@@ -1,0 +1,21 @@
+# SPDX-FileCopyrightText: 2026 Mattia Egloff <mattia.egloff@pm.me>
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+stages:
+  - build
+  - test
+
+build:
+  stage: build
+  script:
+    - dotnet build Vauchi.sln -c Release
+  artifacts:
+    paths:
+      - Vauchi/bin/Release/
+  tags: [windows]
+
+test:
+  stage: test
+  script:
+    - dotnet test Vauchi.Tests/Vauchi.Tests.csproj
+  tags: [windows]
