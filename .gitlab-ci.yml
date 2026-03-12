@@ -1,7 +1,14 @@
 # SPDX-FileCopyrightText: 2026 Mattia Egloff <mattia.egloff@pm.me>
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+include:
+  - project: 'vauchi/scripts'
+    ref: main
+    file:
+      - '/ci-templates/design-drift.yml'
+
 stages:
+  - lint
   - build
   - test
 
@@ -19,3 +26,12 @@ test:
   script:
     - dotnet test Vauchi.Tests/Vauchi.Tests.csproj
   tags: [windows]
+
+# Design drift: verify all design-spec components are implemented
+check:design-drift:
+  extends: .design-drift-job
+  variables:
+    DESIGN_DRIFT_COMPONENT_DIR: "Vauchi/CoreUI/Components"
+    DESIGN_DRIFT_FILE_EXT: ".xaml.cs"
+    DESIGN_DRIFT_FILE_SUFFIX: "Component"
+    DESIGN_DRIFT_CASE: "pascal"
