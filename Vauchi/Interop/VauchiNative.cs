@@ -17,6 +17,12 @@ public static partial class VauchiNative
     [LibraryImport(LibName, EntryPoint = "vauchi_workflow_create", StringMarshalling = StringMarshalling.Utf8)]
     public static partial IntPtr WorkflowCreate(string workflowType);
 
+    [LibraryImport(LibName, EntryPoint = "vauchi_app_create_with_relay", StringMarshalling = StringMarshalling.Utf8)]
+    public static partial IntPtr AppCreateWithRelay(string? relayUrl);
+
+    /// <summary>Default relay URL — matches all other Vauchi frontends.</summary>
+    public const string DefaultRelayUrl = "wss://relay.vauchi.app";
+
     [LibraryImport(LibName, EntryPoint = "vauchi_workflow_destroy")]
     public static partial void WorkflowDestroy(IntPtr handle);
 
