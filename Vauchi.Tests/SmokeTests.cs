@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: 2026 Mattia Egloff <mattia.egloff@pm.me>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-using System.Reflection;
 using System.Text.Json;
 using Xunit;
 
@@ -10,9 +9,9 @@ namespace Vauchi.Tests;
 public class SmokeTests
 {
     [Fact]
-    public void ComponentRenderer_ReturnsNull_ForUnknownVariant()
+    public void ComponentRenderer_ReturnsNull_ForUnknownType()
     {
-        string json = """{"UnknownComponent": {"id": "x"}}""";
+        string json = """{"type": "unknown_component"}""";
         using var doc = JsonDocument.Parse(json);
 
         var result = CoreUI.ComponentRenderer.CreateComponent(doc.RootElement);
@@ -21,32 +20,9 @@ public class SmokeTests
     }
 
     [Fact]
-    public void ComponentRenderer_ReturnsNull_ForEmptyObject()
+    public void ComponentRenderer_ReturnsNull_ForMissingType()
     {
-        string json = """{}""";
-        using var doc = JsonDocument.Parse(json);
-
-        var result = CoreUI.ComponentRenderer.CreateComponent(doc.RootElement);
-
-        Assert.Null(result);
-    }
-
-    [Fact]
-    public void ComponentRenderer_ReturnsNull_ForUnknownStringVariant()
-    {
-        // String variant that doesn't match any known type
-        string json = "\"UnknownThing\"";
-        using var doc = JsonDocument.Parse(json);
-
-        var result = CoreUI.ComponentRenderer.CreateComponent(doc.RootElement);
-
-        Assert.Null(result);
-    }
-
-    [Fact]
-    public void ComponentRenderer_ReturnsNull_ForArrayInput()
-    {
-        string json = """[1, 2, 3]""";
+        string json = """{"content": "hello"}""";
         using var doc = JsonDocument.Parse(json);
 
         var result = CoreUI.ComponentRenderer.CreateComponent(doc.RootElement);
@@ -66,26 +42,10 @@ public class SmokeTests
     {
         // Reflection to verify the constant without calling into native code
         var field = typeof(Interop.VauchiNative)
-            .GetField("LibName", BindingFlags.NonPublic | BindingFlags.Static);
+            .GetField("LibName", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
         Assert.NotNull(field);
         var value = field!.GetValue(null) as string;
         Assert.NotNull(value);
         return value!;
-    }
-
-    [Theory]
-    [InlineData("AppCreate")]
-    [InlineData("AppCreateWithRelay")]
-    [InlineData("AppDestroy")]
-    [InlineData("AppCurrentScreen")]
-    [InlineData("AppHandleAction")]
-    [InlineData("AppNavigateTo")]
-    [InlineData("AppAvailableScreens")]
-    [InlineData("AppDefaultScreen")]
-    public void VauchiNative_AppEngine_MethodExists(string methodName)
-    {
-        var method = typeof(Interop.VauchiNative)
-            .GetMethod(methodName, BindingFlags.Public | BindingFlags.Static);
-        Assert.NotNull(method);
     }
 }

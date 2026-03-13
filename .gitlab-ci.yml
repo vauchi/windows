@@ -21,13 +21,13 @@ build:
   artifacts:
     paths:
       - Vauchi/bin/Release/
-  tags: [saas-windows-medium-amd64]
+  tags: [windows]
 
 test:
   stage: test
   script:
     - dotnet test Vauchi.Tests/Vauchi.Tests.csproj
-  tags: [saas-windows-medium-amd64]
+  tags: [windows]
 
 # Design drift: verify all design-spec components are implemented
 check:design-drift:

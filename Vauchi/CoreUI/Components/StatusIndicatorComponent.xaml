@@ -4,13 +4,8 @@
     x:Class="Vauchi.CoreUI.Components.StatusIndicatorComponent"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <StackPanel Orientation="Horizontal" Spacing="12" Padding="4">
-        <Ellipse x:Name="StatusDot" Width="12" Height="12" Fill="Gray" VerticalAlignment="Center" />
-        <StackPanel Spacing="2" VerticalAlignment="Center">
-            <TextBlock x:Name="TitleText" Text="" />
-            <TextBlock x:Name="DetailText" Text="" Visibility="Collapsed"
-                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                       Style="{StaticResource CaptionTextBlockStyle}" />
-        </StackPanel>
+    <StackPanel Orientation="Horizontal" Spacing="8">
+        <Ellipse x:Name="StatusDot" Width="12" Height="12" Fill="Gray" />
+        <TextBlock x:Name="StatusText" Text="[StatusIndicator placeholder]" VerticalAlignment="Center" />
     </StackPanel>
 </UserControl>

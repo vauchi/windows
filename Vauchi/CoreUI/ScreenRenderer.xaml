@@ -4,47 +4,7 @@
     x:Class="Vauchi.CoreUI.ScreenRenderer"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-            <RowDefinition Height="Auto" />
-        </Grid.RowDefinitions>
-
-        <!-- Row 0: Title area -->
-        <StackPanel x:Name="TitleArea" Grid.Row="0" Padding="16,16,16,8">
-            <TextBlock x:Name="TitleText"
-                       Style="{StaticResource TitleTextBlockStyle}"
-                       TextWrapping="Wrap" />
-            <TextBlock x:Name="SubtitleText"
-                       Style="{StaticResource SubtitleTextBlockStyle}"
-                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                       TextWrapping="Wrap"
-                       Visibility="Collapsed"
-                       Margin="0,4,0,0" />
-        </StackPanel>
-
-        <!-- Row 1: Progress -->
-        <StackPanel x:Name="ProgressArea" Grid.Row="1" Padding="16,0,16,8" Visibility="Collapsed">
-            <ProgressBar x:Name="ProgressBar" Minimum="0" Maximum="100" />
-            <TextBlock x:Name="ProgressLabel"
-                       Style="{StaticResource CaptionTextBlockStyle}"
-                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                       Margin="0,4,0,0" />
-        </StackPanel>
-
-        <!-- Row 2: Components -->
-        <ScrollViewer Grid.Row="2">
-            <StackPanel x:Name="ComponentContainer" Spacing="8" Padding="16,0,16,16" />
-        </ScrollViewer>
-
-        <!-- Row 3: Screen-level action bar -->
-        <StackPanel x:Name="ActionBar" Grid.Row="3"
-                    Orientation="Horizontal"
-                    HorizontalAlignment="Right"
-                    Spacing="8"
-                    Padding="16,8,16,16"
-                    Visibility="Collapsed" />
-    </Grid>
+    <ScrollViewer>
+        <StackPanel x:Name="ComponentContainer" Spacing="8" Padding="16" />
+    </ScrollViewer>
 </UserControl>

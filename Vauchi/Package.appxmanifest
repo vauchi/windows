@@ -49,6 +49,5 @@
 
   <Capabilities>
     <rescap:Capability Name="runFullTrust" />
-    <uap:Capability Name="webcam" />
   </Capabilities>
 </Package>
