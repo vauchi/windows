@@ -11,4 +11,9 @@
     <PackageReference Include="xunit" Version="2.9.3" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.0" />
   </ItemGroup>
+  <!-- Link helper files from main project (no WinUI dependency) -->
+  <ItemGroup>
+    <Compile Include="..\Vauchi\Helpers\ActionJson.cs" Link="Linked\ActionJson.cs" />
+    <Compile Include="..\Vauchi\Helpers\ActionResultParser.cs" Link="Linked\ActionResultParser.cs" />
+  </ItemGroup>
 </Project>

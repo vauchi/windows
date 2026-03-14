@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 using System.Text.Json;
+using Vauchi.Helpers;
 using Xunit;
 
 namespace Vauchi.Tests;
@@ -100,5 +101,70 @@ public class ActionJsonTests
 
         Assert.True(root.TryGetProperty("UndoPressed", out var up));
         Assert.Equal("undo_delete", up.GetProperty("action_id").GetString());
+    }
+
+    // ── ActionJson helper tests ─────────────────────────────────
+
+    [Fact]
+    public void Helper_ActionPressed_MatchesSerdeFormat()
+    {
+        string json = ActionJson.ActionPressed("create_new");
+        var doc = JsonDocument.Parse(json);
+        Assert.Equal("create_new", doc.RootElement.GetProperty("ActionPressed").GetProperty("action_id").GetString());
+    }
+
+    [Fact]
+    public void Helper_ActionPressed_EscapesQuotes()
+    {
+        string json = ActionJson.ActionPressed("action\"with\"quotes");
+        var doc = JsonDocument.Parse(json);
+        Assert.Equal("action\"with\"quotes", doc.RootElement.GetProperty("ActionPressed").GetProperty("action_id").GetString());
+    }
+
+    [Fact]
+    public void Helper_TextChanged_EscapesSpecialCharacters()
+    {
+        string json = ActionJson.TextChanged("input", "line1\nline2\ttab\\back\"quote");
+        var doc = JsonDocument.Parse(json);
+        var inner = doc.RootElement.GetProperty("TextChanged");
+        Assert.Equal("line1\nline2\ttab\\back\"quote", inner.GetProperty("value").GetString());
+    }
+
+    [Fact]
+    public void Helper_TextChanged_HandlesUnicode()
+    {
+        string json = ActionJson.TextChanged("input", "日本語テスト");
+        var doc = JsonDocument.Parse(json);
+        Assert.Equal("日本語テスト", doc.RootElement.GetProperty("TextChanged").GetProperty("value").GetString());
+    }
+
+    [Fact]
+    public void Helper_ItemToggled_MatchesSerdeFormat()
+    {
+        string json = ActionJson.ItemToggled("toggle_list", "item_1");
+        var doc = JsonDocument.Parse(json);
+        var inner = doc.RootElement.GetProperty("ItemToggled");
+        Assert.Equal("toggle_list", inner.GetProperty("component_id").GetString());
+        Assert.Equal("item_1", inner.GetProperty("item_id").GetString());
+    }
+
+    [Fact]
+    public void Helper_ListItemSelected_MatchesSerdeFormat()
+    {
+        string json = ActionJson.ListItemSelected("contact_list", "contact_abc");
+        var doc = JsonDocument.Parse(json);
+        var inner = doc.RootElement.GetProperty("ListItemSelected");
+        Assert.Equal("contact_list", inner.GetProperty("component_id").GetString());
+        Assert.Equal("contact_abc", inner.GetProperty("item_id").GetString());
+    }
+
+    [Fact]
+    public void Helper_SettingsToggled_MatchesSerdeFormat()
+    {
+        string json = ActionJson.SettingsToggled("settings", "notifications");
+        var doc = JsonDocument.Parse(json);
+        var inner = doc.RootElement.GetProperty("SettingsToggled");
+        Assert.Equal("settings", inner.GetProperty("component_id").GetString());
+        Assert.Equal("notifications", inner.GetProperty("item_id").GetString());
     }
 }
