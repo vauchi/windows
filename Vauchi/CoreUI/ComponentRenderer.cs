@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Mattia Egloff <mattia.egloff@pm.me>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+using System;
 using System.Text.Json;
 using Microsoft.UI.Xaml;
 using Vauchi.CoreUI.Components;
@@ -15,7 +16,7 @@ public static class ComponentRenderer
     /// <summary>
     /// Creates the appropriate UI component based on the JSON "type" field.
     /// </summary>
-    public static UIElement? CreateComponent(JsonElement component)
+    public static UIElement? CreateComponent(JsonElement component, Action<string>? onAction = null)
     {
         if (!component.TryGetProperty("type", out var typeProp))
             return null;
@@ -24,30 +25,30 @@ public static class ComponentRenderer
 
         return type switch
         {
-            "text" => CreateAndRender<TextComponent>(component),
-            "text_input" => CreateAndRender<TextInputComponent>(component),
-            "toggle_list" => CreateAndRender<ToggleListComponent>(component),
-            "field_list" => CreateAndRender<FieldListComponent>(component),
-            "card_preview" => CreateAndRender<CardPreviewComponent>(component),
-            "info_panel" => CreateAndRender<InfoPanelComponent>(component),
-            "contact_list" => CreateAndRender<ContactListComponent>(component),
-            "settings_group" => CreateAndRender<SettingsGroupComponent>(component),
-            "action_list" => CreateAndRender<ActionListComponent>(component),
-            "status_indicator" => CreateAndRender<StatusIndicatorComponent>(component),
-            "pin_input" => CreateAndRender<PinInputComponent>(component),
-            "qr_code" => CreateAndRender<QrCodeComponent>(component),
-            "confirmation_dialog" => CreateAndRender<ConfirmationDialogComponent>(component),
-            "divider" => CreateAndRender<DividerComponent>(component),
+            "text" => CreateAndRender<TextComponent>(component, onAction),
+            "text_input" => CreateAndRender<TextInputComponent>(component, onAction),
+            "toggle_list" => CreateAndRender<ToggleListComponent>(component, onAction),
+            "field_list" => CreateAndRender<FieldListComponent>(component, onAction),
+            "card_preview" => CreateAndRender<CardPreviewComponent>(component, onAction),
+            "info_panel" => CreateAndRender<InfoPanelComponent>(component, onAction),
+            "contact_list" => CreateAndRender<ContactListComponent>(component, onAction),
+            "settings_group" => CreateAndRender<SettingsGroupComponent>(component, onAction),
+            "action_list" => CreateAndRender<ActionListComponent>(component, onAction),
+            "status_indicator" => CreateAndRender<StatusIndicatorComponent>(component, onAction),
+            "pin_input" => CreateAndRender<PinInputComponent>(component, onAction),
+            "qr_code" => CreateAndRender<QrCodeComponent>(component, onAction),
+            "confirmation_dialog" => CreateAndRender<ConfirmationDialogComponent>(component, onAction),
+            "divider" => CreateAndRender<DividerComponent>(component, onAction),
             _ => null,
         };
     }
 
-    private static UIElement CreateAndRender<T>(JsonElement data)
-        where T : IRenderable, new()
+    private static UIElement CreateAndRender<T>(JsonElement data, Action<string>? onAction)
+        where T : UIElement, IRenderable, new()
     {
         var component = new T();
-        component.Render(data);
-        return (UIElement)component;
+        component.Render(data, onAction);
+        return component;
     }
 }
 
@@ -56,5 +57,5 @@ public static class ComponentRenderer
 /// </summary>
 public interface IRenderable
 {
-    void Render(JsonElement data);
+    void Render(JsonElement data, Action<string>? onAction);
 }

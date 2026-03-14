@@ -14,7 +14,7 @@ public class SmokeTests
         string json = """{"type": "unknown_component"}""";
         using var doc = JsonDocument.Parse(json);
 
-        var result = CoreUI.ComponentRenderer.CreateComponent(doc.RootElement);
+        var result = CoreUI.ComponentRenderer.CreateComponent(doc.RootElement, null);
 
         Assert.Null(result);
     }
@@ -25,7 +25,7 @@ public class SmokeTests
         string json = """{"content": "hello"}""";
         using var doc = JsonDocument.Parse(json);
 
-        var result = CoreUI.ComponentRenderer.CreateComponent(doc.RootElement);
+        var result = CoreUI.ComponentRenderer.CreateComponent(doc.RootElement, null);
 
         Assert.Null(result);
     }

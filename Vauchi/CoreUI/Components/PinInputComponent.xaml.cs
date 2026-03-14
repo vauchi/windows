@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Mattia Egloff <mattia.egloff@pm.me>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+using System;
 using System.Text.Json;
 using Microsoft.UI.Xaml.Controls;
 
@@ -13,8 +14,10 @@ public sealed partial class PinInputComponent : UserControl, IRenderable
         InitializeComponent();
     }
 
-    public void Render(JsonElement data)
+    public void Render(JsonElement data, Action<string>? onAction)
     {
+        string componentId = data.TryGetProperty("id", out var id) ? id.GetString() ?? "" : "";
+
         if (data.TryGetProperty("label", out var label))
         {
             PinLabel.Text = label.GetString() ?? "Enter PIN";
@@ -23,6 +26,14 @@ public sealed partial class PinInputComponent : UserControl, IRenderable
         {
             PinBox.MaxLength = length.GetInt32();
         }
-        // TODO: Wire up PasswordChanged to emit user action
+
+        if (onAction != null && componentId.Length > 0)
+        {
+            PinBox.PasswordChanged += (_, _) =>
+            {
+                string escaped = PinBox.Password.Replace("\\", "\\\\").Replace("\"", "\\\"");
+                onAction($"{{\"TextChanged\":{{\"component_id\":\"{componentId}\",\"value\":\"{escaped}\"}}}}");
+            };
+        }
     }
 }
