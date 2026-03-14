@@ -9,9 +9,9 @@ namespace Vauchi.Tests;
 public class SmokeTests
 {
     [Fact]
-    public void ComponentRenderer_ReturnsNull_ForUnknownType()
+    public void ComponentRenderer_ReturnsNull_ForUnknownVariant()
     {
-        string json = """{"type": "unknown_component"}""";
+        string json = """{"UnknownComponent": {"id": "x"}}""";
         using var doc = JsonDocument.Parse(json);
 
         var result = CoreUI.ComponentRenderer.CreateComponent(doc.RootElement);
@@ -20,9 +20,32 @@ public class SmokeTests
     }
 
     [Fact]
-    public void ComponentRenderer_ReturnsNull_ForMissingType()
+    public void ComponentRenderer_ReturnsNull_ForEmptyObject()
     {
-        string json = """{"content": "hello"}""";
+        string json = """{}""";
+        using var doc = JsonDocument.Parse(json);
+
+        var result = CoreUI.ComponentRenderer.CreateComponent(doc.RootElement);
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public void ComponentRenderer_ReturnsNull_ForUnknownStringVariant()
+    {
+        // String variant that doesn't match any known type
+        string json = "\"UnknownThing\"";
+        using var doc = JsonDocument.Parse(json);
+
+        var result = CoreUI.ComponentRenderer.CreateComponent(doc.RootElement);
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public void ComponentRenderer_ReturnsNull_ForArrayInput()
+    {
+        string json = """[1, 2, 3]""";
         using var doc = JsonDocument.Parse(json);
 
         var result = CoreUI.ComponentRenderer.CreateComponent(doc.RootElement);
