@@ -1,0 +1,35 @@
+// SPDX-FileCopyrightText: 2026 Mattia Egloff <mattia.egloff@pm.me>
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+using System;
+using System.Text.Json;
+using Microsoft.UI.Xaml.Controls;
+
+namespace Vauchi.CoreUI.Components;
+
+public sealed partial class InlineConfirmComponent : UserControl, IRenderable
+{
+    public event EventHandler<string>? ActionRequested;
+
+    public InlineConfirmComponent()
+    {
+        InitializeComponent();
+    }
+
+    public void Render(JsonElement data)
+    {
+        // TODO: Wire up confirm/cancel buttons to emit user actions
+        if (data.ValueKind == JsonValueKind.Object && data.TryGetProperty("message", out var message))
+        {
+            PromptText.Text = message.GetString() ?? "[InlineConfirm]";
+        }
+        if (data.ValueKind == JsonValueKind.Object && data.TryGetProperty("confirm_label", out var confirmLabel))
+        {
+            ConfirmButton.Content = confirmLabel.GetString() ?? "Confirm";
+        }
+        if (data.ValueKind == JsonValueKind.Object && data.TryGetProperty("cancel_label", out var cancelLabel))
+        {
+            CancelButton.Content = cancelLabel.GetString() ?? "Cancel";
+        }
+    }
+}
