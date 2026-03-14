@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Mattia Egloff <mattia.egloff@pm.me>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+using System.Reflection;
 using System.Text.Json;
 using Xunit;
 
@@ -65,10 +66,26 @@ public class SmokeTests
     {
         // Reflection to verify the constant without calling into native code
         var field = typeof(Interop.VauchiNative)
-            .GetField("LibName", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+            .GetField("LibName", BindingFlags.NonPublic | BindingFlags.Static);
         Assert.NotNull(field);
         var value = field!.GetValue(null) as string;
         Assert.NotNull(value);
         return value!;
+    }
+
+    [Theory]
+    [InlineData("AppCreate")]
+    [InlineData("AppCreateWithRelay")]
+    [InlineData("AppDestroy")]
+    [InlineData("AppCurrentScreen")]
+    [InlineData("AppHandleAction")]
+    [InlineData("AppNavigateTo")]
+    [InlineData("AppAvailableScreens")]
+    [InlineData("AppDefaultScreen")]
+    public void VauchiNative_AppEngine_MethodExists(string methodName)
+    {
+        var method = typeof(Interop.VauchiNative)
+            .GetMethod(methodName, BindingFlags.Public | BindingFlags.Static);
+        Assert.NotNull(method);
     }
 }
