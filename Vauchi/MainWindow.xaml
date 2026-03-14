@@ -6,7 +6,14 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:coreui="using:Vauchi.CoreUI"
     Title="Vauchi">
-    <Grid>
+    <NavigationView
+        x:Name="NavView"
+        IsBackButtonVisible="Visible"
+        IsBackEnabled="True"
+        BackRequested="NavView_BackRequested"
+        SelectionChanged="NavView_SelectionChanged"
+        IsSettingsVisible="False"
+        PaneDisplayMode="Left">
         <coreui:ScreenRenderer x:Name="Renderer" />
-    </Grid>
+    </NavigationView>
 </Window>
