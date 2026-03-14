@@ -15,10 +15,13 @@
                    HorizontalAlignment="Center"
                    MaxWidth="300" />
         <StackPanel x:Name="ScanPanel" Visibility="Collapsed"
-                    HorizontalAlignment="Center">
-            <TextBlock x:Name="ScanPlaceholder"
-                       Text="Camera scanning — coming soon"
+                    HorizontalAlignment="Center" Spacing="8">
+            <Image x:Name="CameraPreview" Width="300" Height="300"
+                   Visibility="Collapsed" />
+            <TextBlock x:Name="ScanStatusText"
+                       Text="Initializing camera..."
                        Style="{StaticResource BodyTextBlockStyle}"
+                       HorizontalAlignment="Center"
                        Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
         </StackPanel>
     </StackPanel>
