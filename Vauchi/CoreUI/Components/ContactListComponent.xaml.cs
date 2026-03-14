@@ -15,6 +15,7 @@ public sealed partial class ContactListComponent : UserControl, IRenderable
     public event EventHandler<string>? ActionRequested;
 
     private string _componentId = "";
+    private bool _eventsWired;
 
     public ContactListComponent()
     {
@@ -32,21 +33,25 @@ public sealed partial class ContactListComponent : UserControl, IRenderable
         if (searchable)
         {
             SearchBox.Visibility = Visibility.Visible;
-            SearchBox.TextChanged += (_, args) =>
+            if (!_eventsWired)
             {
-                if (args.Reason == AutoSuggestionBoxTextChangeReason.UserInput)
+                SearchBox.TextChanged += (_, args) =>
                 {
-                    ActionRequested?.Invoke(this,
-                        JsonSerializer.Serialize(new
-                        {
-                            SearchChanged = new
+                    if (args.Reason == AutoSuggestionBoxTextChangeReason.UserInput)
+                    {
+                        ActionRequested?.Invoke(this,
+                            JsonSerializer.Serialize(new
                             {
-                                component_id = _componentId,
-                                query = SearchBox.Text
-                            }
-                        }));
-                }
-            };
+                                SearchChanged = new
+                                {
+                                    component_id = _componentId,
+                                    query = SearchBox.Text
+                                }
+                            }));
+                    }
+                };
+                _eventsWired = true;
+            }
         }
 
         ContactListView.Items.Clear();

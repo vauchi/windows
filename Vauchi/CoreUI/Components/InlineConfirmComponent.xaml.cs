@@ -15,6 +15,7 @@ public sealed partial class InlineConfirmComponent : UserControl, IRenderable
     public event EventHandler<string>? ActionRequested;
 
     private string _componentId = "";
+    private bool _eventsWired;
 
     public InlineConfirmComponent()
     {
@@ -51,26 +52,31 @@ public sealed partial class InlineConfirmComponent : UserControl, IRenderable
         // Initially collapsed; tap warning text to expand
         ButtonPanel.Visibility = Visibility.Collapsed;
 
-        WarningText.Tapped += OnWarningTapped;
-
-        ConfirmButton.Click += (_, _) =>
+        if (!_eventsWired)
         {
-            ActionRequested?.Invoke(this,
-                JsonSerializer.Serialize(new
-                {
-                    ActionPressed = new { action_id = $"{_componentId}_confirm" }
-                }));
-        };
+            WarningText.Tapped += OnWarningTapped;
 
-        CancelButton.Click += (_, _) =>
-        {
-            ButtonPanel.Visibility = Visibility.Collapsed;
-            ActionRequested?.Invoke(this,
-                JsonSerializer.Serialize(new
-                {
-                    ActionPressed = new { action_id = $"{_componentId}_cancel" }
-                }));
-        };
+            ConfirmButton.Click += (_, _) =>
+            {
+                ActionRequested?.Invoke(this,
+                    JsonSerializer.Serialize(new
+                    {
+                        ActionPressed = new { action_id = $"{_componentId}_confirm" }
+                    }));
+            };
+
+            CancelButton.Click += (_, _) =>
+            {
+                ButtonPanel.Visibility = Visibility.Collapsed;
+                ActionRequested?.Invoke(this,
+                    JsonSerializer.Serialize(new
+                    {
+                        ActionPressed = new { action_id = $"{_componentId}_cancel" }
+                    }));
+            };
+
+            _eventsWired = true;
+        }
     }
 
     private void OnWarningTapped(object sender, TappedRoutedEventArgs e)

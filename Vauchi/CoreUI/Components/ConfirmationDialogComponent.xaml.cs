@@ -3,6 +3,7 @@
 
 using System;
 using System.Text.Json;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 
@@ -13,6 +14,7 @@ public sealed partial class ConfirmationDialogComponent : UserControl, IRenderab
     public event EventHandler<string>? ActionRequested;
 
     private string _componentId = "";
+    private bool _eventsWired;
 
     public ConfirmationDialogComponent()
     {
@@ -27,7 +29,10 @@ public sealed partial class ConfirmationDialogComponent : UserControl, IRenderab
 
         if (data.TryGetProperty("title", out var title))
         {
-            // Title is shown via the dialog message as a prefix if needed
+            DialogTitle.Text = title.GetString() ?? "";
+            DialogTitle.Visibility = string.IsNullOrEmpty(title.GetString())
+                ? Visibility.Collapsed
+                : Visibility.Visible;
         }
 
         if (data.TryGetProperty("message", out var message))
@@ -51,22 +56,27 @@ public sealed partial class ConfirmationDialogComponent : UserControl, IRenderab
             ConfirmButton.Foreground = new SolidColorBrush(Microsoft.UI.Colors.Red);
         }
 
-        ConfirmButton.Click += (_, _) =>
+        if (!_eventsWired)
         {
-            ActionRequested?.Invoke(this,
-                JsonSerializer.Serialize(new
-                {
-                    ActionPressed = new { action_id = $"{_componentId}_confirm" }
-                }));
-        };
+            ConfirmButton.Click += (_, _) =>
+            {
+                ActionRequested?.Invoke(this,
+                    JsonSerializer.Serialize(new
+                    {
+                        ActionPressed = new { action_id = $"{_componentId}_confirm" }
+                    }));
+            };
 
-        CancelButton.Click += (_, _) =>
-        {
-            ActionRequested?.Invoke(this,
-                JsonSerializer.Serialize(new
-                {
-                    ActionPressed = new { action_id = $"{_componentId}_cancel" }
-                }));
-        };
+            CancelButton.Click += (_, _) =>
+            {
+                ActionRequested?.Invoke(this,
+                    JsonSerializer.Serialize(new
+                    {
+                        ActionPressed = new { action_id = $"{_componentId}_cancel" }
+                    }));
+            };
+
+            _eventsWired = true;
+        }
     }
 }

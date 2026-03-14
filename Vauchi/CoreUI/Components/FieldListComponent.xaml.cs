@@ -72,14 +72,20 @@ public sealed partial class FieldListComponent : UserControl, IRenderable
             {
                 grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
+                var currentVisibility = field.TryGetProperty("visibility", out var vis)
+                    ? vis.GetString() ?? "Shown"
+                    : "Shown";
+                var isShown = currentVisibility == "Shown";
+
                 var eyeButton = new Button
                 {
-                    Content = new SymbolIcon(Symbol.View),
+                    Content = new SymbolIcon(isShown ? Symbol.View : Symbol.ViewAll),
                     Padding = new Thickness(4),
                     Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent)
                 };
 
                 var capturedFieldId = fieldId;
+                var toggleTo = !isShown;
                 eyeButton.Click += (_, _) =>
                 {
                     ActionRequested?.Invoke(this,
@@ -89,7 +95,7 @@ public sealed partial class FieldListComponent : UserControl, IRenderable
                             {
                                 field_id = capturedFieldId,
                                 group_id = (string?)null,
-                                visible = true
+                                visible = toggleTo
                             }
                         }));
                 };
