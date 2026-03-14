@@ -3,13 +3,18 @@
 
 using System;
 using System.Text.Json;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
 
 namespace Vauchi.CoreUI.Components;
 
 public sealed partial class InlineConfirmComponent : UserControl, IRenderable
 {
     public event EventHandler<string>? ActionRequested;
+
+    private string _componentId = "";
 
     public InlineConfirmComponent()
     {
@@ -18,18 +23,58 @@ public sealed partial class InlineConfirmComponent : UserControl, IRenderable
 
     public void Render(JsonElement data)
     {
-        // TODO: Wire up confirm/cancel buttons to emit user actions
-        if (data.ValueKind == JsonValueKind.Object && data.TryGetProperty("message", out var message))
+        _componentId = data.TryGetProperty("id", out var id)
+            ? id.GetString() ?? ""
+            : "";
+
+        if (data.TryGetProperty("warning", out var warning))
         {
-            PromptText.Text = message.GetString() ?? "[InlineConfirm]";
+            WarningText.Text = warning.GetString() ?? "";
         }
-        if (data.ValueKind == JsonValueKind.Object && data.TryGetProperty("confirm_label", out var confirmLabel))
+
+        if (data.TryGetProperty("confirm_text", out var confirmText))
         {
-            ConfirmButton.Content = confirmLabel.GetString() ?? "Confirm";
+            ConfirmButton.Content = confirmText.GetString() ?? "Confirm";
         }
-        if (data.ValueKind == JsonValueKind.Object && data.TryGetProperty("cancel_label", out var cancelLabel))
+
+        if (data.TryGetProperty("cancel_text", out var cancelText))
         {
-            CancelButton.Content = cancelLabel.GetString() ?? "Cancel";
+            CancelButton.Content = cancelText.GetString() ?? "Cancel";
         }
+
+        var destructive = data.TryGetProperty("destructive", out var d) && d.GetBoolean();
+        if (destructive)
+        {
+            ConfirmButton.Foreground = new SolidColorBrush(Microsoft.UI.Colors.Red);
+        }
+
+        // Initially collapsed; tap warning text to expand
+        ButtonPanel.Visibility = Visibility.Collapsed;
+
+        WarningText.Tapped += OnWarningTapped;
+
+        ConfirmButton.Click += (_, _) =>
+        {
+            ActionRequested?.Invoke(this,
+                JsonSerializer.Serialize(new
+                {
+                    ActionPressed = new { action_id = $"{_componentId}_confirm" }
+                }));
+        };
+
+        CancelButton.Click += (_, _) =>
+        {
+            ButtonPanel.Visibility = Visibility.Collapsed;
+            ActionRequested?.Invoke(this,
+                JsonSerializer.Serialize(new
+                {
+                    ActionPressed = new { action_id = $"{_componentId}_cancel" }
+                }));
+        };
+    }
+
+    private void OnWarningTapped(object sender, TappedRoutedEventArgs e)
+    {
+        ButtonPanel.Visibility = Visibility.Visible;
     }
 }

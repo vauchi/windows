@@ -5,8 +5,10 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <StackPanel Spacing="8">
-        <TextBlock x:Name="PromptText" Text="[InlineConfirm placeholder]" TextWrapping="Wrap" />
-        <StackPanel Orientation="Horizontal" Spacing="8">
+        <TextBlock x:Name="WarningText" Text="[InlineConfirm placeholder]"
+                   TextWrapping="Wrap" />
+        <StackPanel x:Name="ButtonPanel" Orientation="Horizontal" Spacing="8"
+                    Visibility="Collapsed">
             <Button x:Name="ConfirmButton" Content="Confirm" />
             <Button x:Name="CancelButton" Content="Cancel" />
         </StackPanel>
