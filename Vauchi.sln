@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Vauchi", "Vauchi\Vauchi.csp
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Vauchi.Tests", "Vauchi.Tests\Vauchi.Tests.csproj", "{B2C3D4E5-F6A7-8901-BCDE-F12345678901}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Vauchi.UnitTests", "Vauchi.UnitTests\Vauchi.UnitTests.csproj", "{1E7FCB8E-9AFB-46F9-B0D7-150A0D701694}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -21,5 +23,9 @@ Global
 		{B2C3D4E5-F6A7-8901-BCDE-F12345678901}.Debug|x64.Build.0 = Debug|x64
 		{B2C3D4E5-F6A7-8901-BCDE-F12345678901}.Release|x64.ActiveCfg = Release|x64
 		{B2C3D4E5-F6A7-8901-BCDE-F12345678901}.Release|x64.Build.0 = Release|x64
+		{1E7FCB8E-9AFB-46F9-B0D7-150A0D701694}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{1E7FCB8E-9AFB-46F9-B0D7-150A0D701694}.Debug|x64.Build.0 = Debug|Any CPU
+		{1E7FCB8E-9AFB-46F9-B0D7-150A0D701694}.Release|x64.ActiveCfg = Release|Any CPU
+		{1E7FCB8E-9AFB-46F9-B0D7-150A0D701694}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

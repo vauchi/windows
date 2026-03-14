@@ -106,7 +106,7 @@ public class ScreenModelParsingTests
     [InlineData("""{"PinInput": {"id": "pi1", "label": "Enter PIN", "length": 6, "filled": 0}}""", "PinInput")]
     [InlineData("""{"QrCode": {"id": "qr1", "data": "test", "mode": "Display"}}""", "QrCode")]
     [InlineData("""{"ConfirmationDialog": {"id": "cd1", "title": "Confirm", "message": "Sure?"}}""", "ConfirmationDialog")]
-    [InlineData(""""Divider"""", "Divider")]
+    [InlineData("\"Divider\"", "Divider")]
     [InlineData("""{"ShowToast": {"id": "st1", "message": "Done"}}""", "ShowToast")]
     [InlineData("""{"InlineConfirm": {"id": "ic1", "label": "Delete", "confirm_label": "Yes"}}""", "InlineConfirm")]
     [InlineData("""{"EditableText": {"id": "et1", "value": "text", "editing": false}}""", "EditableText")]
