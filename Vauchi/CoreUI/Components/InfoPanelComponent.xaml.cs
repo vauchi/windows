@@ -3,6 +3,7 @@
 
 using System;
 using System.Text.Json;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
 namespace Vauchi.CoreUI.Components;
@@ -20,12 +21,57 @@ public sealed partial class InfoPanelComponent : UserControl, IRenderable
     {
         if (data.TryGetProperty("title", out var title))
         {
-            Panel.Title = title.GetString() ?? "";
+            var titleStr = title.GetString() ?? "";
+            if (!string.IsNullOrEmpty(titleStr))
+            {
+                PanelTitle.Text = titleStr;
+                PanelTitle.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                PanelTitle.Visibility = Visibility.Collapsed;
+            }
         }
-        if (data.TryGetProperty("message", out var message))
+
+        ItemsContainer.Children.Clear();
+
+        if (data.TryGetProperty("items", out var items)
+            && items.ValueKind == JsonValueKind.Array)
         {
-            Panel.Message = message.GetString() ?? "";
+            foreach (var item in items.EnumerateArray())
+            {
+                var row = new StackPanel { Spacing = 2 };
+
+                if (item.TryGetProperty("title", out var itemTitle))
+                {
+                    var titleBlock = new TextBlock
+                    {
+                        Text = itemTitle.GetString() ?? ""
+                    };
+                    if (Application.Current.Resources.TryGetValue(
+                            "BodyStrongTextBlockStyle", out var strongStyle)
+                        && strongStyle is Style style)
+                    {
+                        titleBlock.Style = style;
+                    }
+                    row.Children.Add(titleBlock);
+                }
+
+                if (item.TryGetProperty("detail", out var itemDetail)
+                    && itemDetail.ValueKind != JsonValueKind.Null)
+                {
+                    var detailBlock = new TextBlock
+                    {
+                        Text = itemDetail.GetString() ?? "",
+                        TextWrapping = TextWrapping.Wrap,
+                        Foreground = (Microsoft.UI.Xaml.Media.Brush)
+                            Application.Current.Resources["TextFillColorSecondaryBrush"]
+                    };
+                    row.Children.Add(detailBlock);
+                }
+
+                ItemsContainer.Children.Add(row);
+            }
         }
-        // TODO: Map severity from data["severity"]
     }
 }
