@@ -3,7 +3,10 @@
 
 using System;
 using System.Text.Json;
+using Microsoft.UI;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Shapes;
 
 namespace Vauchi.CoreUI.Components;
@@ -19,10 +22,34 @@ public sealed partial class StatusIndicatorComponent : UserControl, IRenderable
 
     public void Render(JsonElement data)
     {
-        if (data.TryGetProperty("label", out var label))
+        if (data.TryGetProperty("title", out var title))
         {
-            StatusText.Text = label.GetString() ?? "";
+            TitleText.Text = title.GetString() ?? "";
         }
-        // TODO: Map status to color for StatusDot fill
+
+        if (data.TryGetProperty("detail", out var detail)
+            && detail.ValueKind != JsonValueKind.Null)
+        {
+            DetailText.Text = detail.GetString() ?? "";
+            DetailText.Visibility = Visibility.Visible;
+        }
+        else
+        {
+            DetailText.Visibility = Visibility.Collapsed;
+        }
+
+        if (data.TryGetProperty("status", out var status))
+        {
+            var color = status.GetString() switch
+            {
+                "Pending" => Colors.Gray,
+                "InProgress" => Colors.DodgerBlue,
+                "Success" => Colors.Green,
+                "Failed" => Colors.Red,
+                "Warning" => Colors.Orange,
+                _ => Colors.Gray
+            };
+            StatusDot.Fill = new SolidColorBrush(color);
+        }
     }
 }
