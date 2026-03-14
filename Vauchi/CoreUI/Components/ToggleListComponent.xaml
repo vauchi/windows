@@ -4,7 +4,9 @@
     x:Class="Vauchi.CoreUI.Components.ToggleListComponent"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <StackPanel x:Name="ToggleContainer" Spacing="4">
-        <TextBlock x:Name="Placeholder" Text="[ToggleList placeholder]" />
+    <StackPanel Spacing="8">
+        <TextBlock x:Name="ListLabel"
+                   Style="{StaticResource BodyStrongTextBlockStyle}" />
+        <StackPanel x:Name="ItemsContainer" Spacing="0" />
     </StackPanel>
 </UserControl>
