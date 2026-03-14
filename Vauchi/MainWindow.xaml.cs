@@ -7,6 +7,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Vauchi.Interop;
 using Vauchi.Platform;
+using Windows.Storage;
 using Windows.System;
 
 namespace Vauchi;
@@ -26,21 +27,27 @@ public sealed partial class MainWindow : Window
         InitializeComponent();
         Title = "Vauchi";
 
-        // Set initial and minimum window size
+        // Restore saved window size/position, or use defaults
         var appWindow = this.AppWindow;
-        appWindow.Resize(new Windows.Graphics.SizeInt32(1024, 768));
+        RestoreWindowState(appWindow);
 
-        // Enforce minimum window size via Changed event
+        // Enforce minimum window size and persist state on change
         appWindow.Changed += (sender, args) =>
         {
             if (args.DidSizeChange)
             {
                 var size = sender.Size;
-                var changed = false;
                 var w = size.Width < 720 ? 720 : size.Width;
                 var h = size.Height < 480 ? 480 : size.Height;
                 if (w != size.Width || h != size.Height)
                     sender.Resize(new Windows.Graphics.SizeInt32(w, h));
+                else
+                    SaveWindowState(sender);
+            }
+
+            if (args.DidPositionChange)
+            {
+                SaveWindowState(sender);
             }
         };
 
@@ -392,5 +399,41 @@ public sealed partial class MainWindow : Window
             }
         }
         return string.Join(" ", parts);
+    }
+
+    private static void SaveWindowState(Microsoft.UI.Windowing.AppWindow appWindow)
+    {
+        var settings = ApplicationData.Current.LocalSettings;
+        var size = appWindow.Size;
+        var pos = appWindow.Position;
+
+        settings.Values["WindowWidth"] = size.Width;
+        settings.Values["WindowHeight"] = size.Height;
+        settings.Values["WindowX"] = pos.X;
+        settings.Values["WindowY"] = pos.Y;
+    }
+
+    private static void RestoreWindowState(Microsoft.UI.Windowing.AppWindow appWindow)
+    {
+        var settings = ApplicationData.Current.LocalSettings;
+
+        var width = settings.Values["WindowWidth"] is int w ? w : 1024;
+        var height = settings.Values["WindowHeight"] is int h ? h : 768;
+
+        // Enforce minimums
+        if (width < 720) width = 720;
+        if (height < 480) height = 480;
+
+        appWindow.Resize(new Windows.Graphics.SizeInt32(width, height));
+
+        // Restore position if saved
+        if (settings.Values["WindowX"] is int x && settings.Values["WindowY"] is int y)
+        {
+            // Basic bounds check — don't place window completely off-screen
+            if (x > -width && y > -height)
+            {
+                appWindow.Move(new Windows.Graphics.PointInt32(x, y));
+            }
+        }
     }
 }
