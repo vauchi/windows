@@ -3,6 +3,7 @@
 
 using System;
 using System.Text.Json;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
 namespace Vauchi.CoreUI.Components;
@@ -22,6 +23,23 @@ public sealed partial class TextComponent : UserControl, IRenderable
         {
             ContentText.Text = content.GetString() ?? "";
         }
-        // TODO: Apply style from data["style"]
+
+        if (data.TryGetProperty("style", out var style))
+        {
+            var styleKey = style.GetString() switch
+            {
+                "Title" => "TitleTextBlockStyle",
+                "Subtitle" => "SubtitleTextBlockStyle",
+                "Body" => "BodyTextBlockStyle",
+                "Caption" => "CaptionTextBlockStyle",
+                _ => "BodyTextBlockStyle"
+            };
+
+            if (Application.Current.Resources.TryGetValue(styleKey, out var resourceStyle)
+                && resourceStyle is Style winuiStyle)
+            {
+                ContentText.Style = winuiStyle;
+            }
+        }
     }
 }
