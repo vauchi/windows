@@ -74,6 +74,31 @@ public sealed partial class MainWindow : Window
             // for now just let the window close normally
         };
 
+        // Keyboard shortcuts
+        KeyboardShortcuts.Register(
+            NavView,
+            onNavigate: screenName =>
+            {
+                var result = VauchiNative.AppNavigateTo(_appHandle, screenName);
+                if (result != null)
+                    ApplyResult(result);
+                else
+                    RefreshScreen();
+            },
+            onBack: () =>
+            {
+                string actionJson = """{"ActionPressed": {"action_id": "back"}}""";
+                string? result = VauchiNative.AppHandleAction(_appHandle, actionJson);
+                if (result != null)
+                    ApplyResult(result);
+            },
+            onQuit: () =>
+            {
+                _trayManager?.Dispose();
+                _trayManager = null;
+                this.Close();
+            });
+
         PopulateNavigation();
         SelectDefaultScreen();
         RefreshScreen();
