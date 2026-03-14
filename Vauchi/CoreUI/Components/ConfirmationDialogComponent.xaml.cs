@@ -4,12 +4,15 @@
 using System;
 using System.Text.Json;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 
 namespace Vauchi.CoreUI.Components;
 
 public sealed partial class ConfirmationDialogComponent : UserControl, IRenderable
 {
     public event EventHandler<string>? ActionRequested;
+
+    private string _componentId = "";
 
     public ConfirmationDialogComponent()
     {
@@ -18,18 +21,52 @@ public sealed partial class ConfirmationDialogComponent : UserControl, IRenderab
 
     public void Render(JsonElement data)
     {
+        _componentId = data.TryGetProperty("id", out var id)
+            ? id.GetString() ?? ""
+            : "";
+
+        if (data.TryGetProperty("title", out var title))
+        {
+            // Title is shown via the dialog message as a prefix if needed
+        }
+
         if (data.TryGetProperty("message", out var message))
         {
             DialogMessage.Text = message.GetString() ?? "";
         }
-        if (data.TryGetProperty("confirm_label", out var confirmLabel))
+
+        if (data.TryGetProperty("confirm_text", out var confirmText))
         {
-            ConfirmButton.Content = confirmLabel.GetString() ?? "Confirm";
+            ConfirmButton.Content = confirmText.GetString() ?? "Confirm";
         }
-        if (data.TryGetProperty("cancel_label", out var cancelLabel))
+
+        if (data.TryGetProperty("cancel_text", out var cancelText))
         {
-            CancelButton.Content = cancelLabel.GetString() ?? "Cancel";
+            CancelButton.Content = cancelText.GetString() ?? "Cancel";
         }
-        // TODO: Wire up button clicks to emit user actions
+
+        var destructive = data.TryGetProperty("destructive", out var d) && d.GetBoolean();
+        if (destructive)
+        {
+            ConfirmButton.Foreground = new SolidColorBrush(Microsoft.UI.Colors.Red);
+        }
+
+        ConfirmButton.Click += (_, _) =>
+        {
+            ActionRequested?.Invoke(this,
+                JsonSerializer.Serialize(new
+                {
+                    ActionPressed = new { action_id = $"{_componentId}_confirm" }
+                }));
+        };
+
+        CancelButton.Click += (_, _) =>
+        {
+            ActionRequested?.Invoke(this,
+                JsonSerializer.Serialize(new
+                {
+                    ActionPressed = new { action_id = $"{_componentId}_cancel" }
+                }));
+        };
     }
 }
