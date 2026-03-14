@@ -69,9 +69,8 @@ public sealed partial class MainWindow : Window
         // Minimize to tray on close
         appWindow.Closing += (sender, args) =>
         {
-            // Cancel close and hide instead (minimize to tray)
-            // TODO: Actually hide window when H.NotifyIcon is available;
-            // for now just let the window close normally
+            args.Cancel = true;
+            this.AppWindow.Hide();
         };
 
         // Keyboard shortcuts

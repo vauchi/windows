@@ -2,20 +2,20 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 using System;
+using System.Windows.Input;
+using H.NotifyIcon;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
 
 namespace Vauchi.Platform;
 
 /// <summary>
-/// Manages the system tray icon and context menu.
-/// Uses H.NotifyIcon.WinUI when available (requires net10.0+).
+/// Manages the system tray icon and context menu using H.NotifyIcon.WinUI.
 /// </summary>
 public class SystemTrayManager : IDisposable
 {
     private readonly Window _window;
-
-    // TODO: Uncomment when H.NotifyIcon.WinUI is available (net10.0+)
-    // private TaskbarIcon? _trayIcon;
+    private TaskbarIcon? _trayIcon;
 
     /// <summary>Raised when the user clicks "Exchange" in the tray menu.</summary>
     public event EventHandler? ExchangeRequested;
@@ -34,38 +34,51 @@ public class SystemTrayManager : IDisposable
     /// </summary>
     public void Initialize()
     {
-        // TODO: Implement with H.NotifyIcon.WinUI when available (net10.0+)
-        //
-        // _trayIcon = new TaskbarIcon
-        // {
-        //     ToolTipText = "Vauchi",
-        // };
-        //
-        // var contextMenu = new MenuFlyout();
-        //
-        // var exchangeItem = new MenuFlyoutItem { Text = "Exchange" };
-        // exchangeItem.Click += (_, _) => ExchangeRequested?.Invoke(this, EventArgs.Empty);
-        // contextMenu.Items.Add(exchangeItem);
-        //
-        // var openItem = new MenuFlyoutItem { Text = "Open Vauchi" };
-        // openItem.Click += (_, _) => _window.Activate();
-        // contextMenu.Items.Add(openItem);
-        //
-        // contextMenu.Items.Add(new MenuFlyoutSeparator());
-        //
-        // var quitItem = new MenuFlyoutItem { Text = "Quit" };
-        // quitItem.Click += (_, _) => QuitRequested?.Invoke(this, EventArgs.Empty);
-        // contextMenu.Items.Add(quitItem);
-        //
-        // _trayIcon.ContextFlyout = contextMenu;
-        // _trayIcon.TrayMouseDoubleClick += (_, _) => _window.Activate();
+        _trayIcon = new TaskbarIcon
+        {
+            ToolTipText = "Vauchi",
+            DoubleClickCommand = new RelayCommand(() => _window.Activate()),
+        };
+
+        var contextMenu = new MenuFlyout();
+
+        var exchangeItem = new MenuFlyoutItem { Text = "Exchange" };
+        exchangeItem.Click += (_, _) => ExchangeRequested?.Invoke(this, EventArgs.Empty);
+        contextMenu.Items.Add(exchangeItem);
+
+        var openItem = new MenuFlyoutItem { Text = "Open Vauchi" };
+        openItem.Click += (_, _) => _window.Activate();
+        contextMenu.Items.Add(openItem);
+
+        contextMenu.Items.Add(new MenuFlyoutSeparator());
+
+        var quitItem = new MenuFlyoutItem { Text = "Quit" };
+        quitItem.Click += (_, _) => QuitRequested?.Invoke(this, EventArgs.Empty);
+        contextMenu.Items.Add(quitItem);
+
+        _trayIcon.ContextFlyout = contextMenu;
     }
 
     public void Dispose()
     {
-        // TODO: Uncomment when H.NotifyIcon.WinUI is available
-        // _trayIcon?.Dispose();
-        // _trayIcon = null;
+        _trayIcon?.Dispose();
+        _trayIcon = null;
         GC.SuppressFinalize(this);
+    }
+
+    /// <summary>
+    /// Simple ICommand implementation for tray icon double-click.
+    /// </summary>
+    private sealed class RelayCommand : ICommand
+    {
+        private readonly Action _execute;
+
+        public RelayCommand(Action execute) => _execute = execute;
+
+        public event EventHandler? CanExecuteChanged;
+
+        public bool CanExecute(object? parameter) => true;
+
+        public void Execute(object? parameter) => _execute();
     }
 }

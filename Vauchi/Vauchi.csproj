@@ -12,7 +12,6 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.6.*" />
     <PackageReference Include="ZXing.Net" Version="0.16.11" />
-    <!-- TODO: Add H.NotifyIcon.WinUI when upgrading to net10.0+ (incompatible with net8.0) -->
-    <!-- <PackageReference Include="H.NotifyIcon.WinUI" Version="2.*" /> -->
+    <PackageReference Include="H.NotifyIcon.WinUI" Version="2.1.0" />
   </ItemGroup>
 </Project>
