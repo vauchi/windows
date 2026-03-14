@@ -1,0 +1,9 @@
+<!-- SPDX-FileCopyrightText: 2026 Mattia Egloff <mattia.egloff@pm.me> -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<Project>
+  <PropertyGroup>
+    <!-- WinUI PRI generation requires VS MSBuild tools.
+         Build with: msbuild (from VS Developer Command Prompt) or Visual Studio IDE.
+         dotnet build/test will show PRI error but C# compilation succeeds. -->
+  </PropertyGroup>
+</Project>
