@@ -71,6 +71,8 @@ public sealed partial class PinInputComponent : UserControl, IRenderable
                     FontSize = 18,
                     InputScope = CreateNumberScope()
                 };
+                Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(
+                    digitBox, $"PIN digit {i + 1}");
 
                 var index = i;
                 digitBox.TextChanged += (s, e) => OnDigitChanged(index);

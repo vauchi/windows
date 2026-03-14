@@ -44,6 +44,7 @@ public sealed partial class ActionListComponent : UserControl, IRenderable
                 HorizontalContentAlignment = HorizontalAlignment.Left,
                 Padding = new Thickness(16, 12, 16, 12)
             };
+            Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(button, label);
 
             if (hasDetail)
             {

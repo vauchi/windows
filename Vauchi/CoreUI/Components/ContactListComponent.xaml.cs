@@ -80,6 +80,7 @@ public sealed partial class ContactListComponent : UserControl, IRenderable
                     Padding = new Thickness(4),
                     ColumnSpacing = 12
                 };
+                Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(grid, name);
                 grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
                 grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
 
