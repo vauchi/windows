@@ -4,9 +4,8 @@
     x:Class="Vauchi.CoreUI.Components.CardPreviewComponent"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <Border BorderBrush="Gray" BorderThickness="1" CornerRadius="8" Padding="12">
-        <StackPanel x:Name="CardContent" Spacing="4">
-            <TextBlock x:Name="Placeholder" Text="[CardPreview placeholder]" />
-        </StackPanel>
+    <Border CornerRadius="8" Padding="16"
+            Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+        <StackPanel x:Name="CardContainer" Spacing="8" />
     </Border>
 </UserControl>
