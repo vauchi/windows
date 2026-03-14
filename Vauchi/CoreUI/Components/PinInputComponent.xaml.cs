@@ -4,6 +4,7 @@
 using System;
 using System.Text.Json;
 using Microsoft.UI.Xaml.Controls;
+using Vauchi.Helpers;
 
 namespace Vauchi.CoreUI.Components;
 
@@ -30,10 +31,7 @@ public sealed partial class PinInputComponent : UserControl, IRenderable
         if (onAction != null && componentId.Length > 0)
         {
             PinBox.PasswordChanged += (_, _) =>
-            {
-                string escaped = PinBox.Password.Replace("\\", "\\\\").Replace("\"", "\\\"");
-                onAction($"{{\"TextChanged\":{{\"component_id\":\"{componentId}\",\"value\":\"{escaped}\"}}}}");
-            };
+                onAction(ActionJson.TextChanged(componentId, PinBox.Password));
         }
     }
 }

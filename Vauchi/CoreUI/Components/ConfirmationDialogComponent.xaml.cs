@@ -4,6 +4,7 @@
 using System;
 using System.Text.Json;
 using Microsoft.UI.Xaml.Controls;
+using Vauchi.Helpers;
 
 namespace Vauchi.CoreUI.Components;
 
@@ -34,9 +35,9 @@ public sealed partial class ConfirmationDialogComponent : UserControl, IRenderab
         if (onAction != null && componentId.Length > 0)
         {
             ConfirmButton.Click += (_, _) =>
-                onAction($"{{\"ActionPressed\":{{\"action_id\":\"{componentId}_confirm\"}}}}");
+                onAction(ActionJson.ActionPressed($"{componentId}_confirm"));
             CancelButton.Click += (_, _) =>
-                onAction($"{{\"ActionPressed\":{{\"action_id\":\"{componentId}_cancel\"}}}}");
+                onAction(ActionJson.ActionPressed($"{componentId}_cancel"));
         }
     }
 }

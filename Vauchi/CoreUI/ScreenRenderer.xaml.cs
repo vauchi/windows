@@ -5,6 +5,7 @@ using System;
 using System.Text.Json;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Vauchi.Helpers;
 
 namespace Vauchi.CoreUI;
 
@@ -67,8 +68,7 @@ public sealed partial class ScreenRenderer : UserControl
                     btn.Style = (Style)Application.Current.Resources["AccentButtonStyle"];
 
                 string capturedId = actionId;
-                btn.Click += (_, _) =>
-                    RaiseAction($"{{\"ActionPressed\":{{\"action_id\":\"{capturedId}\"}}}}");
+                btn.Click += (_, _) => RaiseAction(ActionJson.ActionPressed(capturedId));
 
                 buttonPanel.Children.Add(btn);
             }

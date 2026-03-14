@@ -4,6 +4,7 @@
 using System;
 using System.Text.Json;
 using Microsoft.UI.Xaml.Controls;
+using Vauchi.Helpers;
 
 namespace Vauchi.CoreUI.Components;
 
@@ -30,10 +31,7 @@ public sealed partial class TextInputComponent : UserControl, IRenderable
         if (onAction != null && componentId.Length > 0)
         {
             InputBox.TextChanged += (_, _) =>
-            {
-                string escaped = InputBox.Text.Replace("\\", "\\\\").Replace("\"", "\\\"");
-                onAction($"{{\"TextChanged\":{{\"component_id\":\"{componentId}\",\"value\":\"{escaped}\"}}}}");
-            };
+                onAction(ActionJson.TextChanged(componentId, InputBox.Text));
         }
     }
 }

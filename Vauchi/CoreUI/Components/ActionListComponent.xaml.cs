@@ -5,6 +5,7 @@ using System;
 using System.Text.Json;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Vauchi.Helpers;
 
 namespace Vauchi.CoreUI.Components;
 
@@ -45,8 +46,7 @@ public sealed partial class ActionListComponent : UserControl, IRenderable
             if (onAction != null)
             {
                 string capturedId = actionId;
-                btn.Click += (_, _) =>
-                    onAction($"{{\"ActionPressed\":{{\"action_id\":\"{capturedId}\"}}}}");
+                btn.Click += (_, _) => onAction(ActionJson.ActionPressed(capturedId));
             }
 
             ActionContainer.Children.Add(btn);

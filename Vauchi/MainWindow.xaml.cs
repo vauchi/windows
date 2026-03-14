@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 using System;
-using System.Text.Json;
 using Microsoft.UI.Xaml;
+using Vauchi.Helpers;
 using Vauchi.Interop;
 
 namespace Vauchi;
@@ -41,29 +41,27 @@ public sealed partial class MainWindow : Window
 
     private void HandleActionResult(string resultJson)
     {
-        using var doc = JsonDocument.Parse(resultJson);
-        var root = doc.RootElement;
+        var kind = ActionResultParser.Classify(resultJson);
 
-        // ActionResult is a serde enum: {"UpdateScreen": {...}} or {"NavigateTo": {...}}
-        if (root.TryGetProperty("UpdateScreen", out _) ||
-            root.TryGetProperty("NavigateTo", out _))
+        switch (kind)
         {
-            RefreshScreen();
-        }
-        else if (root.TryGetProperty("Complete", out _) ||
-                 root.TryGetProperty("WipeComplete", out _))
-        {
-            RefreshScreen();
-        }
-        else if (root.TryGetProperty("ValidationError", out _))
-        {
-            // Re-render current screen (engine state may have updated)
-            RefreshScreen();
-        }
-        else
-        {
-            // Other results (ShowAlert, OpenUrl, etc.) — refresh for now
-            RefreshScreen();
+            case ActionResultKind.UpdateScreen:
+            case ActionResultKind.NavigateTo:
+            case ActionResultKind.ValidationError:
+            case ActionResultKind.Complete:
+            case ActionResultKind.WipeComplete:
+                RefreshScreen();
+                break;
+
+            case ActionResultKind.Error:
+                // Native returned an error — refresh to show current state
+                RefreshScreen();
+                break;
+
+            default:
+                // ShowAlert, OpenUrl, OpenContact, etc. — refresh for now
+                RefreshScreen();
+                break;
         }
     }
 
