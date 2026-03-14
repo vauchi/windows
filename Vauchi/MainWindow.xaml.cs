@@ -6,6 +6,7 @@ using System.Text.Json;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Vauchi.Interop;
+using Vauchi.Platform;
 using Windows.System;
 
 namespace Vauchi;
@@ -18,6 +19,7 @@ public sealed partial class MainWindow : Window
 {
     private IntPtr _appHandle;
     private bool _suppressSelectionChanged;
+    private SystemTrayManager? _trayManager;
 
     public MainWindow()
     {
@@ -46,6 +48,31 @@ public sealed partial class MainWindow : Window
 
         Renderer.ActionRequested += OnActionRequested;
         this.Closed += OnClosed;
+
+        // System tray
+        _trayManager = new SystemTrayManager(this);
+        _trayManager.Initialize();
+        _trayManager.ExchangeRequested += (_, _) =>
+        {
+            this.Activate();
+            var result = VauchiNative.AppNavigateTo(_appHandle, "exchange");
+            if (result != null)
+                ApplyResult(result);
+        };
+        _trayManager.QuitRequested += (_, _) =>
+        {
+            _trayManager?.Dispose();
+            _trayManager = null;
+            this.Close();
+        };
+
+        // Minimize to tray on close
+        appWindow.Closing += (sender, args) =>
+        {
+            // Cancel close and hide instead (minimize to tray)
+            // TODO: Actually hide window when H.NotifyIcon is available;
+            // for now just let the window close normally
+        };
 
         PopulateNavigation();
         SelectDefaultScreen();
@@ -313,6 +340,9 @@ public sealed partial class MainWindow : Window
     private void OnClosed(object sender, WindowEventArgs args)
     {
         Renderer.ActionRequested -= OnActionRequested;
+
+        _trayManager?.Dispose();
+        _trayManager = null;
 
         if (_appHandle != IntPtr.Zero)
         {
