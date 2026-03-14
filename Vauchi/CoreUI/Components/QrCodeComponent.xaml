@@ -4,8 +4,22 @@
     x:Class="Vauchi.CoreUI.Components.QrCodeComponent"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <Border BorderBrush="Gray" BorderThickness="1" Padding="16"
-            HorizontalAlignment="Center" VerticalAlignment="Center">
-        <TextBlock x:Name="Placeholder" Text="[QR Code placeholder]" />
-    </Border>
+    <StackPanel HorizontalAlignment="Center" Spacing="8">
+        <TextBlock x:Name="QrLabel" Visibility="Collapsed"
+                   Style="{StaticResource CaptionTextBlockStyle}"
+                   HorizontalAlignment="Center" />
+        <Image x:Name="QrImage" Width="250" Height="250"
+               Visibility="Collapsed" />
+        <TextBlock x:Name="QrFallbackText" Visibility="Collapsed"
+                   TextWrapping="Wrap" IsTextSelectionEnabled="True"
+                   HorizontalAlignment="Center"
+                   MaxWidth="300" />
+        <StackPanel x:Name="ScanPanel" Visibility="Collapsed"
+                    HorizontalAlignment="Center">
+            <TextBlock x:Name="ScanPlaceholder"
+                       Text="Camera scanning — coming soon"
+                       Style="{StaticResource BodyTextBlockStyle}"
+                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+        </StackPanel>
+    </StackPanel>
 </UserControl>
