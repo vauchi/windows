@@ -4,7 +4,7 @@
 using Vauchi.Helpers;
 using Xunit;
 
-namespace Vauchi.Tests;
+namespace Vauchi.UnitTests;
 
 /// <summary>
 /// Verify ActionResultParser correctly classifies vauchi-cabi ActionResult JSON.
@@ -28,19 +28,23 @@ public class ActionResultParserTests
     [Fact]
     public void Classifies_Complete_UnitVariant()
     {
-        Assert.Equal(ActionResultKind.Complete, ActionResultParser.Classify("\"Complete\""));
+        // Serde unit variants serialize as "Complete"
+        string json = "\"Complete\"";
+        Assert.Equal(ActionResultKind.Complete, ActionResultParser.Classify(json));
     }
 
     [Fact]
     public void Classifies_WipeComplete_UnitVariant()
     {
-        Assert.Equal(ActionResultKind.WipeComplete, ActionResultParser.Classify("\"WipeComplete\""));
+        string json = "\"WipeComplete\"";
+        Assert.Equal(ActionResultKind.WipeComplete, ActionResultParser.Classify(json));
     }
 
     [Fact]
     public void Classifies_RequestCamera_UnitVariant()
     {
-        Assert.Equal(ActionResultKind.RequestCamera, ActionResultParser.Classify("\"RequestCamera\""));
+        string json = "\"RequestCamera\"";
+        Assert.Equal(ActionResultKind.RequestCamera, ActionResultParser.Classify(json));
     }
 
     [Fact]
@@ -88,13 +92,15 @@ public class ActionResultParserTests
     [Fact]
     public void Classifies_StartDeviceLink()
     {
-        Assert.Equal(ActionResultKind.StartDeviceLink, ActionResultParser.Classify("\"StartDeviceLink\""));
+        string json = "\"StartDeviceLink\"";
+        Assert.Equal(ActionResultKind.StartDeviceLink, ActionResultParser.Classify(json));
     }
 
     [Fact]
     public void Classifies_StartBackupImport()
     {
-        Assert.Equal(ActionResultKind.StartBackupImport, ActionResultParser.Classify("\"StartBackupImport\""));
+        string json = "\"StartBackupImport\"";
+        Assert.Equal(ActionResultKind.StartBackupImport, ActionResultParser.Classify(json));
     }
 
     [Fact]
@@ -128,6 +134,7 @@ public class ActionResultParserTests
     [Fact]
     public void Classifies_UnknownStringVariant_AsUnknown()
     {
-        Assert.Equal(ActionResultKind.Unknown, ActionResultParser.Classify("\"FutureUnitVariant\""));
+        string json = "\"FutureUnitVariant\"";
+        Assert.Equal(ActionResultKind.Unknown, ActionResultParser.Classify(json));
     }
 }
