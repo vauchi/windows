@@ -3,6 +3,7 @@
 
 using System;
 using System.Text.Json;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
 namespace Vauchi.CoreUI.Components;
@@ -18,10 +19,61 @@ public sealed partial class ActionListComponent : UserControl, IRenderable
 
     public void Render(JsonElement data)
     {
-        // TODO: Build action buttons from data["actions"]
-        if (data.TryGetProperty("title", out var title))
+        ActionContainer.Children.Clear();
+
+        if (!data.TryGetProperty("items", out var items)
+            || items.ValueKind != JsonValueKind.Array)
         {
-            Placeholder.Text = title.GetString() ?? "[ActionList]";
+            return;
+        }
+
+        foreach (var item in items.EnumerateArray())
+        {
+            var itemId = item.TryGetProperty("id", out var id)
+                ? id.GetString() ?? ""
+                : "";
+            var label = item.TryGetProperty("label", out var lbl)
+                ? lbl.GetString() ?? ""
+                : "";
+            var hasDetail = item.TryGetProperty("detail", out var detail)
+                            && detail.ValueKind != JsonValueKind.Null;
+
+            var button = new Button
+            {
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                HorizontalContentAlignment = HorizontalAlignment.Left,
+                Padding = new Thickness(16, 12, 16, 12)
+            };
+
+            if (hasDetail)
+            {
+                var panel = new StackPanel { Spacing = 2 };
+                panel.Children.Add(new TextBlock { Text = label });
+                panel.Children.Add(new TextBlock
+                {
+                    Text = detail.GetString() ?? "",
+                    Foreground = (Microsoft.UI.Xaml.Media.Brush)
+                        Application.Current.Resources["TextFillColorSecondaryBrush"],
+                    Style = (Style)Application.Current.Resources["CaptionTextBlockStyle"]
+                });
+                button.Content = panel;
+            }
+            else
+            {
+                button.Content = label;
+            }
+
+            var capturedId = itemId;
+            button.Click += (_, _) =>
+            {
+                ActionRequested?.Invoke(this,
+                    JsonSerializer.Serialize(new
+                    {
+                        ActionPressed = new { action_id = capturedId }
+                    }));
+            };
+
+            ActionContainer.Children.Add(button);
         }
     }
 }

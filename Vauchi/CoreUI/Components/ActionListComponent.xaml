@@ -4,7 +4,5 @@
     x:Class="Vauchi.CoreUI.Components.ActionListComponent"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <StackPanel x:Name="ActionContainer" Spacing="4" Orientation="Horizontal">
-        <TextBlock x:Name="Placeholder" Text="[ActionList placeholder]" />
-    </StackPanel>
+    <StackPanel x:Name="ActionContainer" Spacing="8" />
 </UserControl>
