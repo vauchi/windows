@@ -24,9 +24,23 @@ public sealed partial class MainWindow : Window
         InitializeComponent();
         Title = "Vauchi";
 
-        // Set minimum window size
+        // Set initial and minimum window size
         var appWindow = this.AppWindow;
-        appWindow.Resize(new Windows.Graphics.SizeInt32(720, 480));
+        appWindow.Resize(new Windows.Graphics.SizeInt32(1024, 768));
+
+        // Enforce minimum window size via Changed event
+        appWindow.Changed += (sender, args) =>
+        {
+            if (args.DidSizeChange)
+            {
+                var size = sender.Size;
+                var changed = false;
+                var w = size.Width < 720 ? 720 : size.Width;
+                var h = size.Height < 480 ? 480 : size.Height;
+                if (w != size.Width || h != size.Height)
+                    sender.Resize(new Windows.Graphics.SizeInt32(w, h));
+            }
+        };
 
         _appHandle = VauchiNative.AppCreateWithRelay(VauchiNative.DefaultRelayUrl);
 
@@ -34,6 +48,7 @@ public sealed partial class MainWindow : Window
         this.Closed += OnClosed;
 
         PopulateNavigation();
+        SelectDefaultScreen();
         RefreshScreen();
     }
 
@@ -80,6 +95,23 @@ public sealed partial class MainWindow : Window
         {
             NavView.IsPaneVisible = false;
         }
+    }
+
+    private void SelectDefaultScreen()
+    {
+        var defaultScreen = VauchiNative.AppDefaultScreen(_appHandle);
+        if (string.IsNullOrEmpty(defaultScreen)) return;
+
+        _suppressSelectionChanged = true;
+        foreach (var menuItem in NavView.MenuItems)
+        {
+            if (menuItem is NavigationViewItem item && item.Tag is string tag && tag == defaultScreen)
+            {
+                NavView.SelectedItem = item;
+                break;
+            }
+        }
+        _suppressSelectionChanged = false;
     }
 
     private void RefreshScreen()
@@ -187,17 +219,31 @@ public sealed partial class MainWindow : Window
                     }
 
                     case "OpenContact":
+                    {
+                        // Core returns OpenContact with a contact_id — navigate via AppNavigateTo
+                        var contactId = property.Value.TryGetProperty("contact_id", out var cid)
+                            ? cid.GetString() ?? "" : "";
+                        var navResult = VauchiNative.AppNavigateTo(_appHandle, "contacts");
+                        if (navResult != null)
+                            Renderer.RenderFromJson(navResult);
+                        break;
+                    }
+
                     case "EditContact":
+                    {
+                        var contactId = property.Value.TryGetProperty("contact_id", out var cid)
+                            ? cid.GetString() ?? "" : "";
+                        var navResult = VauchiNative.AppNavigateTo(_appHandle, "contacts");
+                        if (navResult != null)
+                            Renderer.RenderFromJson(navResult);
+                        break;
+                    }
+
                     case "OpenEntryDetail":
                     {
-                        // Navigate to the relevant screen with context
-                        string contextJson = property.Value.GetRawText();
-                        string? navResult = VauchiNative.AppHandleAction(_appHandle,
-                            JsonSerializer.Serialize(new { ActionPressed = new { action_id = "navigate_" + property.Name, context = contextJson } }));
-                        if (navResult != null)
-                        {
-                            ApplyResult(navResult);
-                        }
+                        // Navigate to entry detail — refresh current screen as the detail
+                        // is typically shown in the current context
+                        RefreshScreen();
                         break;
                     }
 
@@ -237,7 +283,7 @@ public sealed partial class MainWindow : Window
 
     private void NavView_BackRequested(NavigationView sender, NavigationViewBackRequestedEventArgs args)
     {
-        string actionJson = JsonSerializer.Serialize(new { ActionPressed = new { action_id = "back" } });
+        string actionJson = """{"ActionPressed": {"action_id": "back"}}""";
         string? resultJson = VauchiNative.AppHandleAction(_appHandle, actionJson);
         if (resultJson != null)
         {
