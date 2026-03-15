@@ -58,4 +58,84 @@ public static partial class VauchiNative
         string? json = WorkflowCurrentScreen(handle);
         return json != null ? JsonDocument.Parse(json) : null;
     }
+
+    // ── App API (ADR-030/031) ───────────────────────────────────────
+
+    [LibraryImport(LibName, EntryPoint = "vauchi_app_create_with_config", StringMarshalling = StringMarshalling.Utf8)]
+    public static partial IntPtr AppCreateWithConfig(string dataDir, string? relayUrl);
+
+    [LibraryImport(LibName, EntryPoint = "vauchi_app_destroy")]
+    public static partial void AppDestroy(IntPtr handle);
+
+    [LibraryImport(LibName, EntryPoint = "vauchi_app_current_screen")]
+    private static partial IntPtr AppCurrentScreenRaw(IntPtr handle);
+
+    [LibraryImport(LibName, EntryPoint = "vauchi_app_handle_action", StringMarshalling = StringMarshalling.Utf8)]
+    private static partial IntPtr AppHandleActionRaw(IntPtr handle, string actionJson);
+
+    [LibraryImport(LibName, EntryPoint = "vauchi_app_handle_hardware_event", StringMarshalling = StringMarshalling.Utf8)]
+    private static partial IntPtr AppHandleHardwareEventRaw(IntPtr handle, string eventJson);
+
+    [LibraryImport(LibName, EntryPoint = "vauchi_app_navigate_to", StringMarshalling = StringMarshalling.Utf8)]
+    private static partial IntPtr AppNavigateToRaw(IntPtr handle, string screenName);
+
+    [LibraryImport(LibName, EntryPoint = "vauchi_app_available_screens")]
+    private static partial IntPtr AppAvailableScreensRaw(IntPtr handle);
+
+    [LibraryImport(LibName, EntryPoint = "vauchi_app_default_screen")]
+    private static partial IntPtr AppDefaultScreenRaw(IntPtr handle);
+
+    public static string? AppCurrentScreen(IntPtr handle)
+    {
+        IntPtr ptr = AppCurrentScreenRaw(handle);
+        if (ptr == IntPtr.Zero) return null;
+        string result = Marshal.PtrToStringUTF8(ptr)!;
+        StringFree(ptr);
+        return result;
+    }
+
+    public static string? AppHandleAction(IntPtr handle, string actionJson)
+    {
+        IntPtr ptr = AppHandleActionRaw(handle, actionJson);
+        if (ptr == IntPtr.Zero) return null;
+        string result = Marshal.PtrToStringUTF8(ptr)!;
+        StringFree(ptr);
+        return result;
+    }
+
+    public static string? AppHandleHardwareEvent(IntPtr handle, string eventJson)
+    {
+        IntPtr ptr = AppHandleHardwareEventRaw(handle, eventJson);
+        if (ptr == IntPtr.Zero) return null;
+        string result = Marshal.PtrToStringUTF8(ptr)!;
+        StringFree(ptr);
+        return result;
+    }
+
+    public static string? AppNavigateTo(IntPtr handle, string screenName)
+    {
+        IntPtr ptr = AppNavigateToRaw(handle, screenName);
+        if (ptr == IntPtr.Zero) return null;
+        string result = Marshal.PtrToStringUTF8(ptr)!;
+        StringFree(ptr);
+        return result;
+    }
+
+    public static string? AppAvailableScreens(IntPtr handle)
+    {
+        IntPtr ptr = AppAvailableScreensRaw(handle);
+        if (ptr == IntPtr.Zero) return null;
+        string result = Marshal.PtrToStringUTF8(ptr)!;
+        StringFree(ptr);
+        return result;
+    }
+
+    public static string? AppDefaultScreen(IntPtr handle)
+    {
+        IntPtr ptr = AppDefaultScreenRaw(handle);
+        if (ptr == IntPtr.Zero) return null;
+        string result = Marshal.PtrToStringUTF8(ptr)!;
+        StringFree(ptr);
+        return result;
+    }
 }
