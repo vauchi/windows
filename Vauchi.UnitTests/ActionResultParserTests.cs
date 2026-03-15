@@ -105,6 +105,13 @@ public class ActionResultParserTests
     }
 
     [Fact]
+    public void Classifies_ExchangeCommands()
+    {
+        string json = """{"ExchangeCommands":{"commands":["QrRequestScan"]}}""";
+        Assert.Equal(ActionResultKind.ExchangeCommands, ActionResultParser.Classify(json));
+    }
+
+    [Fact]
     public void Classifies_NativeError()
     {
         string json = """{"error":"null action JSON"}""";

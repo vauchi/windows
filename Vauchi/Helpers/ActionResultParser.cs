@@ -24,6 +24,7 @@ public enum ActionResultKind
     RequestCamera,
     OpenEntryDetail,
     ShowToast,
+    ExchangeCommands,
     Error,
     Unknown,
 }
@@ -35,7 +36,7 @@ public static class ActionResultParser
         "UpdateScreen", "NavigateTo", "ValidationError", "Complete",
         "WipeComplete", "StartDeviceLink", "StartBackupImport",
         "OpenContact", "EditContact", "OpenUrl", "ShowAlert",
-        "RequestCamera", "OpenEntryDetail", "ShowToast",
+        "RequestCamera", "OpenEntryDetail", "ShowToast", "ExchangeCommands",
     ];
 
     /// <summary>
@@ -84,6 +85,7 @@ public static class ActionResultParser
         "RequestCamera" => ActionResultKind.RequestCamera,
         "OpenEntryDetail" => ActionResultKind.OpenEntryDetail,
         "ShowToast" => ActionResultKind.ShowToast,
+        "ExchangeCommands" => ActionResultKind.ExchangeCommands,
         _ => ActionResultKind.Unknown,
     };
 }
