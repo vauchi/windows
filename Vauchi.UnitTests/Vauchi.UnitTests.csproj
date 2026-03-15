@@ -15,5 +15,6 @@
   <ItemGroup>
     <Compile Include="..\Vauchi\Helpers\ActionJson.cs" Link="Linked\ActionJson.cs" />
     <Compile Include="..\Vauchi\Helpers\ActionResultParser.cs" Link="Linked\ActionResultParser.cs" />
+    <Compile Include="..\Vauchi\Helpers\ExchangeCommandParser.cs" Link="Linked\ExchangeCommandParser.cs" />
   </ItemGroup>
 </Project>
