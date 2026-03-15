@@ -144,6 +144,7 @@ public class ExchangeCommandParserTests
         var cmds = ExchangeCommandParser.ParseAll(json);
         Assert.Equal(3, cmds.Length);
         Assert.Equal(ExchangeCommandKind.QrDisplay, cmds[0].Kind);
+        Assert.Equal("abc", cmds[0].GetString("data"));
         Assert.Equal(ExchangeCommandKind.QrRequestScan, cmds[1].Kind);
         Assert.Equal(ExchangeCommandKind.BleDisconnect, cmds[2].Kind);
     }
@@ -162,7 +163,20 @@ public class ExchangeCommandParserTests
         var cmds = ExchangeCommandParser.ParseFromActionResult(resultJson);
         Assert.Equal(2, cmds.Length);
         Assert.Equal(ExchangeCommandKind.QrDisplay, cmds[0].Kind);
+        Assert.Equal("x", cmds[0].GetString("data"));
         Assert.Equal(ExchangeCommandKind.QrRequestScan, cmds[1].Kind);
+    }
+
+    // ── Adversarial (CC-14) ──
+
+    [Fact]
+    public void GetBytes_Returns_Null_On_Base64_String()
+    {
+        // If Rust ever uses serde_bytes, Vec<u8> would serialize as Base64 string
+        // instead of int array. GetBytes must return null (not crash).
+        var cmd = ParseSingle("""{"BleStartAdvertising":{"service_uuid":"x","payload":"AQID"}}""");
+        Assert.Equal(ExchangeCommandKind.BleStartAdvertising, cmd.Kind);
+        Assert.Null(cmd.GetBytes("payload"));
     }
 
     // ── Helper ──
