@@ -137,4 +137,18 @@ public class ActionResultParserTests
         string json = "\"FutureUnitVariant\"";
         Assert.Equal(ActionResultKind.Unknown, ActionResultParser.Classify(json));
     }
+
+    [Fact]
+    public void Classifies_ExchangeCommands()
+    {
+        string json = """{"ExchangeCommands":{"commands":[{"QrDisplay":{"data":"vauchi://..."}},"QrRequestScan"]}}""";
+        Assert.Equal(ActionResultKind.ExchangeCommands, ActionResultParser.Classify(json));
+    }
+
+    [Fact]
+    public void Classifies_ExchangeCommands_EmptyCommands()
+    {
+        string json = """{"ExchangeCommands":{"commands":[]}}""";
+        Assert.Equal(ActionResultKind.ExchangeCommands, ActionResultParser.Classify(json));
+    }
 }
