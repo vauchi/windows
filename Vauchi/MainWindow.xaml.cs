@@ -53,6 +53,12 @@ public sealed partial class MainWindow : Window
                 RefreshScreen();
                 break;
 
+            case ActionResultKind.ExchangeCommands:
+                // ExchangeCommands requires App API (VauchiApp*), not Workflow API.
+                // Ignored during onboarding. Full wiring added when MainWindow
+                // migrates to AppCreateWithConfig.
+                break;
+
             case ActionResultKind.Error:
                 // Native returned an error — refresh to show current state
                 RefreshScreen();
