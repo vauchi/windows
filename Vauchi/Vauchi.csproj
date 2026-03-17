@@ -10,6 +10,7 @@
     <WindowsSdkPackageVersion>10.0.22621.52</WindowsSdkPackageVersion>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="H.NotifyIcon.WinUI" Version="2.2.0" />
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.6.*" />
   </ItemGroup>
 </Project>
