@@ -139,7 +139,7 @@ public class ActionResultParserTests
     }
 
     [Fact]
-    public void Classifies_ExchangeCommands()
+    public void Classifies_ExchangeCommands_WithQrDisplay()
     {
         string json = """{"ExchangeCommands":{"commands":[{"QrDisplay":{"data":"vauchi://..."}},"QrRequestScan"]}}""";
         Assert.Equal(ActionResultKind.ExchangeCommands, ActionResultParser.Classify(json));

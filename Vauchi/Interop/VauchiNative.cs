@@ -64,6 +64,13 @@ public static partial class VauchiNative
     [LibraryImport(LibName, EntryPoint = "vauchi_app_create_with_config", StringMarshalling = StringMarshalling.Utf8)]
     public static partial IntPtr AppCreateWithConfig(string dataDir, string? relayUrl);
 
+    [LibraryImport(LibName, EntryPoint = "vauchi_app_create_with_key", StringMarshalling = StringMarshalling.Utf8)]
+    public static partial IntPtr AppCreateWithKey(
+        string dataDir,
+        string? relayUrl,
+        [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 3)] byte[] keyBytes,
+        int keyLen);
+
     [LibraryImport(LibName, EntryPoint = "vauchi_app_destroy")]
     public static partial void AppDestroy(IntPtr handle);
 
