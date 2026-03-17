@@ -16,7 +16,7 @@ public sealed partial class ShowToastComponent : UserControl, IRenderable
         InitializeComponent();
     }
 
-    public void Render(JsonElement data)
+    public void Render(JsonElement data, Action<string>? onAction)
     {
         // TODO: Show toast notification from data["message"]
         if (data.ValueKind == JsonValueKind.Object && data.TryGetProperty("message", out var message))

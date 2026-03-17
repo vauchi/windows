@@ -22,7 +22,7 @@ public sealed partial class InlineConfirmComponent : UserControl, IRenderable
         InitializeComponent();
     }
 
-    public void Render(JsonElement data)
+    public void Render(JsonElement data, Action<string>? onAction)
     {
         _componentId = data.TryGetProperty("id", out var id)
             ? id.GetString() ?? ""
