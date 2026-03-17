@@ -20,6 +20,7 @@ public sealed partial class MainWindow : Window
     private IntPtr _appHandle;
     private List<string> _screenIds = new();
     private bool _sidebarUpdating;
+    private SystemTrayManager? _tray;
 
     public MainWindow()
     {
@@ -28,6 +29,9 @@ public sealed partial class MainWindow : Window
 
         Renderer.ActionRequested += OnActionRequested;
         InitializeApp();
+
+        _tray = new SystemTrayManager(this);
+        _tray.Initialize();
 
         var shortcuts = new KeyboardShortcuts();
         shortcuts.NavigateRequested += screenName =>
@@ -58,7 +62,8 @@ public sealed partial class MainWindow : Window
 
         if (_appHandle == IntPtr.Zero)
         {
-            _appHandle = VauchiNative.AppCreateWithRelay(null);
+            throw new InvalidOperationException(
+                "Failed to initialize Vauchi storage. The database may be corrupted or inaccessible.");
         }
 
         string? defaultScreen = VauchiNative.AppDefaultScreen(_appHandle);
@@ -199,6 +204,7 @@ public sealed partial class MainWindow : Window
     private void OnClosed(object sender, WindowEventArgs args)
     {
         Renderer.ActionRequested -= OnActionRequested;
+        _tray?.Dispose();
 
         if (_appHandle != IntPtr.Zero)
         {
