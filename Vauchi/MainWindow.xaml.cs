@@ -28,6 +28,16 @@ public sealed partial class MainWindow : Window
 
         Renderer.ActionRequested += OnActionRequested;
         InitializeApp();
+
+        var shortcuts = new KeyboardShortcuts();
+        shortcuts.NavigateRequested += screenName =>
+        {
+            if (_appHandle == IntPtr.Zero) return;
+            VauchiNative.AppNavigateTo(_appHandle, screenName);
+            RefreshSidebar();
+            RefreshScreen();
+        };
+        shortcuts.Register(Content as UIElement ?? throw new InvalidOperationException("Content not set"));
     }
 
     private void InitializeApp()
