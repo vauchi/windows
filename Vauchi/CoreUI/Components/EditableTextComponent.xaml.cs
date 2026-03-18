@@ -3,14 +3,13 @@
 
 using System;
 using System.Text.Json;
+using Vauchi.Helpers;
 using Microsoft.UI.Xaml.Controls;
 
 namespace Vauchi.CoreUI.Components;
 
 public sealed partial class EditableTextComponent : UserControl, IRenderable
 {
-    public event EventHandler<string>? ActionRequested;
-
     public EditableTextComponent()
     {
         InitializeComponent();
@@ -18,14 +17,21 @@ public sealed partial class EditableTextComponent : UserControl, IRenderable
 
     public void Render(JsonElement data, Action<string>? onAction)
     {
-        // TODO: Wire up TextChanged to emit user action
-        if (data.ValueKind == JsonValueKind.Object && data.TryGetProperty("value", out var value))
+        string componentId = data.TryGetProperty("id", out var id) ? id.GetString() ?? "" : "";
+
+        if (data.TryGetProperty("value", out var value))
         {
             EditableBox.Text = value.GetString() ?? "";
         }
-        if (data.ValueKind == JsonValueKind.Object && data.TryGetProperty("placeholder", out var placeholder))
+        if (data.TryGetProperty("placeholder", out var placeholder))
         {
             EditableBox.PlaceholderText = placeholder.GetString() ?? "";
+        }
+
+        if (onAction != null && componentId.Length > 0)
+        {
+            EditableBox.TextChanged += (_, _) =>
+                onAction(ActionJson.TextChanged(componentId, EditableBox.Text));
         }
     }
 }

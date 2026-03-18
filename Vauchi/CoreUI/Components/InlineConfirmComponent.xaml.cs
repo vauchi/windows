@@ -1,19 +1,19 @@
 // SPDX-FileCopyrightText: 2026 Mattia Egloff <mattia.egloff@pm.me>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-using System;
-using System.Text.Json;
 using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
+using System;
+using System.Text.Json;
+using Vauchi.Helpers;
+using Microsoft.UI.Xaml.Controls;
+using Windows.Security.Credentials;
 
 namespace Vauchi.CoreUI.Components;
 
 public sealed partial class InlineConfirmComponent : UserControl, IRenderable
 {
-    public event EventHandler<string>? ActionRequested;
-
     private string _componentId = "";
     private bool _eventsWired;
 
@@ -58,21 +58,13 @@ public sealed partial class InlineConfirmComponent : UserControl, IRenderable
 
             ConfirmButton.Click += (_, _) =>
             {
-                ActionRequested?.Invoke(this,
-                    JsonSerializer.Serialize(new
-                    {
-                        ActionPressed = new { action_id = $"{_componentId}_confirm" }
-                    }));
+                onAction?.Invoke(ActionJson.ActionPressed($"{_componentId}_confirm"));
             };
 
             CancelButton.Click += (_, _) =>
             {
                 ButtonPanel.Visibility = Visibility.Collapsed;
-                ActionRequested?.Invoke(this,
-                    JsonSerializer.Serialize(new
-                    {
-                        ActionPressed = new { action_id = $"{_componentId}_cancel" }
-                    }));
+                onAction?.Invoke(ActionJson.ActionPressed($"{_componentId}_cancel"));
             };
 
             _eventsWired = true;

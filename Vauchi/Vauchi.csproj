@@ -4,13 +4,19 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
-    <UseWinUI>true</UseWinUI>
+	  <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+	  <UseWinUI>true</UseWinUI>
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <WindowsSdkPackageVersion>10.0.22621.52</WindowsSdkPackageVersion>
-  </PropertyGroup>
+    <WindowsSdkPackageVersion>10.0.22621.57</WindowsSdkPackageVersion>
+	  <Platforms>x64</Platforms>
+		<PlatformTarget>x64</PlatformTarget>
+		<RuntimeIdentifier>win-x64</RuntimeIdentifier>
+	  <WindowsPackageType>None</WindowsPackageType>
+	  <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+</PropertyGroup>
   <ItemGroup>
     <PackageReference Include="H.NotifyIcon.WinUI" Version="2.2.0" />
-    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.6.*" />
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.6.241114003" />
   </ItemGroup>
 </Project>

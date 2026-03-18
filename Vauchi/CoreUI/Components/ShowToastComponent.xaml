@@ -4,5 +4,10 @@
     x:Class="Vauchi.CoreUI.Components.ShowToastComponent"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-    <TextBlock x:Name="Placeholder" Text="[ShowToast placeholder]" />
+    <InfoBar x:Name="Toast"
+             IsOpen="True"
+             IsClosable="True"
+             Severity="Informational"
+             Title=""
+             Message="[ShowToast placeholder]" />
 </UserControl>

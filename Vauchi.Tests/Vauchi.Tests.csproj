@@ -6,7 +6,8 @@
     <UseWinUI>true</UseWinUI>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
-    <WindowsSdkPackageVersion>10.0.22621.52</WindowsSdkPackageVersion>
+    <Platforms>x64;ARM64;AnyCPU</Platforms>
+    <WindowsSdkPackageVersion>10.0.22621.57</WindowsSdkPackageVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.*" />

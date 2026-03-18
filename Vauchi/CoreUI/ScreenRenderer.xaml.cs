@@ -3,9 +3,9 @@
 
 using System;
 using System.Text.Json;
-using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
 using Vauchi.Helpers;
+using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml;
 
 namespace Vauchi.CoreUI;
 
@@ -24,6 +24,7 @@ public sealed partial class ScreenRenderer : UserControl
     /// </summary>
     public void RenderFromJson(string screenJson)
     {
+        System.Diagnostics.Debug.WriteLine($"[Vauchi] RenderScreen: {screenJson[..Math.Min(screenJson.Length, 300)]}");
         ComponentContainer.Children.Clear();
 
         using var doc = JsonDocument.Parse(screenJson);

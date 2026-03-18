@@ -7,6 +7,7 @@ using Microsoft.UI.Xaml.Controls;
 
 namespace Vauchi.CoreUI.Components;
 
+
 public sealed partial class QrCodeComponent : UserControl, IRenderable
 {
     public QrCodeComponent()

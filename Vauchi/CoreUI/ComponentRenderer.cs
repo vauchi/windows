@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: 2026 Mattia Egloff <mattia.egloff@pm.me>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+using Microsoft.UI.Xaml;
 using System;
 using System.Text.Json;
-using Microsoft.UI.Xaml;
 using Vauchi.CoreUI.Components;
 
 namespace Vauchi.CoreUI;
@@ -39,6 +39,9 @@ public static class ComponentRenderer
             "qr_code" => CreateAndRender<QrCodeComponent>(component, onAction),
             "confirmation_dialog" => CreateAndRender<ConfirmationDialogComponent>(component, onAction),
             "divider" => CreateAndRender<DividerComponent>(component, onAction),
+            "editable_text" => CreateAndRender<EditableTextComponent>(component, onAction),
+            "inline_confirm" => CreateAndRender<InlineConfirmComponent>(component, onAction),
+            "show_toast" => CreateAndRender<ShowToastComponent>(component, onAction),
             _ => null,
         };
     }

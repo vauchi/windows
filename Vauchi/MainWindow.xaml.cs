@@ -1,11 +1,11 @@
 // SPDX-FileCopyrightText: 2026 Mattia Egloff <mattia.egloff@pm.me>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
 using System;
 using System.Collections.Generic;
 using System.Text.Json;
-using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
 using Vauchi.Helpers;
 using Vauchi.Interop;
 using Vauchi.Platform;
@@ -67,7 +67,14 @@ public sealed partial class MainWindow : Window
         }
 
         string? defaultScreen = VauchiNative.AppDefaultScreen(_appHandle);
-        if (defaultScreen != null)
+
+        // Check if onboarding is needed (identity not yet created)
+        string? availableJson = VauchiNative.AppAvailableScreens(_appHandle);
+        if (availableJson != null && availableJson.Contains("\"onboarding\""))
+        {
+            VauchiNative.AppNavigateTo(_appHandle, "onboarding");
+        }
+        else if (defaultScreen != null)
         {
             VauchiNative.AppNavigateTo(_appHandle, defaultScreen);
         }
@@ -121,7 +128,10 @@ public sealed partial class MainWindow : Window
     {
         if (_appHandle == IntPtr.Zero) return;
 
+        System.Diagnostics.Debug.WriteLine($"[Vauchi] Action: {actionJson}");
+
         string? resultJson = VauchiNative.AppHandleAction(_appHandle, actionJson);
+        System.Diagnostics.Debug.WriteLine($"[Vauchi] Result: {resultJson ?? "null"}");
         if (resultJson == null) return;
 
         HandleActionResult(resultJson);
@@ -130,6 +140,7 @@ public sealed partial class MainWindow : Window
     private void HandleActionResult(string resultJson)
     {
         var kind = ActionResultParser.Classify(resultJson);
+        System.Diagnostics.Debug.WriteLine($"[Vauchi] ResultKind: {kind}");
 
         switch (kind)
         {
