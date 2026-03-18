@@ -10,6 +10,8 @@ namespace Vauchi.CoreUI.Components;
 
 public sealed partial class EditableTextComponent : UserControl, IRenderable
 {
+    private bool _eventWired;
+
     public EditableTextComponent()
     {
         InitializeComponent();
@@ -28,10 +30,11 @@ public sealed partial class EditableTextComponent : UserControl, IRenderable
             EditableBox.PlaceholderText = placeholder.GetString() ?? "";
         }
 
-        if (onAction != null && componentId.Length > 0)
+        if (!_eventWired && onAction != null && componentId.Length > 0)
         {
             EditableBox.TextChanged += (_, _) =>
                 onAction(ActionJson.TextChanged(componentId, EditableBox.Text));
+            _eventWired = true;
         }
     }
 }

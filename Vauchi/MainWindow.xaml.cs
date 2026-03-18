@@ -69,14 +69,26 @@ public sealed partial class MainWindow : Window
         string? defaultScreen = VauchiNative.AppDefaultScreen(_appHandle);
 
         // Check if onboarding is needed (identity not yet created)
+        string? startScreen = defaultScreen;
         string? availableJson = VauchiNative.AppAvailableScreens(_appHandle);
-        if (availableJson != null && availableJson.Contains("\"onboarding\""))
+        if (availableJson != null)
         {
-            VauchiNative.AppNavigateTo(_appHandle, "onboarding");
+            try
+            {
+                using var doc = JsonDocument.Parse(availableJson);
+                foreach (var el in doc.RootElement.EnumerateArray())
+                {
+                    if (el.GetString() == "onboarding") { startScreen = "onboarding"; break; }
+                }
+            }
+            catch (JsonException)
+            {
+                System.Diagnostics.Debug.WriteLine("[Vauchi] Failed to parse available screens");
+            }
         }
-        else if (defaultScreen != null)
+        if (startScreen != null)
         {
-            VauchiNative.AppNavigateTo(_appHandle, defaultScreen);
+            VauchiNative.AppNavigateTo(_appHandle, startScreen);
         }
 
         RefreshSidebar();
@@ -128,10 +140,10 @@ public sealed partial class MainWindow : Window
     {
         if (_appHandle == IntPtr.Zero) return;
 
-        System.Diagnostics.Debug.WriteLine($"[Vauchi] Action: {actionJson}");
+        System.Diagnostics.Debug.WriteLine($"[Vauchi] Action: {JsonSanitizer.SafeType(actionJson)}");
 
         string? resultJson = VauchiNative.AppHandleAction(_appHandle, actionJson);
-        System.Diagnostics.Debug.WriteLine($"[Vauchi] Result: {resultJson ?? "null"}");
+        System.Diagnostics.Debug.WriteLine($"[Vauchi] Result: {JsonSanitizer.SafeType(resultJson)}");
         if (resultJson == null) return;
 
         HandleActionResult(resultJson);

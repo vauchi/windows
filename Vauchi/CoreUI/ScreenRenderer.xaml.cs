@@ -24,11 +24,13 @@ public sealed partial class ScreenRenderer : UserControl
     /// </summary>
     public void RenderFromJson(string screenJson)
     {
-        System.Diagnostics.Debug.WriteLine($"[Vauchi] RenderScreen: {screenJson[..Math.Min(screenJson.Length, 300)]}");
         ComponentContainer.Children.Clear();
 
         using var doc = JsonDocument.Parse(screenJson);
         var root = doc.RootElement;
+
+        string screenId = root.TryGetProperty("screen_id", out var sid) ? sid.GetString() ?? "unknown" : "unknown";
+        System.Diagnostics.Debug.WriteLine($"[Vauchi] RenderScreen: {screenId}");
 
         // Render components
         if (root.TryGetProperty("components", out var components) &&

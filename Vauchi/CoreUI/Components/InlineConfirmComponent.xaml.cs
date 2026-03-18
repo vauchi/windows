@@ -8,13 +8,13 @@ using System;
 using System.Text.Json;
 using Vauchi.Helpers;
 using Microsoft.UI.Xaml.Controls;
-using Windows.Security.Credentials;
 
 namespace Vauchi.CoreUI.Components;
 
 public sealed partial class InlineConfirmComponent : UserControl, IRenderable
 {
     private string _componentId = "";
+    private Action<string>? _onAction;
     private bool _eventsWired;
 
     public InlineConfirmComponent()
@@ -27,6 +27,7 @@ public sealed partial class InlineConfirmComponent : UserControl, IRenderable
         _componentId = data.TryGetProperty("id", out var id)
             ? id.GetString() ?? ""
             : "";
+        _onAction = onAction;
 
         if (data.TryGetProperty("warning", out var warning))
         {
@@ -58,13 +59,13 @@ public sealed partial class InlineConfirmComponent : UserControl, IRenderable
 
             ConfirmButton.Click += (_, _) =>
             {
-                onAction?.Invoke(ActionJson.ActionPressed($"{_componentId}_confirm"));
+                _onAction?.Invoke(ActionJson.ActionPressed($"{_componentId}_confirm"));
             };
 
             CancelButton.Click += (_, _) =>
             {
                 ButtonPanel.Visibility = Visibility.Collapsed;
-                onAction?.Invoke(ActionJson.ActionPressed($"{_componentId}_cancel"));
+                _onAction?.Invoke(ActionJson.ActionPressed($"{_componentId}_cancel"));
             };
 
             _eventsWired = true;

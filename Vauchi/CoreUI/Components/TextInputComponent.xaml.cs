@@ -10,6 +10,8 @@ namespace Vauchi.CoreUI.Components;
 
 public sealed partial class TextInputComponent : UserControl, IRenderable
 {
+    private bool _eventWired;
+
     public TextInputComponent()
     {
         InitializeComponent();
@@ -28,10 +30,11 @@ public sealed partial class TextInputComponent : UserControl, IRenderable
             InputBox.Text = value.GetString() ?? "";
         }
 
-        if (onAction != null && componentId.Length > 0)
+        if (!_eventWired && onAction != null && componentId.Length > 0)
         {
             InputBox.TextChanged += (_, _) =>
                 onAction(ActionJson.TextChanged(componentId, InputBox.Text));
+            _eventWired = true;
         }
     }
 }

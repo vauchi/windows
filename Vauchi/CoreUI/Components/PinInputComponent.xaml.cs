@@ -10,6 +10,8 @@ namespace Vauchi.CoreUI.Components;
 
 public sealed partial class PinInputComponent : UserControl, IRenderable
 {
+    private bool _eventWired;
+
     public PinInputComponent()
     {
         InitializeComponent();
@@ -28,10 +30,11 @@ public sealed partial class PinInputComponent : UserControl, IRenderable
             PinBox.MaxLength = length.GetInt32();
         }
 
-        if (onAction != null && componentId.Length > 0)
+        if (!_eventWired && onAction != null && componentId.Length > 0)
         {
             PinBox.PasswordChanged += (_, _) =>
                 onAction(ActionJson.TextChanged(componentId, PinBox.Password));
+            _eventWired = true;
         }
     }
 }
