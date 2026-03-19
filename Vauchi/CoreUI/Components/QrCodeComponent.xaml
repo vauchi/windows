@@ -18,9 +18,11 @@
         </Border>
         <TextBlock x:Name="QrLabel" Style="{StaticResource CaptionTextBlockStyle}"
                    HorizontalAlignment="Center" Visibility="Collapsed" />
-        <TextBlock x:Name="ScanMessage" Text="Camera scanning not yet available on this device."
+        <TextBlock x:Name="ScanMessage" Text="Point your camera at a QR code to scan."
                    Style="{StaticResource CaptionTextBlockStyle}"
                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                    HorizontalAlignment="Center" Visibility="Collapsed" TextWrapping="Wrap" />
+        <Button x:Name="ScanButton" Content="Scan QR Code"
+                HorizontalAlignment="Center" Visibility="Collapsed" />
     </StackPanel>
 </UserControl>

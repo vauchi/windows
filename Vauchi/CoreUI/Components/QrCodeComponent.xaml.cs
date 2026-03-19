@@ -6,11 +6,16 @@ using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using System;
 using System.Text.Json;
+using Vauchi.Helpers;
 
 namespace Vauchi.CoreUI.Components;
 
 public sealed partial class QrCodeComponent : UserControl, IRenderable
 {
+    private string _componentId = "";
+    private Action<string>? _onAction;
+    private bool _scanEventWired;
+
     public QrCodeComponent()
     {
         InitializeComponent();
@@ -18,6 +23,8 @@ public sealed partial class QrCodeComponent : UserControl, IRenderable
 
     public void Render(JsonElement data, Action<string>? onAction)
     {
+        _componentId = data.TryGetProperty("id", out var id) ? id.GetString() ?? "" : "";
+        _onAction = onAction;
         string qrData = data.TryGetProperty("data", out var d) ? d.GetString() ?? "" : "";
         string mode = data.TryGetProperty("mode", out var m) ? m.GetString() ?? "Display" : "Display";
         string? label = data.TryGetProperty("label", out var l) ? l.GetString() : null;
@@ -26,12 +33,21 @@ public sealed partial class QrCodeComponent : UserControl, IRenderable
         {
             QrDisplayBorder.Visibility = Visibility.Collapsed;
             ScanMessage.Visibility = Visibility.Visible;
+            ScanButton.Visibility = Visibility.Visible;
+
+            // Wire scan button once — emits ActionPressed so core can request camera
+            if (!_scanEventWired)
+            {
+                ScanButton.Click += OnScanButtonClick;
+                _scanEventWired = true;
+            }
         }
         else
         {
             // Display mode — placeholder until ZXing.Net is added
             QrDisplayBorder.Visibility = Visibility.Visible;
             ScanMessage.Visibility = Visibility.Collapsed;
+            ScanButton.Visibility = Visibility.Collapsed;
             QrDataText.Text = qrData.Length > 60 ? qrData[..57] + "..." : qrData;
         }
 
@@ -42,5 +58,10 @@ public sealed partial class QrCodeComponent : UserControl, IRenderable
         }
 
         AutomationProperties.SetName(this, label ?? "QR Code");
+    }
+
+    private void OnScanButtonClick(object sender, RoutedEventArgs e)
+    {
+        _onAction?.Invoke(ActionJson.ActionPressed(_componentId));
     }
 }
