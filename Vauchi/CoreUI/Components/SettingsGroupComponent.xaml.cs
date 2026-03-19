@@ -1,8 +1,10 @@
 // SPDX-FileCopyrightText: 2026 Mattia Egloff <mattia.egloff@pm.me>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 using System;
 using System.Text.Json;
 using Vauchi.Helpers;
@@ -18,113 +20,189 @@ public sealed partial class SettingsGroupComponent : UserControl, IRenderable
 
     public void Render(JsonElement data, Action<string>? onAction)
     {
-        SettingsContainer.Children.Clear();
+        string componentId = data.TryGetProperty("id", out var idEl) ? idEl.GetString() ?? "" : "";
 
-        string componentId = data.TryGetProperty("id", out var cid)
-            ? cid.GetString() ?? "" : "";
+        GroupLabel.Text = data.TryGetProperty("label", out var labelEl)
+            ? (labelEl.GetString() ?? "").ToUpperInvariant()
+            : "";
 
-        // Label is the group header (key is "label", not "title")
-        if (data.TryGetProperty("label", out var label))
-        {
-            SettingsContainer.Children.Add(new TextBlock
-            {
-                Text = label.GetString() ?? "[SettingsGroup]",
-                FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
-            });
-        }
+        ItemsContainer.Children.Clear();
 
-        if (!data.TryGetProperty("items", out var items) ||
-            items.ValueKind != JsonValueKind.Array)
-        {
+        if (!data.TryGetProperty("items", out var items))
             return;
-        }
 
         foreach (var item in items.EnumerateArray())
         {
-            string itemId = item.TryGetProperty("id", out var id)
-                ? id.GetString() ?? "" : "";
-            string itemLabel = item.TryGetProperty("label", out var lbl)
-                ? lbl.GetString() ?? itemId : itemId;
+            string itemId = item.TryGetProperty("id", out var iIdEl) ? iIdEl.GetString() ?? "" : "";
+            string itemLabel = item.TryGetProperty("label", out var iLabelEl) ? iLabelEl.GetString() ?? "" : "";
 
-            string kindName = DetectKind(item);
+            if (!item.TryGetProperty("kind", out var kind))
+                continue;
 
-            if (kindName == "Toggle")
-            {
-                var toggle = new ToggleSwitch
-                {
-                    Header = itemLabel,
-                    IsOn = GetToggleValue(item),
-                };
-
-                if (onAction != null)
-                {
-                    string capturedId = itemId;
-                    string capturedComponentId = componentId;
-                    toggle.Toggled += (_, _) =>
-                        onAction(ActionJson.SettingsToggled(capturedComponentId, capturedId));
-                }
-
-                SettingsContainer.Children.Add(toggle);
-            }
-            else
-            {
-                // Link, Value, Destructive — render as clickable row
-                var btn = new Button
-                {
-                    Content = itemLabel,
-                    HorizontalAlignment = HorizontalAlignment.Stretch,
-                    HorizontalContentAlignment = HorizontalAlignment.Left,
-                };
-
-                if (kindName == "Destructive")
-                {
-                    btn.Style = (Style)Application.Current.Resources["AccentButtonStyle"];
-                }
-
-                if (onAction != null)
-                {
-                    string capturedId = itemId;
-                    string capturedComponentId = componentId;
-                    btn.Click += (_, _) =>
-                        onAction(ActionJson.ListItemSelected(capturedComponentId, capturedId));
-                }
-
-                SettingsContainer.Children.Add(btn);
-            }
+            UIElement row = BuildItemRow(componentId, itemId, itemLabel, kind, onAction);
+            ItemsContainer.Children.Add(row);
         }
     }
 
-    private static string DetectKind(JsonElement item)
+    private static UIElement BuildItemRow(
+        string componentId,
+        string itemId,
+        string label,
+        JsonElement kind,
+        Action<string>? onAction)
     {
-        if (!item.TryGetProperty("kind", out var kind))
-            return "Link";
-
-        if (kind.ValueKind == JsonValueKind.String)
-            return kind.GetString() ?? "Link";
-
-        // Externally-tagged enum: {"Toggle": {...}}, "Link", {"Value": {...}}, etc.
-        if (kind.ValueKind == JsonValueKind.Object)
+        var container = new StackPanel
         {
-            if (kind.TryGetProperty("Toggle", out _)) return "Toggle";
-            if (kind.TryGetProperty("Value", out _)) return "Value";
-            if (kind.TryGetProperty("Link", out _)) return "Link";
-            if (kind.TryGetProperty("Destructive", out _)) return "Destructive";
+            Padding = new Thickness(16, 12, 16, 12),
+        };
+
+        // Determine kind by first property name (externally-tagged enum)
+        foreach (var prop in kind.EnumerateObject())
+        {
+            switch (prop.Name)
+            {
+                case "Toggle":
+                {
+                    bool enabled = prop.Value.TryGetProperty("enabled", out var enEl) && enEl.GetBoolean();
+                    var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+                    var labelBlock = new TextBlock
+                    {
+                        Text = label,
+                        VerticalAlignment = VerticalAlignment.Center,
+                        HorizontalAlignment = HorizontalAlignment.Left,
+                    };
+                    var toggle = new ToggleSwitch
+                    {
+                        IsOn = enabled,
+                        HorizontalAlignment = HorizontalAlignment.Right,
+                        OffContent = "",
+                        OnContent = "",
+                    };
+
+                    if (onAction != null)
+                    {
+                        string capturedComponent = componentId;
+                        string capturedItem = itemId;
+                        toggle.Toggled += (_, _) =>
+                            onAction(ActionJson.SettingsToggled(capturedComponent, capturedItem));
+                    }
+
+                    var grid = new Grid();
+                    grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                    grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+                    Grid.SetColumn(labelBlock, 0);
+                    Grid.SetColumn(toggle, 1);
+                    grid.Children.Add(labelBlock);
+                    grid.Children.Add(toggle);
+                    container.Children.Add(grid);
+                    break;
+                }
+
+                case "Value":
+                {
+                    string value = prop.Value.TryGetProperty("value", out var valEl)
+                        ? valEl.GetString() ?? ""
+                        : "";
+                    var grid = new Grid();
+                    grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                    grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+                    var labelBlock = new TextBlock { Text = label, VerticalAlignment = VerticalAlignment.Center };
+                    var valueBlock = new TextBlock
+                    {
+                        Text = value,
+                        Opacity = 0.6,
+                        VerticalAlignment = VerticalAlignment.Center,
+                    };
+
+                    Grid.SetColumn(labelBlock, 0);
+                    Grid.SetColumn(valueBlock, 1);
+                    grid.Children.Add(labelBlock);
+                    grid.Children.Add(valueBlock);
+                    container.Children.Add(grid);
+
+                    if (onAction != null)
+                    {
+                        string capturedComponent = componentId;
+                        string capturedItem = itemId;
+                        container.PointerPressed += (_, _) =>
+                            onAction(ActionJson.ListItemSelected(capturedComponent, capturedItem));
+                    }
+                    break;
+                }
+
+                case "Link":
+                {
+                    string detail = prop.Value.TryGetProperty("detail", out var detEl)
+                        ? detEl.GetString() ?? ""
+                        : "";
+                    var grid = new Grid();
+                    grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                    grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+                    grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+                    var labelBlock = new TextBlock { Text = label, VerticalAlignment = VerticalAlignment.Center };
+                    var detailBlock = new TextBlock
+                    {
+                        Text = detail,
+                        Opacity = 0.6,
+                        VerticalAlignment = VerticalAlignment.Center,
+                    };
+                    var chevron = new TextBlock
+                    {
+                        Text = ">",
+                        Opacity = 0.4,
+                        VerticalAlignment = VerticalAlignment.Center,
+                        Margin = new Thickness(4, 0, 0, 0),
+                    };
+
+                    Grid.SetColumn(labelBlock, 0);
+                    Grid.SetColumn(detailBlock, 1);
+                    Grid.SetColumn(chevron, 2);
+                    grid.Children.Add(labelBlock);
+                    grid.Children.Add(detailBlock);
+                    grid.Children.Add(chevron);
+                    container.Children.Add(grid);
+
+                    if (onAction != null)
+                    {
+                        string capturedComponent = componentId;
+                        string capturedItem = itemId;
+                        container.PointerPressed += (_, _) =>
+                            onAction(ActionJson.ListItemSelected(capturedComponent, capturedItem));
+                    }
+                    break;
+                }
+
+                case "Destructive":
+                {
+                    string btnLabel = prop.Value.TryGetProperty("label", out var lblEl)
+                        ? lblEl.GetString() ?? label
+                        : label;
+                    var btn = new Button
+                    {
+                        Content = btnLabel,
+                        Foreground = new SolidColorBrush(Colors.Red),
+                        HorizontalAlignment = HorizontalAlignment.Left,
+                    };
+
+                    if (onAction != null)
+                    {
+                        string capturedComponent = componentId;
+                        string capturedItem = itemId;
+                        btn.Click += (_, _) =>
+                            onAction(ActionJson.ListItemSelected(capturedComponent, capturedItem));
+                    }
+
+                    container.Children.Add(btn);
+                    break;
+                }
+            }
+
+            // Only process first property (externally-tagged)
+            break;
         }
 
-        return "Link";
-    }
-
-    private static bool GetToggleValue(JsonElement item)
-    {
-        if (item.TryGetProperty("kind", out var kind) &&
-            kind.ValueKind == JsonValueKind.Object &&
-            kind.TryGetProperty("Toggle", out var toggle))
-        {
-            if (toggle.TryGetProperty("value", out var v))
-                return v.GetBoolean();
-            if (toggle.TryGetProperty("enabled", out var e))
-                return e.GetBoolean();
-        }
-        return false;
+        return container;
     }
 }

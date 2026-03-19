@@ -5,6 +5,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System;
 using System.Text.Json;
+using Vauchi.Helpers;
 
 namespace Vauchi.CoreUI.Components;
 
@@ -17,49 +18,111 @@ public sealed partial class FieldListComponent : UserControl, IRenderable
 
     public void Render(JsonElement data, Action<string>? onAction)
     {
+        string visibilityMode = data.TryGetProperty("visibility_mode", out var modeEl)
+            ? modeEl.GetString() ?? "ReadOnly"
+            : "ReadOnly";
+
         FieldContainer.Children.Clear();
 
-        if (!data.TryGetProperty("fields", out var fields) ||
-            fields.ValueKind != JsonValueKind.Array)
-        {
-            if (data.TryGetProperty("title", out var title))
-            {
-                FieldContainer.Children.Add(
-                    new TextBlock { Text = title.GetString() ?? "[FieldList]" });
-            }
+        if (!data.TryGetProperty("fields", out var fields))
             return;
-        }
 
-        // ReadOnly mode: render label+value pairs
         foreach (var field in fields.EnumerateArray())
         {
-            string label = field.TryGetProperty("label", out var lbl)
-                ? lbl.GetString() ?? "" : "";
-            string value = field.TryGetProperty("value", out var val)
-                ? val.GetString() ?? "" : "";
+            string fieldId = field.TryGetProperty("id", out var fIdEl) ? fIdEl.GetString() ?? "" : "";
+            string label = field.TryGetProperty("label", out var lblEl) ? lblEl.GetString() ?? "" : "";
+            string value = field.TryGetProperty("value", out var valEl) ? valEl.GetString() ?? "" : "";
 
-            var row = new StackPanel
-            {
-                Orientation = Orientation.Horizontal,
-                Spacing = 12,
-            };
+            bool currentlyVisible = IsFieldVisible(field);
 
-            row.Children.Add(new TextBlock
-            {
-                Text = label,
-                FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
-                Width = 120,
-                VerticalAlignment = VerticalAlignment.Center,
-            });
-
-            row.Children.Add(new TextBlock
-            {
-                Text = value,
-                VerticalAlignment = VerticalAlignment.Center,
-                TextWrapping = TextWrapping.Wrap,
-            });
-
+            UIElement row = BuildFieldRow(fieldId, label, value, currentlyVisible, visibilityMode, onAction);
             FieldContainer.Children.Add(row);
         }
+    }
+
+    private static bool IsFieldVisible(JsonElement field)
+    {
+        if (!field.TryGetProperty("visibility", out var vis))
+            return true;
+
+        if (vis.ValueKind == JsonValueKind.String)
+        {
+            string visStr = vis.GetString() ?? "";
+            return visStr == "Shown";
+        }
+
+        // Object: {"Groups": [...]} — treated as visible
+        return true;
+    }
+
+    private static UIElement BuildFieldRow(
+        string fieldId,
+        string label,
+        string value,
+        bool currentlyVisible,
+        string visibilityMode,
+        Action<string>? onAction)
+    {
+        var grid = new Grid { Padding = new Thickness(0, 4, 0, 4) };
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+        var labelBlock = new TextBlock
+        {
+            Text = label,
+            Opacity = 0.6,
+            FontSize = 13,
+            VerticalAlignment = VerticalAlignment.Center,
+        };
+
+        var valueBlock = new TextBlock
+        {
+            Text = value,
+            VerticalAlignment = VerticalAlignment.Center,
+        };
+
+        Grid.SetColumn(labelBlock, 0);
+        Grid.SetColumn(valueBlock, 1);
+        grid.Children.Add(labelBlock);
+        grid.Children.Add(valueBlock);
+
+        if (visibilityMode == "ShowHide" && onAction != null)
+        {
+            bool isVisible = currentlyVisible;
+            string capturedFieldId = fieldId;
+
+            var eyeButton = new Button
+            {
+                Content = isVisible ? "👁" : "👁\u0338",
+                Padding = new Thickness(4),
+                VerticalAlignment = VerticalAlignment.Center,
+            };
+
+            eyeButton.Click += (_, _) =>
+            {
+                isVisible = !isVisible;
+                eyeButton.Content = isVisible ? "👁" : "👁\u0338";
+                onAction(ActionJson.FieldVisibilityChanged(capturedFieldId, null, isVisible));
+            };
+
+            Grid.SetColumn(eyeButton, 2);
+            grid.Children.Add(eyeButton);
+        }
+        else if (visibilityMode == "PerGroup")
+        {
+            // Show which groups can see this field (read-only text)
+            var groupsNote = new TextBlock
+            {
+                Text = "Groups",
+                Opacity = 0.4,
+                FontSize = 11,
+                VerticalAlignment = VerticalAlignment.Center,
+            };
+            Grid.SetColumn(groupsNote, 2);
+            grid.Children.Add(groupsNote);
+        }
+
+        return grid;
     }
 }

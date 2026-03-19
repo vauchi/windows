@@ -5,6 +5,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System;
 using System.Text.Json;
+using Vauchi.Helpers;
 
 namespace Vauchi.CoreUI.Components;
 
@@ -30,33 +31,38 @@ public sealed partial class ShowToastComponent : UserControl, IRenderable
         {
             Toast.Message = message.GetString() ?? "";
         }
-        if (data.TryGetProperty("title", out var title))
-        {
-            Toast.Title = title.GetString() ?? "";
-        }
 
-        string severity = (data.TryGetProperty("severity", out var sev)
-            ? sev.GetString() ?? "" : "").ToLowerInvariant();
-        Toast.Severity = severity switch
+        // Severity is not part of the ShowToast data model — always use Informational
+        Toast.Severity = InfoBarSeverity.Informational;
+
+        // Wire undo button if undo_action_id is present
+        Toast.ActionButton = null;
+        if (data.TryGetProperty("undo_action_id", out var undoEl) && onAction != null)
         {
-            "error" => InfoBarSeverity.Error,
-            "warning" => InfoBarSeverity.Warning,
-            "success" => InfoBarSeverity.Success,
-            _ => InfoBarSeverity.Informational,
-        };
+            string? undoId = undoEl.ValueKind == JsonValueKind.String ? undoEl.GetString() : null;
+            if (!string.IsNullOrEmpty(undoId))
+            {
+                string capturedUndoId = undoId;
+                var undoButton = new Button { Content = "Undo" };
+                undoButton.Click += (_, _) =>
+                    onAction(ActionJson.UndoPressed(capturedUndoId));
+                Toast.ActionButton = undoButton;
+            }
+        }
 
         Toast.IsOpen = true;
 
-        // Auto-dismiss non-error toasts after 4 seconds
-        if (Toast.Severity != InfoBarSeverity.Error)
+        // Use duration_ms from data (default 4000 ms if absent)
+        int durationMs = data.TryGetProperty("duration_ms", out var durEl)
+            ? durEl.GetInt32()
+            : 4000;
+
+        _dismissTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(durationMs) };
+        _dismissTimer.Tick += (_, _) =>
         {
-            _dismissTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(4) };
-            _dismissTimer.Tick += (_, _) =>
-            {
-                _dismissTimer?.Stop();
-                Toast.IsOpen = false;
-            };
-            _dismissTimer.Start();
-        }
+            _dismissTimer?.Stop();
+            Toast.IsOpen = false;
+        };
+        _dismissTimer.Start();
     }
 }

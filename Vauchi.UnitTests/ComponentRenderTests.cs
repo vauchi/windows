@@ -141,4 +141,96 @@ public class ComponentRenderTests
         using var doc = JsonDocument.Parse(json);
         Assert.False(doc.RootElement.TryGetProperty("detail", out _));
     }
+
+    // ── ContactList ──
+
+    [Fact]
+    public void ContactList_ReadsContactItems()
+    {
+        var json = """{"id":"cl1","contacts":[{"id":"c1","name":"Alice","subtitle":"Work","avatar_initials":"AL","status":"online","searchable_fields":["alice"]}],"searchable":true}""";
+        using var doc = JsonDocument.Parse(json);
+        var contacts = doc.RootElement.GetProperty("contacts");
+        Assert.Equal(1, contacts.GetArrayLength());
+        Assert.Equal("Alice", contacts[0].GetProperty("name").GetString());
+        Assert.Equal("AL", contacts[0].GetProperty("avatar_initials").GetString());
+        Assert.True(doc.RootElement.GetProperty("searchable").GetBoolean());
+    }
+
+    [Fact]
+    public void ContactList_EmptyContacts()
+    {
+        var json = """{"id":"cl1","contacts":[],"searchable":false}""";
+        using var doc = JsonDocument.Parse(json);
+        Assert.Equal(0, doc.RootElement.GetProperty("contacts").GetArrayLength());
+    }
+
+    // ── SettingsGroup: all 4 SettingsItemKind ──
+
+    [Theory]
+    [InlineData("""{"Toggle":{"enabled":true}}""", "Toggle")]
+    [InlineData("""{"Value":{"value":"English"}}""", "Value")]
+    [InlineData("""{"Link":{"detail":"v0.5.0"}}""", "Link")]
+    [InlineData("""{"Destructive":{"label":"Delete Account"}}""", "Destructive")]
+    public void SettingsGroup_AllItemKinds(string kindJson, string expectedKind)
+    {
+        var json = $$"""{"id":"sg1","label":"General","items":[{"id":"si1","label":"Theme","kind":{{kindJson}}}]}""";
+        using var doc = JsonDocument.Parse(json);
+        var item = doc.RootElement.GetProperty("items")[0];
+        Assert.True(item.GetProperty("kind").TryGetProperty(expectedKind, out _));
+    }
+
+    [Fact]
+    public void SettingsGroup_EmptyItems()
+    {
+        var json = """{"id":"sg1","label":"","items":[]}""";
+        using var doc = JsonDocument.Parse(json);
+        Assert.Equal(0, doc.RootElement.GetProperty("items").GetArrayLength());
+    }
+
+    // ── FieldList ──
+
+    [Theory]
+    [InlineData("ReadOnly")]
+    [InlineData("ShowHide")]
+    [InlineData("PerGroup")]
+    public void FieldList_VisibilityModes(string mode)
+    {
+        var json = $$"""{"id":"fl1","fields":[],"visibility_mode":"{{mode}}","available_groups":[]}""";
+        using var doc = JsonDocument.Parse(json);
+        Assert.Equal(mode, doc.RootElement.GetProperty("visibility_mode").GetString());
+    }
+
+    // ── CardPreview ──
+
+    [Fact]
+    public void CardPreview_ReadsGroupViews()
+    {
+        var json = """{"name":"Alice","fields":[],"group_views":[{"group_name":"family","display_name":"Mom","visible_fields":[]}],"selected_group":"family"}""";
+        using var doc = JsonDocument.Parse(json);
+        Assert.Equal("family", doc.RootElement.GetProperty("selected_group").GetString());
+        Assert.Equal("Mom", doc.RootElement.GetProperty("group_views")[0].GetProperty("display_name").GetString());
+    }
+
+    // ── ConfirmationDialog: correct field names ──
+
+    [Fact]
+    public void ConfirmationDialog_CorrectFields()
+    {
+        var json = """{"id":"cd1","title":"Delete Contact","message":"Cannot be undone","confirm_text":"Delete","destructive":true}""";
+        using var doc = JsonDocument.Parse(json);
+        Assert.Equal("Delete", doc.RootElement.GetProperty("confirm_text").GetString());
+        Assert.True(doc.RootElement.GetProperty("destructive").GetBoolean());
+        Assert.Equal("Delete Contact", doc.RootElement.GetProperty("title").GetString());
+    }
+
+    // ── ShowToast: correct data model ──
+
+    [Fact]
+    public void ShowToast_ReadsDurationAndUndo()
+    {
+        var json = """{"id":"st1","message":"Deleted","undo_action_id":"undo_del","duration_ms":5000}""";
+        using var doc = JsonDocument.Parse(json);
+        Assert.Equal(5000, doc.RootElement.GetProperty("duration_ms").GetInt32());
+        Assert.Equal("undo_del", doc.RootElement.GetProperty("undo_action_id").GetString());
+    }
 }
