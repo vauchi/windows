@@ -190,10 +190,43 @@ public sealed partial class MainWindow : Window
                 case ExchangeCommandKind.QrDisplay:
                     break;
                 case ExchangeCommandKind.QrRequestScan:
-                    // TODO: launch camera scanner
+                    ShowQrScanDialog();
                     break;
                 default:
                     break;
+            }
+        }
+    }
+
+    private async void ShowQrScanDialog()
+    {
+        var input = new TextBox
+        {
+            PlaceholderText = "Paste scanned QR data here...",
+            AcceptsReturn = false,
+        };
+
+        var dialog = new ContentDialog
+        {
+            Title = "Scan QR Code",
+            Content = input,
+            PrimaryButtonText = "Submit",
+            CloseButtonText = "Cancel",
+            XamlRoot = Content.XamlRoot,
+        };
+
+        var result = await dialog.ShowAsync();
+        if (result == ContentDialogResult.Primary)
+        {
+            string scanned = input.Text?.Trim() ?? "";
+            if (scanned.Length > 0 && _appHandle != IntPtr.Zero)
+            {
+                string eventJson = ExchangeHardwareEventJson.QrScanned(scanned);
+                string? resultJson = VauchiNative.AppHandleHardwareEvent(_appHandle, eventJson);
+                if (resultJson != null)
+                {
+                    HandleActionResult(resultJson);
+                }
             }
         }
     }
