@@ -61,6 +61,14 @@ secret_detection:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
 # Design drift: verify all design-spec components are implemented
+test:a11y:
+  stage: test
+  script:
+    - dotnet test Vauchi.Tests/Vauchi.Tests.csproj --filter "FullyQualifiedName~AccessibilityTests"
+  tags: [saas-windows-medium-amd64]
+  when: manual
+  allow_failure: true
+
 check:design-drift:
   extends: .design-drift-job
   variables:
