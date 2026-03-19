@@ -4,6 +4,7 @@
 using System;
 using System.Text.Json;
 using Vauchi.Helpers;
+using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media;
