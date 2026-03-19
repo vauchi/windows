@@ -34,6 +34,42 @@ public sealed partial class MainWindow : Window
         Title = "Vauchi";
 
         Renderer.ActionRequested += OnActionRequested;
+
+        // Async init with optional Windows Hello gate
+        _ = InitializeAsync();
+    }
+
+    private async System.Threading.Tasks.Task InitializeAsync()
+    {
+        // Windows Hello gate (if enabled)
+        if (SecureStorageService.IsHelloEnabled)
+        {
+            bool authenticated = await SecureStorageService.AuthenticateAsync();
+            if (!authenticated)
+            {
+                // Show locked state — user can retry
+                var dialog = new ContentDialog
+                {
+                    Title = "Authentication Required",
+                    Content = "Windows Hello authentication is required to access Vauchi.",
+                    PrimaryButtonText = "Retry",
+                    CloseButtonText = "Quit",
+                    XamlRoot = Content.XamlRoot,
+                };
+                var result = await dialog.ShowAsync();
+                if (result == ContentDialogResult.Primary)
+                {
+                    await InitializeAsync(); // Retry
+                    return;
+                }
+                else
+                {
+                    Application.Current.Exit();
+                    return;
+                }
+            }
+        }
+
         InitializeApp();
 
         _tray = new SystemTrayManager(this, screenName =>
