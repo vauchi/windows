@@ -44,6 +44,10 @@ Vauchi/Libs/
 .idea/
 *.sln.iml
 
+## Test artifacts
+Vauchi.UITests/
+screenshot.png
+
 ## OS
 .DS_Store
 Thumbs.db
