@@ -71,6 +71,7 @@ public sealed partial class MainWindow : Window
         }
 
         InitializeApp();
+        RestoreWindowState();
 
         _tray = new SystemTrayManager(this, screenName =>
         {
@@ -422,8 +423,45 @@ public sealed partial class MainWindow : Window
         await dialog.ShowAsync();
     }
 
+    private void SaveWindowState()
+    {
+        try
+        {
+            var settings = Windows.Storage.ApplicationData.Current.LocalSettings;
+            var appWindow = this.AppWindow;
+            if (appWindow != null)
+            {
+                settings.Values["WindowWidth"] = appWindow.Size.Width;
+                settings.Values["WindowHeight"] = appWindow.Size.Height;
+                settings.Values["WindowX"] = appWindow.Position.X;
+                settings.Values["WindowY"] = appWindow.Position.Y;
+            }
+        }
+        catch { }
+    }
+
+    private void RestoreWindowState()
+    {
+        try
+        {
+            var settings = Windows.Storage.ApplicationData.Current.LocalSettings;
+            if (settings.Values["WindowWidth"] is int w && settings.Values["WindowHeight"] is int h
+                && w >= 720 && h >= 480)
+            {
+                AppWindow.Resize(new Windows.Graphics.SizeInt32(w, h));
+            }
+            if (settings.Values["WindowX"] is int x && settings.Values["WindowY"] is int y
+                && x >= 0 && y >= 0)
+            {
+                AppWindow.Move(new Windows.Graphics.PointInt32(x, y));
+            }
+        }
+        catch { }
+    }
+
     private void OnClosed(object sender, WindowEventArgs args)
     {
+        SaveWindowState();
         Renderer.ActionRequested -= OnActionRequested;
         _tray?.Dispose();
         _toastTimer?.Stop();
