@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using System;
 using System.Text.Json;
-using Vauchi.Helpers;
 
 namespace Vauchi.CoreUI.Components;
 
@@ -18,41 +18,29 @@ public sealed partial class QrCodeComponent : UserControl, IRenderable
 
     public void Render(JsonElement data, Action<string>? onAction)
     {
-        DisplayBorder.Visibility = Visibility.Collapsed;
-        ScanPanel.Visibility = Visibility.Collapsed;
+        string qrData = data.TryGetProperty("data", out var d) ? d.GetString() ?? "" : "";
+        string mode = data.TryGetProperty("mode", out var m) ? m.GetString() ?? "Display" : "Display";
+        string? label = data.TryGetProperty("label", out var l) ? l.GetString() : null;
 
-        string componentId = data.TryGetProperty("id", out var cid)
-            ? cid.GetString() ?? "" : "";
-
-        // Key is "data", not "payload"
-        if (data.TryGetProperty("data", out var qrData) &&
-            qrData.GetString() is string payload && payload.Length > 0)
+        if (mode == "Scan")
         {
-            // Display mode: show the QR payload as monospace text
-            // TODO: Render actual QR image (needs QRCoder NuGet package)
-            DisplayBorder.Visibility = Visibility.Visible;
-            QrDataText.Text = payload;
-            return;
+            QrDisplayBorder.Visibility = Visibility.Collapsed;
+            ScanMessage.Visibility = Visibility.Visible;
+        }
+        else
+        {
+            // Display mode — placeholder until ZXing.Net is added
+            QrDisplayBorder.Visibility = Visibility.Visible;
+            ScanMessage.Visibility = Visibility.Collapsed;
+            QrDataText.Text = qrData.Length > 60 ? qrData[..57] + "..." : qrData;
         }
 
-        // Scan mode: show paste + submit UI
-        if (data.TryGetProperty("mode", out var mode) &&
-            mode.GetString() == "Scan")
+        if (label != null)
         {
-            ScanPanel.Visibility = Visibility.Visible;
-
-            if (onAction != null)
-            {
-                string capturedComponentId = componentId;
-                ScanSubmitButton.Click += (_, _) =>
-                {
-                    string scanned = ScanInput.Text?.Trim() ?? "";
-                    if (scanned.Length > 0)
-                    {
-                        onAction(ActionJson.TextChanged(capturedComponentId, scanned));
-                    }
-                };
-            }
+            QrLabel.Text = label;
+            QrLabel.Visibility = Visibility.Visible;
         }
+
+        AutomationProperties.SetName(this, label ?? "QR Code");
     }
 }

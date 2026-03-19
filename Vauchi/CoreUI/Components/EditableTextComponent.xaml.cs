@@ -1,16 +1,18 @@
 // SPDX-FileCopyrightText: 2026 Mattia Egloff <mattia.egloff@pm.me>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
+using Microsoft.UI.Xaml.Controls;
 using System;
 using System.Text.Json;
 using Vauchi.Helpers;
-using Microsoft.UI.Xaml.Controls;
 
 namespace Vauchi.CoreUI.Components;
 
 public sealed partial class EditableTextComponent : UserControl, IRenderable
 {
-    private bool _eventWired;
+    private bool _eventsWired;
 
     public EditableTextComponent()
     {
@@ -20,21 +22,53 @@ public sealed partial class EditableTextComponent : UserControl, IRenderable
     public void Render(JsonElement data, Action<string>? onAction)
     {
         string componentId = data.TryGetProperty("id", out var id) ? id.GetString() ?? "" : "";
+        string label = data.TryGetProperty("label", out var l) ? l.GetString() ?? "" : "";
+        string value = data.TryGetProperty("value", out var v) ? v.GetString() ?? "" : "";
+        bool editing = data.TryGetProperty("editing", out var e) && e.GetBoolean();
 
-        if (data.TryGetProperty("value", out var value))
+        LabelText.Text = label;
+
+        if (editing)
         {
-            EditableBox.Text = value.GetString() ?? "";
+            DisplayPanel.Visibility = Visibility.Collapsed;
+            EditPanel.Visibility = Visibility.Visible;
+            EditBox.Text = value;
         }
-        if (data.TryGetProperty("placeholder", out var placeholder))
+        else
         {
-            EditableBox.PlaceholderText = placeholder.GetString() ?? "";
+            DisplayPanel.Visibility = Visibility.Visible;
+            EditPanel.Visibility = Visibility.Collapsed;
+            DisplayValue.Text = value.Length > 0 ? value : "(empty)";
         }
 
-        if (!_eventWired && onAction != null && componentId.Length > 0)
+        // Validation error
+        if (data.TryGetProperty("validation_error", out var ve) && ve.ValueKind == JsonValueKind.String)
         {
-            EditableBox.TextChanged += (_, _) =>
-                onAction(ActionJson.TextChanged(componentId, EditableBox.Text));
-            _eventWired = true;
+            ValidationError.Text = ve.GetString() ?? "";
+            ValidationError.Visibility = Visibility.Visible;
         }
+        else
+        {
+            ValidationError.Visibility = Visibility.Collapsed;
+        }
+
+        if (!_eventsWired && onAction != null && componentId.Length > 0)
+        {
+            string capturedId = componentId;
+
+            EditButton.Click += (_, _) =>
+                onAction(ActionJson.ActionPressed($"{capturedId}_edit"));
+
+            SaveButton.Click += (_, _) =>
+                onAction(ActionJson.TextChanged(capturedId, EditBox.Text));
+
+            CancelButton.Click += (_, _) =>
+                onAction(ActionJson.ActionPressed($"{capturedId}_cancel"));
+
+            _eventsWired = true;
+        }
+
+        AutomationProperties.SetName(EditBox, label);
+        AutomationProperties.SetName(EditButton, $"Edit {label}");
     }
 }
