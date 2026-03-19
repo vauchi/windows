@@ -50,4 +50,36 @@ public static class ActionJson
             SettingsToggled = new { component_id = componentId, item_id = itemId }
         });
     }
+
+    public static string FieldVisibilityChanged(string fieldId, string? groupId, bool visible)
+    {
+        return JsonSerializer.Serialize(new
+        {
+            FieldVisibilityChanged = new { field_id = fieldId, group_id = groupId, visible }
+        });
+    }
+
+    public static string GroupViewSelected(string? groupName)
+    {
+        return JsonSerializer.Serialize(new
+        {
+            GroupViewSelected = new { group_name = groupName }
+        });
+    }
+
+    public static string SearchChanged(string componentId, string query)
+    {
+        return JsonSerializer.Serialize(new
+        {
+            SearchChanged = new { component_id = componentId, query }
+        });
+    }
+
+    public static string UndoPressed(string actionId)
+    {
+        return JsonSerializer.Serialize(new
+        {
+            UndoPressed = new { action_id = actionId }
+        });
+    }
 }
