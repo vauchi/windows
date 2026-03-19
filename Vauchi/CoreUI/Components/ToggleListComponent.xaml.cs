@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: 2026 Mattia Egloff <mattia.egloff@pm.me>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using System;
 using System.Text.Json;
@@ -17,53 +19,56 @@ public sealed partial class ToggleListComponent : UserControl, IRenderable
 
     public void Render(JsonElement data, Action<string>? onAction)
     {
-        ToggleContainer.Children.Clear();
+        // Keep only the header label, clear dynamic items
+        while (ToggleContainer.Children.Count > 1)
+            ToggleContainer.Children.RemoveAt(ToggleContainer.Children.Count - 1);
 
-        string componentId = data.TryGetProperty("id", out var cid)
-            ? cid.GetString() ?? "" : "";
+        string componentId = data.TryGetProperty("id", out var cid) ? cid.GetString() ?? "" : "";
 
-        // Group header (key is "label", not "title")
-        if (data.TryGetProperty("label", out var label))
+        if (data.TryGetProperty("label", out var label) && label.GetString() is string lbl && lbl.Length > 0)
         {
-            ToggleContainer.Children.Add(new TextBlock
-            {
-                Text = label.GetString() ?? "[ToggleList]",
-                FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
-            });
+            HeaderLabel.Text = lbl;
+            HeaderLabel.Visibility = Visibility.Visible;
         }
 
-        if (!data.TryGetProperty("items", out var items) ||
-            items.ValueKind != JsonValueKind.Array)
-        {
+        if (!data.TryGetProperty("items", out var items) || items.ValueKind != JsonValueKind.Array)
             return;
-        }
 
         foreach (var item in items.EnumerateArray())
         {
-            string itemId = item.TryGetProperty("id", out var id)
-                ? id.GetString() ?? "" : "";
-            string itemLabel = item.TryGetProperty("label", out var lbl)
-                ? lbl.GetString() ?? itemId : itemId;
-            bool selected = item.TryGetProperty("selected", out var sel)
-                && sel.GetBoolean();
+            string itemId = item.TryGetProperty("id", out var id) ? id.GetString() ?? "" : "";
+            string itemLabel = item.TryGetProperty("label", out var il) ? il.GetString() ?? "" : "";
+            bool selected = item.TryGetProperty("selected", out var sel) && sel.GetBoolean();
+            string? subtitle = item.TryGetProperty("subtitle", out var sub) ? sub.GetString() : null;
 
-            var checkBox = new CheckBox
+            var toggle = new ToggleSwitch
             {
-                Content = itemLabel,
-                IsChecked = selected,
+                Header = itemLabel,
+                IsOn = selected,
             };
+
+            AutomationProperties.SetName(toggle, itemLabel);
 
             if (onAction != null)
             {
-                string capturedId = itemId;
+                string capturedItemId = itemId;
                 string capturedComponentId = componentId;
-                checkBox.Checked += (_, _) =>
-                    onAction(ActionJson.ItemToggled(capturedComponentId, capturedId));
-                checkBox.Unchecked += (_, _) =>
-                    onAction(ActionJson.ItemToggled(capturedComponentId, capturedId));
+                toggle.Toggled += (_, _) =>
+                    onAction(ActionJson.ItemToggled(capturedComponentId, capturedItemId));
             }
 
-            ToggleContainer.Children.Add(checkBox);
+            ToggleContainer.Children.Add(toggle);
+
+            if (subtitle != null)
+            {
+                ToggleContainer.Children.Add(new TextBlock
+                {
+                    Text = subtitle,
+                    Style = (Style)Application.Current.Resources["CaptionTextBlockStyle"],
+                    Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["TextFillColorSecondaryBrush"],
+                    Margin = new Thickness(0, -4, 0, 0),
+                });
+            }
         }
     }
 }

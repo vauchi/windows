@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Mattia Egloff <mattia.egloff@pm.me>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System;
 using System.Text.Json;
@@ -16,14 +17,32 @@ public sealed partial class InfoPanelComponent : UserControl, IRenderable
 
     public void Render(JsonElement data, Action<string>? onAction)
     {
-        if (data.TryGetProperty("title", out var title))
+        ItemsContainer.Children.Clear();
+
+        PanelTitle.Text = data.TryGetProperty("title", out var title) ? title.GetString() ?? "" : "";
+
+        if (!data.TryGetProperty("items", out var items) || items.ValueKind != JsonValueKind.Array)
+            return;
+
+        foreach (var item in items.EnumerateArray())
         {
-            Panel.Title = title.GetString() ?? "";
+            string itemTitle = item.TryGetProperty("title", out var it) ? it.GetString() ?? "" : "";
+            string detail = item.TryGetProperty("detail", out var det) ? det.GetString() ?? "" : "";
+
+            var row = new StackPanel { Spacing = 2 };
+            row.Children.Add(new TextBlock
+            {
+                Text = itemTitle,
+                Style = (Style)Application.Current.Resources["BodyStrongTextBlockStyle"],
+            });
+            row.Children.Add(new TextBlock
+            {
+                Text = detail,
+                TextWrapping = TextWrapping.Wrap,
+                Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["TextFillColorSecondaryBrush"],
+            });
+
+            ItemsContainer.Children.Add(row);
         }
-        if (data.TryGetProperty("message", out var message))
-        {
-            Panel.Message = message.GetString() ?? "";
-        }
-        // TODO: Map severity from data["severity"]
     }
 }

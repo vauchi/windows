@@ -20,32 +20,40 @@ public sealed partial class ActionListComponent : UserControl, IRenderable
     {
         ActionContainer.Children.Clear();
 
-        if (!data.TryGetProperty("actions", out var actions) ||
-            actions.ValueKind != JsonValueKind.Array)
-        {
-            if (data.TryGetProperty("title", out var title))
-            {
-                ActionContainer.Children.Add(
-                    new TextBlock { Text = title.GetString() ?? "[ActionList]" });
-            }
+        if (!data.TryGetProperty("items", out var items) ||
+            items.ValueKind != JsonValueKind.Array)
             return;
-        }
 
-        foreach (var action in actions.EnumerateArray())
+        foreach (var item in items.EnumerateArray())
         {
-            string actionId = action.TryGetProperty("id", out var id) ? id.GetString() ?? "" : "";
-            string label = action.TryGetProperty("label", out var lbl) ? lbl.GetString() ?? actionId : actionId;
-            bool enabled = !action.TryGetProperty("enabled", out var en) || en.GetBoolean();
-            string style = action.TryGetProperty("style", out var st) ? st.GetString() ?? "" : "";
+            string itemId = item.TryGetProperty("id", out var id) ? id.GetString() ?? "" : "";
+            string label = item.TryGetProperty("label", out var lbl) ? lbl.GetString() ?? "" : "";
+            string? detail = item.TryGetProperty("detail", out var det) ? det.GetString() : null;
 
-            var btn = new Button { Content = label, IsEnabled = enabled };
+            var content = new StackPanel { Spacing = 2 };
+            content.Children.Add(new TextBlock { Text = label });
+            if (detail != null)
+            {
+                content.Children.Add(new TextBlock
+                {
+                    Text = detail,
+                    Style = (Style)Application.Current.Resources["CaptionTextBlockStyle"],
+                    Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["TextFillColorSecondaryBrush"],
+                });
+            }
 
-            if (style == "Primary")
-                btn.Style = (Style)Application.Current.Resources["AccentButtonStyle"];
+            var btn = new Button
+            {
+                Content = content,
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                HorizontalContentAlignment = HorizontalAlignment.Left,
+            };
+
+            AutomationProperties.SetName(btn, label);
 
             if (onAction != null)
             {
-                string capturedId = actionId;
+                string capturedId = itemId;
                 btn.Click += (_, _) => onAction(ActionJson.ActionPressed(capturedId));
             }
 
