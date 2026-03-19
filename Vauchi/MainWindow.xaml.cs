@@ -171,14 +171,96 @@ public sealed partial class MainWindow : Window
                 RefreshScreen();
                 break;
 
-            case ActionResultKind.Error:
+            case ActionResultKind.ShowAlert:
+                ShowAlertAsync(resultJson);
+                break;
+
+            case ActionResultKind.OpenUrl:
+                OpenUrlAsync(resultJson);
+                break;
+
+            case ActionResultKind.ShowToast:
+                ShowFloatingToast(resultJson);
+                break;
+
+            case ActionResultKind.OpenContact:
+            case ActionResultKind.EditContact:
+            case ActionResultKind.OpenEntryDetail:
+            case ActionResultKind.StartDeviceLink:
+            case ActionResultKind.StartBackupImport:
+                RefreshSidebar();
                 RefreshScreen();
+                break;
+
+            case ActionResultKind.RequestCamera:
+                System.Diagnostics.Debug.WriteLine("[Vauchi] Camera requested — not yet implemented");
+                break;
+
+            case ActionResultKind.Error:
+                ShowFatalErrorAsync(resultJson);
                 break;
 
             default:
                 RefreshScreen();
                 break;
         }
+    }
+
+    private async void ShowAlertAsync(string resultJson)
+    {
+        using var doc = JsonDocument.Parse(resultJson);
+        if (!doc.RootElement.TryGetProperty("ShowAlert", out var alert)) return;
+        string title = alert.TryGetProperty("title", out var t) ? t.GetString() ?? "" : "";
+        string message = alert.TryGetProperty("message", out var m) ? m.GetString() ?? "" : "";
+        var dialog = new ContentDialog
+        {
+            Title = title,
+            Content = message,
+            CloseButtonText = "OK",
+            XamlRoot = Content.XamlRoot,
+        };
+        await dialog.ShowAsync();
+    }
+
+    private async void OpenUrlAsync(string resultJson)
+    {
+        using var doc = JsonDocument.Parse(resultJson);
+        if (!doc.RootElement.TryGetProperty("OpenUrl", out var urlEl)) return;
+        string? url = urlEl.TryGetProperty("url", out var u) ? u.GetString() : null;
+        if (url != null && Uri.TryCreate(url, UriKind.Absolute, out var uri))
+            await Windows.System.Launcher.LaunchUriAsync(uri);
+    }
+
+    private void ShowFloatingToast(string resultJson)
+    {
+        using var doc = JsonDocument.Parse(resultJson);
+        if (!doc.RootElement.TryGetProperty("ShowToast", out var toast)) return;
+        string message = toast.TryGetProperty("message", out var m) ? m.GetString() ?? "" : "";
+        string? undoId = toast.TryGetProperty("undo_action_id", out var uid) ? uid.GetString() : null;
+
+        // Log toast for now — floating InfoBar will be wired in Task 9 (NavigationView)
+        System.Diagnostics.Debug.WriteLine($"[Vauchi] Toast: {message}{(undoId != null ? $" (undo: {undoId})" : "")}");
+    }
+
+    private async void ShowFatalErrorAsync(string resultJson)
+    {
+        string errorMsg = "Unknown error";
+        try
+        {
+            using var doc = JsonDocument.Parse(resultJson);
+            if (doc.RootElement.TryGetProperty("error", out var err))
+                errorMsg = err.GetString() ?? errorMsg;
+        }
+        catch { }
+
+        var dialog = new ContentDialog
+        {
+            Title = "Vauchi Error",
+            Content = $"An unrecoverable error occurred:\n\n{errorMsg}\n\nThe app may need to be restarted.",
+            CloseButtonText = "OK",
+            XamlRoot = Content.XamlRoot,
+        };
+        await dialog.ShowAsync();
     }
 
     private void HandleExchangeCommands(ExchangeCommand[] commands)
