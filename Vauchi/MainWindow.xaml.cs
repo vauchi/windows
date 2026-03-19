@@ -36,7 +36,13 @@ public sealed partial class MainWindow : Window
         Renderer.ActionRequested += OnActionRequested;
         InitializeApp();
 
-        _tray = new SystemTrayManager(this);
+        _tray = new SystemTrayManager(this, screenName =>
+        {
+            if (_appHandle == IntPtr.Zero) return;
+            VauchiNative.AppNavigateTo(_appHandle, screenName);
+            SyncNavSelection();
+            RefreshScreen();
+        });
         _tray.Initialize();
 
         var shortcuts = new KeyboardShortcuts();
@@ -46,6 +52,22 @@ public sealed partial class MainWindow : Window
             VauchiNative.AppNavigateTo(_appHandle, screenName);
             SyncNavSelection();
             RefreshScreen();
+        };
+        shortcuts.BackRequested += () =>
+        {
+            if (_appHandle == IntPtr.Zero) return;
+            string? resultJson = VauchiNative.AppHandleAction(_appHandle, ActionJson.ActionPressed("back"));
+            if (resultJson != null) HandleActionResult(resultJson);
+        };
+        shortcuts.SearchFocusRequested += () =>
+        {
+            // TODO: focus search field when search UI is implemented
+        };
+        shortcuts.PrimaryActionRequested += () =>
+        {
+            if (_appHandle == IntPtr.Zero) return;
+            string? resultJson = VauchiNative.AppHandleAction(_appHandle, ActionJson.ActionPressed("primary"));
+            if (resultJson != null) HandleActionResult(resultJson);
         };
         shortcuts.Register(Content as UIElement ?? throw new InvalidOperationException("Content not set"));
     }

@@ -16,6 +16,10 @@ namespace Vauchi.Platform;
 public class KeyboardShortcuts
 {
     public event Action<string>? NavigateRequested;
+    public event Action? BackRequested;
+    public event Action? SearchFocusRequested;
+    public event Action? PrimaryActionRequested;
+
     private static void AddAccelerator(UIElement target, VirtualKey key, VirtualKeyModifiers modifiers, Action action)
     {
         var accel = new KeyboardAccelerator { Key = key, Modifiers = modifiers };
@@ -33,6 +37,9 @@ public class KeyboardShortcuts
         AddAccelerator(root, VirtualKey.Number1, VirtualKeyModifiers.Control, () => NavigateRequested?.Invoke("my_info"));
         AddAccelerator(root, VirtualKey.Number2, VirtualKeyModifiers.Control, () => NavigateRequested?.Invoke("contacts"));
         AddAccelerator(root, VirtualKey.Number3, VirtualKeyModifiers.Control, () => NavigateRequested?.Invoke("settings"));
+        AddAccelerator(root, VirtualKey.Escape, VirtualKeyModifiers.None, () => BackRequested?.Invoke());
+        AddAccelerator(root, VirtualKey.F, VirtualKeyModifiers.Control, () => SearchFocusRequested?.Invoke());
+        AddAccelerator(root, VirtualKey.Enter, VirtualKeyModifiers.Control, () => PrimaryActionRequested?.Invoke());
     }
 
 }

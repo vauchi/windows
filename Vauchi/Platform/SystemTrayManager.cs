@@ -16,15 +16,22 @@ public class SystemTrayManager : IDisposable
 {
     private TaskbarIcon? _trayIcon;
     private readonly Window? _window;
+    private readonly Action<string>? _navigateAction;
 
-    public SystemTrayManager(Window window)
+    public SystemTrayManager(Window window, Action<string>? navigateAction = null)
     {
         _window = window;
+        _navigateAction = navigateAction;
     }
 
     public void Initialize()
     {
         var menu = new MenuFlyout();
+
+        var exchangeItem = new MenuFlyoutItem { Text = "Exchange" };
+        exchangeItem.Click += (_, _) => { ShowWindow(); _navigateAction?.Invoke("exchange"); };
+        menu.Items.Add(exchangeItem);
+        menu.Items.Add(new MenuFlyoutSeparator());
 
         var showItem = new MenuFlyoutItem { Text = "Show Vauchi" };
         showItem.Click += (_, _) => ShowWindow();
