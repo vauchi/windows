@@ -4,7 +4,6 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System;
-using System.Collections.Generic;
 using System.Text.Json;
 using Vauchi.Helpers;
 using Vauchi.Interop;
@@ -12,15 +11,22 @@ using Vauchi.Platform;
 
 namespace Vauchi;
 
-/// <summary>
-/// Main window with sidebar navigation, powered by vauchi-cabi App API.
-/// </summary>
 public sealed partial class MainWindow : Window
 {
     private IntPtr _appHandle;
-    private List<string> _screenIds = new();
-    private bool _sidebarUpdating;
+    private bool _navUpdating;
     private SystemTrayManager? _tray;
+    private DispatcherTimer? _toastTimer;
+
+    // 5-tab navigation model (frontend abstraction, matches TUI/macOS)
+    private static readonly (string screenId, string label, Symbol icon)[] NavTabs =
+    [
+        ("my_info",  "My Card",  Symbol.ContactInfo),
+        ("contacts", "Contacts", Symbol.People),
+        ("exchange", "Exchange", Symbol.Send),
+        ("groups",   "Groups",   Symbol.People),
+        ("settings", "More",     Symbol.More),  // "More" defaults to settings screen
+    ];
 
     public MainWindow()
     {
@@ -38,7 +44,7 @@ public sealed partial class MainWindow : Window
         {
             if (_appHandle == IntPtr.Zero) return;
             VauchiNative.AppNavigateTo(_appHandle, screenName);
-            RefreshSidebar();
+            SyncNavSelection();
             RefreshScreen();
         };
         shortcuts.Register(Content as UIElement ?? throw new InvalidOperationException("Content not set"));
@@ -66,74 +72,125 @@ public sealed partial class MainWindow : Window
                 "Failed to initialize Vauchi storage. The database may be corrupted or inaccessible.");
         }
 
-        string? defaultScreen = VauchiNative.AppDefaultScreen(_appHandle);
-
-        // Check if onboarding is needed (identity not yet created)
-        string? startScreen = defaultScreen;
+        // Check if onboarding needed
+        bool isOnboarding = false;
         string? availableJson = VauchiNative.AppAvailableScreens(_appHandle);
         if (availableJson != null)
         {
             try
             {
                 using var doc = JsonDocument.Parse(availableJson);
-                foreach (var el in doc.RootElement.EnumerateArray())
-                {
-                    if (el.GetString() == "onboarding") { startScreen = "onboarding"; break; }
-                }
+                var arr = doc.RootElement;
+                if (arr.GetArrayLength() == 1 && arr[0].GetString() == "onboarding")
+                    isOnboarding = true;
             }
-            catch (JsonException)
-            {
-                System.Diagnostics.Debug.WriteLine("[Vauchi] Failed to parse available screens");
-            }
-        }
-        if (startScreen != null)
-        {
-            VauchiNative.AppNavigateTo(_appHandle, startScreen);
+            catch (JsonException) { }
         }
 
-        RefreshSidebar();
+        if (isOnboarding)
+        {
+            EnterOnboardingMode();
+            VauchiNative.AppNavigateTo(_appHandle, "onboarding");
+        }
+        else
+        {
+            ExitOnboardingMode();
+            string? defaultScreen = VauchiNative.AppDefaultScreen(_appHandle);
+            if (defaultScreen != null)
+                VauchiNative.AppNavigateTo(_appHandle, defaultScreen);
+        }
+
         RefreshScreen();
     }
 
-    private void RefreshSidebar()
+    private void EnterOnboardingMode()
     {
-        _sidebarUpdating = true;
+        NavView.IsPaneVisible = false;
+        NavView.IsBackButtonVisible = NavigationViewBackButtonVisible.Collapsed;
+        NavView.MenuItems.Clear();
+    }
 
-        string? json = VauchiNative.AppAvailableScreens(_appHandle);
-        _screenIds.Clear();
-        Sidebar.Items.Clear();
+    private void ExitOnboardingMode()
+    {
+        NavView.IsPaneVisible = true;
+        NavView.IsBackButtonVisible = NavigationViewBackButtonVisible.Auto;
+        BuildNavTabs();
+    }
 
-        if (json != null)
+    private void BuildNavTabs()
+    {
+        _navUpdating = true;
+        NavView.MenuItems.Clear();
+
+        foreach (var (screenId, label, icon) in NavTabs)
         {
-            using var doc = JsonDocument.Parse(json);
-            foreach (var el in doc.RootElement.EnumerateArray())
+            NavView.MenuItems.Add(new NavigationViewItem
             {
-                string id = el.GetString() ?? "unknown";
-                _screenIds.Add(id);
-                Sidebar.Items.Add(FormatScreenName(id));
-            }
+                Content = label,
+                Icon = new SymbolIcon(icon),
+                Tag = screenId,
+            });
         }
 
-        _sidebarUpdating = false;
+        _navUpdating = false;
+        SyncNavSelection();
     }
 
-    internal static string FormatScreenName(string id)
+    /// <summary>
+    /// After any screen change, highlight the correct tab based on current screen_id.
+    /// </summary>
+    private void SyncNavSelection()
     {
-        if (string.IsNullOrEmpty(id)) return id;
-        string display = id.Replace('_', ' ');
-        return char.ToUpper(display[0]) + display[1..];
+        _navUpdating = true;
+
+        string? screenJson = VauchiNative.AppCurrentScreen(_appHandle);
+        string screenId = "";
+        if (screenJson != null)
+        {
+            try
+            {
+                using var doc = JsonDocument.Parse(screenJson);
+                screenId = doc.RootElement.TryGetProperty("screen_id", out var sid)
+                    ? sid.GetString() ?? "" : "";
+            }
+            catch (JsonException) { }
+        }
+
+        int tabIndex = MapScreenToTab(screenId);
+        if (tabIndex >= 0 && tabIndex < NavView.MenuItems.Count)
+            NavView.SelectedItem = NavView.MenuItems[tabIndex];
+
+        _navUpdating = false;
     }
 
-    private void OnSidebarSelectionChanged(object sender, SelectionChangedEventArgs e)
+    /// <summary>
+    /// Map screen_id to tab index (0-4). Matches TUI nav_index() mapping.
+    /// </summary>
+    private static int MapScreenToTab(string screenId) => screenId switch
     {
-        if (_sidebarUpdating || _appHandle == IntPtr.Zero) return;
+        "my_info" or "entry_detail" => 0,
+        "contacts" or "contact_detail" or "contact_edit" or "contact_visibility"
+            or "contact_duplicates" or "contact_merge" or "contact_limit" => 1,
+        "exchange" => 2,
+        "groups" or "group_detail" => 3,
+        _ => 4, // settings, help, backup, recovery, sync, etc. → More
+    };
 
-        int index = Sidebar.SelectedIndex;
-        if (index < 0 || index >= _screenIds.Count) return;
+    private void OnNavSelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
+    {
+        if (_navUpdating || _appHandle == IntPtr.Zero) return;
+        if (args.SelectedItem is not NavigationViewItem item) return;
 
-        string screenName = _screenIds[index];
-        VauchiNative.AppNavigateTo(_appHandle, screenName);
+        string screenId = item.Tag as string ?? "";
+        VauchiNative.AppNavigateTo(_appHandle, screenId);
         RefreshScreen();
+    }
+
+    private void OnBackRequested(NavigationView sender, NavigationViewBackRequestedEventArgs args)
+    {
+        if (_appHandle == IntPtr.Zero) return;
+        string? resultJson = VauchiNative.AppHandleAction(_appHandle, ActionJson.ActionPressed("back"));
+        if (resultJson != null) HandleActionResult(resultJson);
     }
 
     private void OnActionRequested(object? sender, string actionJson)
@@ -159,9 +216,27 @@ public sealed partial class MainWindow : Window
             case ActionResultKind.UpdateScreen:
             case ActionResultKind.NavigateTo:
             case ActionResultKind.ValidationError:
+                SyncNavSelection();
+                RefreshScreen();
+                break;
+
             case ActionResultKind.Complete:
             case ActionResultKind.WipeComplete:
-                RefreshSidebar();
+                // Onboarding complete or wipe — rebuild nav, refresh
+                ExitOnboardingMode();
+                string? defaultScreen = VauchiNative.AppDefaultScreen(_appHandle);
+                if (defaultScreen != null)
+                    VauchiNative.AppNavigateTo(_appHandle, defaultScreen);
+                SyncNavSelection();
+                RefreshScreen();
+                break;
+
+            case ActionResultKind.OpenContact:
+            case ActionResultKind.EditContact:
+            case ActionResultKind.OpenEntryDetail:
+            case ActionResultKind.StartDeviceLink:
+            case ActionResultKind.StartBackupImport:
+                SyncNavSelection();
                 RefreshScreen();
                 break;
 
@@ -183,15 +258,6 @@ public sealed partial class MainWindow : Window
                 ShowFloatingToast(resultJson);
                 break;
 
-            case ActionResultKind.OpenContact:
-            case ActionResultKind.EditContact:
-            case ActionResultKind.OpenEntryDetail:
-            case ActionResultKind.StartDeviceLink:
-            case ActionResultKind.StartBackupImport:
-                RefreshSidebar();
-                RefreshScreen();
-                break;
-
             case ActionResultKind.RequestCamera:
                 System.Diagnostics.Debug.WriteLine("[Vauchi] Camera requested — not yet implemented");
                 break;
@@ -203,6 +269,32 @@ public sealed partial class MainWindow : Window
             default:
                 RefreshScreen();
                 break;
+        }
+    }
+
+    private void HandleExchangeCommands(ExchangeCommand[] commands)
+    {
+        foreach (var cmd in commands)
+        {
+            switch (cmd.Kind)
+            {
+                case ExchangeCommandKind.QrDisplay:
+                    break;
+                case ExchangeCommandKind.QrRequestScan:
+                    // TODO: launch camera scanner
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+
+    private void RefreshScreen()
+    {
+        string? screenJson = VauchiNative.AppCurrentScreen(_appHandle);
+        if (screenJson != null)
+        {
+            Renderer.RenderFromJson(screenJson);
         }
     }
 
@@ -233,13 +325,22 @@ public sealed partial class MainWindow : Window
 
     private void ShowFloatingToast(string resultJson)
     {
+        _toastTimer?.Stop();
+
         using var doc = JsonDocument.Parse(resultJson);
         if (!doc.RootElement.TryGetProperty("ShowToast", out var toast)) return;
-        string message = toast.TryGetProperty("message", out var m) ? m.GetString() ?? "" : "";
-        string? undoId = toast.TryGetProperty("undo_action_id", out var uid) ? uid.GetString() : null;
 
-        // Log toast for now — floating InfoBar will be wired in Task 9 (NavigationView)
-        System.Diagnostics.Debug.WriteLine($"[Vauchi] Toast: {message}{(undoId != null ? $" (undo: {undoId})" : "")}");
+        string message = toast.TryGetProperty("message", out var m) ? m.GetString() ?? "" : "";
+        FloatingToast.Message = message;
+        FloatingToast.IsOpen = true;
+
+        _toastTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
+        _toastTimer.Tick += (_, _) =>
+        {
+            _toastTimer?.Stop();
+            FloatingToast.IsOpen = false;
+        };
+        _toastTimer.Start();
     }
 
     private async void ShowFatalErrorAsync(string resultJson)
@@ -263,86 +364,11 @@ public sealed partial class MainWindow : Window
         await dialog.ShowAsync();
     }
 
-    private void HandleExchangeCommands(ExchangeCommand[] commands)
-    {
-        foreach (var cmd in commands)
-        {
-            switch (cmd.Kind)
-            {
-                case ExchangeCommandKind.QrDisplay:
-                    break;
-                case ExchangeCommandKind.QrRequestScan:
-                    ShowQrScanDialog();
-                    break;
-                default:
-                    break;
-            }
-        }
-    }
-
-    private async void ShowQrScanDialog()
-    {
-        var input = new TextBox
-        {
-            PlaceholderText = "Paste scanned QR data here...",
-            AcceptsReturn = false,
-        };
-
-        var dialog = new ContentDialog
-        {
-            Title = "Scan QR Code",
-            Content = input,
-            PrimaryButtonText = "Submit",
-            CloseButtonText = "Cancel",
-            XamlRoot = Content.XamlRoot,
-        };
-
-        var result = await dialog.ShowAsync();
-        if (result == ContentDialogResult.Primary)
-        {
-            string scanned = input.Text?.Trim() ?? "";
-            if (scanned.Length > 0 && _appHandle != IntPtr.Zero)
-            {
-                string eventJson = ExchangeHardwareEventJson.QrScanned(scanned);
-                string? resultJson = VauchiNative.AppHandleHardwareEvent(_appHandle, eventJson);
-                if (resultJson != null)
-                {
-                    HandleActionResult(resultJson);
-                }
-            }
-        }
-    }
-
-    private void RefreshScreen()
-    {
-        string? screenJson = VauchiNative.AppCurrentScreen(_appHandle);
-        if (screenJson != null)
-        {
-            Renderer.RenderFromJson(screenJson);
-        }
-    }
-
-    private void OnQuitClicked(object sender, RoutedEventArgs e)
-    {
-        Close();
-    }
-
-    private async void OnAboutClicked(object sender, RoutedEventArgs e)
-    {
-        var dialog = new ContentDialog
-        {
-            Title = "About Vauchi",
-            Content = "Vauchi — Privacy-focused updatable contact cards.\n\nVersion 0.5.0\nLicense: GPL-3.0-or-later",
-            CloseButtonText = "OK",
-            XamlRoot = Content.XamlRoot,
-        };
-        await dialog.ShowAsync();
-    }
-
     private void OnClosed(object sender, WindowEventArgs args)
     {
         Renderer.ActionRequested -= OnActionRequested;
         _tray?.Dispose();
+        _toastTimer?.Stop();
 
         if (_appHandle != IntPtr.Zero)
         {

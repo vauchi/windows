@@ -7,40 +7,29 @@
     xmlns:coreui="using:Vauchi.CoreUI"
     Title="Vauchi"
     Closed="OnClosed">
+
     <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-        </Grid.RowDefinitions>
+        <NavigationView x:Name="NavView"
+                        IsBackButtonVisible="Auto"
+                        IsBackEnabled="True"
+                        IsPaneToggleButtonVisible="True"
+                        PaneDisplayMode="Left"
+                        OpenPaneLength="200"
+                        CompactPaneLength="48"
+                        BackRequested="OnBackRequested"
+                        SelectionChanged="OnNavSelectionChanged"
+                        IsSettingsVisible="False">
+            <Grid>
+                <coreui:ScreenRenderer x:Name="Renderer" />
 
-        <!-- Menu bar -->
-        <MenuBar Grid.Row="0">
-            <MenuBarItem Title="File">
-                <MenuFlyoutItem Text="Quit" Click="OnQuitClicked">
-                    <MenuFlyoutItem.KeyboardAccelerators>
-                        <KeyboardAccelerator Modifiers="Control" Key="Q" />
-                    </MenuFlyoutItem.KeyboardAccelerators>
-                </MenuFlyoutItem>
-            </MenuBarItem>
-            <MenuBarItem Title="Help">
-                <MenuFlyoutItem Text="About Vauchi" Click="OnAboutClicked" />
-            </MenuBarItem>
-        </MenuBar>
-
-        <!-- Sidebar + Content -->
-        <Grid Grid.Row="1">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="200" />
-                <ColumnDefinition Width="*" />
-            </Grid.ColumnDefinitions>
-
-            <ListView x:Name="Sidebar"
-                      Grid.Column="0"
-                      SelectionMode="Single"
-                      SelectionChanged="OnSidebarSelectionChanged"
-                      Padding="4" />
-
-            <coreui:ScreenRenderer x:Name="Renderer" Grid.Column="1" />
-        </Grid>
+                <!-- Floating toast overlay -->
+                <InfoBar x:Name="FloatingToast"
+                         IsOpen="False"
+                         IsClosable="True"
+                         VerticalAlignment="Top"
+                         HorizontalAlignment="Stretch"
+                         Margin="8,8,8,0" />
+            </Grid>
+        </NavigationView>
     </Grid>
 </Window>
