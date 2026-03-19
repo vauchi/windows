@@ -99,10 +99,13 @@ public sealed partial class FieldListComponent : UserControl, IRenderable
                 VerticalAlignment = VerticalAlignment.Center,
             };
 
+            AutomationProperties.SetName(eyeButton, isVisible ? $"Hide {label}" : $"Show {label}");
+
             eyeButton.Click += (_, _) =>
             {
                 isVisible = !isVisible;
-                eyeButton.Content = isVisible ? "👁" : "👁\u0338";
+                eyeButton.Content = isVisible ? "👁" : "👁̸";
+                AutomationProperties.SetName(eyeButton, isVisible ? $"Hide {label}" : $"Show {label}");
                 onAction(ActionJson.FieldVisibilityChanged(capturedFieldId, null, isVisible));
             };
 

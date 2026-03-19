@@ -49,11 +49,11 @@ public sealed partial class ConfirmationDialogComponent : UserControl, IRenderab
             CancelButton.Content = cancelLabel.GetString() ?? "Cancel";
         }
 
-        // Apply destructive style (red confirm button)
+        // Apply destructive style (themed confirm button foreground)
         bool destructive = data.TryGetProperty("destructive", out var destEl) && destEl.GetBoolean();
         if (destructive)
         {
-            ConfirmButton.Foreground = new SolidColorBrush(Colors.Red);
+            ConfirmButton.Foreground = new SolidColorBrush(Microsoft.UI.Colors.Tomato);
         }
 
         AutomationProperties.SetName(ConfirmButton,

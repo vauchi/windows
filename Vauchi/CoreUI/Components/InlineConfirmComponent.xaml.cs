@@ -3,12 +3,12 @@
 
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
+using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using System;
 using System.Text.Json;
 using Vauchi.Helpers;
-using Microsoft.UI.Xaml.Controls;
 
 namespace Vauchi.CoreUI.Components;
 
@@ -17,6 +17,7 @@ public sealed partial class InlineConfirmComponent : UserControl, IRenderable
     private string _componentId = "";
     private Action<string>? _onAction;
     private bool _eventsWired;
+    private DispatcherTimer? _revertTimer;
 
     public InlineConfirmComponent()
     {
@@ -48,7 +49,7 @@ public sealed partial class InlineConfirmComponent : UserControl, IRenderable
         var destructive = data.TryGetProperty("destructive", out var d) && d.GetBoolean();
         if (destructive)
         {
-            ConfirmButton.Foreground = new SolidColorBrush(Microsoft.UI.Colors.Red);
+            ConfirmButton.Foreground = new SolidColorBrush(Microsoft.UI.Colors.Tomato);
         }
 
         AutomationProperties.SetName(WarningText, WarningText.Text);
@@ -66,11 +67,13 @@ public sealed partial class InlineConfirmComponent : UserControl, IRenderable
 
             ConfirmButton.Click += (_, _) =>
             {
+                _revertTimer?.Stop();
                 _onAction?.Invoke(ActionJson.ActionPressed($"{_componentId}_confirm"));
             };
 
             CancelButton.Click += (_, _) =>
             {
+                _revertTimer?.Stop();
                 ButtonPanel.Visibility = Visibility.Collapsed;
                 _onAction?.Invoke(ActionJson.ActionPressed($"{_componentId}_cancel"));
             };
@@ -82,5 +85,13 @@ public sealed partial class InlineConfirmComponent : UserControl, IRenderable
     private void OnWarningTapped(object sender, TappedRoutedEventArgs e)
     {
         ButtonPanel.Visibility = Visibility.Visible;
+        _revertTimer?.Stop();
+        _revertTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(3) };
+        _revertTimer.Tick += (_, _) =>
+        {
+            _revertTimer?.Stop();
+            ButtonPanel.Visibility = Visibility.Collapsed;
+        };
+        _revertTimer.Start();
     }
 }
