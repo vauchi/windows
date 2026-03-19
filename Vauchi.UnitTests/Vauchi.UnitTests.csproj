@@ -4,6 +4,7 @@
   <PropertyGroup>
     <TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
     <Nullable>enable</Nullable>
+    <DefineConstants>$(DefineConstants);UNIT_TEST_BUILD</DefineConstants>
     <IsPackable>false</IsPackable>
     <!-- Suppress WindowsAppSDK PRI/MRT tooling (requires VS tools not present in dotnet CLI) -->
     <EnableCoreMrtTooling>false</EnableCoreMrtTooling>
@@ -25,5 +26,6 @@
     <Compile Include="..\Vauchi\Helpers\JsonSanitizer.cs" Link="Linked\JsonSanitizer.cs" />
     <Compile Include="..\Vauchi\Platform\KeyStorageService.cs" Link="Linked\KeyStorageService.cs" />
     <Compile Include="..\Vauchi\Platform\SystemTrayManager.cs" Link="Linked\SystemTrayManager.cs" />
+    <Compile Include="..\Vauchi\CoreUI\ComponentRenderer.cs" Link="Linked\ComponentRenderer.cs" />
   </ItemGroup>
 </Project>
