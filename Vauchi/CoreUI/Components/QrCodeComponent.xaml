@@ -5,21 +5,24 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <StackPanel x:Name="QrContainer" HorizontalAlignment="Center" Spacing="8">
-        <Border x:Name="QrDisplayBorder" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                BorderThickness="1" CornerRadius="8" Padding="16"
-                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                HorizontalAlignment="Center" MinWidth="250" MinHeight="250">
-            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="8">
-                <FontIcon x:Name="QrIcon" Glyph="&#xED14;" FontSize="64"
-                          HorizontalAlignment="Center" />
-                <TextBlock x:Name="QrDataText" TextWrapping="Wrap" TextAlignment="Center"
-                           MaxWidth="220" Style="{StaticResource CaptionTextBlockStyle}" />
-            </StackPanel>
+        <!-- Display mode: QR bitmap -->
+        <Border x:Name="QrDisplayBorder" CornerRadius="8" Padding="16"
+                Background="White" HorizontalAlignment="Center"
+                Visibility="Collapsed">
+            <Image x:Name="QrImage" Width="250" Height="250"
+                   Stretch="NearestNeighbor" />
         </Border>
+
+        <!-- Scan mode: camera preview -->
+        <Border x:Name="ScanBorder" CornerRadius="8"
+                Background="Black" HorizontalAlignment="Center"
+                Width="320" Height="240" Visibility="Collapsed">
+            <CaptureElement x:Name="CameraPreview" Stretch="UniformToFill" />
+        </Border>
+
         <TextBlock x:Name="QrLabel" Style="{StaticResource CaptionTextBlockStyle}"
                    HorizontalAlignment="Center" Visibility="Collapsed" />
-        <TextBlock x:Name="ScanMessage" Text="Point your camera at a QR code to scan."
-                   Style="{StaticResource CaptionTextBlockStyle}"
+        <TextBlock x:Name="ScanStatus" Style="{StaticResource CaptionTextBlockStyle}"
                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                    HorizontalAlignment="Center" Visibility="Collapsed" TextWrapping="Wrap" />
         <Button x:Name="ScanButton" Content="Scan QR Code"

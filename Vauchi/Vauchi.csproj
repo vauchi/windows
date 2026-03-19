@@ -18,5 +18,7 @@
   <ItemGroup>
     <PackageReference Include="H.NotifyIcon.WinUI" Version="2.2.0" />
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.6.241114003" />
+    <PackageReference Include="ZXing.Net" Version="0.16.*" />
+    <PackageReference Include="ZXing.Net.Bindings.Windows.Compatibility" Version="0.16.*" />
   </ItemGroup>
 </Project>
