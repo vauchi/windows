@@ -3,6 +3,7 @@
 
 using Microsoft.UI;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using System;
@@ -54,6 +55,11 @@ public sealed partial class ConfirmationDialogComponent : UserControl, IRenderab
         {
             ConfirmButton.Foreground = new SolidColorBrush(Colors.Red);
         }
+
+        AutomationProperties.SetName(ConfirmButton,
+            (string?)ConfirmButton.Content ?? "Confirm");
+        AutomationProperties.SetName(CancelButton,
+            (string?)CancelButton.Content ?? "Cancel");
 
         if (onAction != null && componentId.Length > 0)
         {

@@ -3,6 +3,7 @@
 
 using Microsoft.UI;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using System;
@@ -78,6 +79,8 @@ public sealed partial class SettingsGroupComponent : UserControl, IRenderable
                         OffContent = "",
                         OnContent = "",
                     };
+
+                    AutomationProperties.SetName(toggle, label);
 
                     if (onAction != null)
                     {
@@ -185,6 +188,7 @@ public sealed partial class SettingsGroupComponent : UserControl, IRenderable
                         Foreground = new SolidColorBrush(Colors.Red),
                         HorizontalAlignment = HorizontalAlignment.Left,
                     };
+                    AutomationProperties.SetName(btn, btnLabel);
 
                     if (onAction != null)
                     {

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using System;
@@ -49,6 +50,12 @@ public sealed partial class InlineConfirmComponent : UserControl, IRenderable
         {
             ConfirmButton.Foreground = new SolidColorBrush(Microsoft.UI.Colors.Red);
         }
+
+        AutomationProperties.SetName(WarningText, WarningText.Text);
+        AutomationProperties.SetName(ConfirmButton,
+            (string?)ConfirmButton.Content ?? "Confirm");
+        AutomationProperties.SetName(CancelButton,
+            (string?)CancelButton.Content ?? "Cancel");
 
         // Initially collapsed; tap warning text to expand
         ButtonPanel.Visibility = Visibility.Collapsed;

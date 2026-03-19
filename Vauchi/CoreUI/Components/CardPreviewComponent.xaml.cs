@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using System;
 using System.Collections.Generic;
@@ -55,6 +56,7 @@ public sealed partial class CardPreviewComponent : UserControl, IRenderable
                         ? Microsoft.UI.Text.FontWeights.SemiBold
                         : Microsoft.UI.Text.FontWeights.Normal,
                 };
+                AutomationProperties.SetName(btn, displayName);
 
                 if (onAction != null)
                 {

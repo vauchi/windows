@@ -3,6 +3,7 @@
 
 using Microsoft.UI;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Shapes;
@@ -25,6 +26,7 @@ public sealed partial class ContactListComponent : UserControl, IRenderable
         bool searchable = data.TryGetProperty("searchable", out var searchEl) && searchEl.GetBoolean();
 
         SearchBox.Visibility = searchable ? Visibility.Visible : Visibility.Collapsed;
+        AutomationProperties.SetName(SearchBox, "Search contacts");
 
         if (searchable && onAction != null)
         {
@@ -45,6 +47,7 @@ public sealed partial class ContactListComponent : UserControl, IRenderable
             string? subtitle = contact.TryGetProperty("subtitle", out var subEl) ? subEl.GetString() : null;
 
             var row = BuildContactRow(initials, name, subtitle);
+            AutomationProperties.SetName(row, name);
 
             if (onAction != null && contactId.Length > 0)
             {
