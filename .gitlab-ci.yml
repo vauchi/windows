@@ -67,7 +67,6 @@ test:a11y:
     - dotnet test Vauchi.Tests/Vauchi.Tests.csproj --filter "FullyQualifiedName~AccessibilityTests"
   tags: [saas-windows-medium-amd64]
   when: manual
-  allow_failure: true
 
 check:design-drift:
   extends: .design-drift-job
