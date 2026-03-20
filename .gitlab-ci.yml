@@ -8,6 +8,7 @@ include:
     ref: main
     file:
       - '/ci-templates/design-drift.yml'
+      - '/ci-templates/token-lint.yml'
       - '/ci-templates/badges.yml'
 
 variables:
@@ -80,6 +81,12 @@ check:design-drift:
 # ============================================================
 # Deploy Stage — Badge Pages
 # ============================================================
+
+check:design-tokens:
+  extends: .token-lint-job
+  variables:
+    TOKEN_LINT_PATHS: "Vauchi"
+    TOKEN_LINT_GLOBS: "*.cs *.xaml"
 
 pages:
   extends: .badges-pages
