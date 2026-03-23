@@ -323,7 +323,12 @@ public sealed partial class MainWindow : Window
                 break;
 
             case ActionResultKind.RequestCamera:
-                System.Diagnostics.Debug.WriteLine("[Vauchi] Camera requested — not yet implemented");
+                // Legacy path: core requested camera without an active ExchangeSession.
+                // Navigate to exchange screen — the screen model will include a QrCode
+                // component in Scan mode, and QrCodeComponent handles camera internally.
+                VauchiNative.AppNavigateTo(_appHandle, "exchange");
+                SyncNavSelection();
+                RefreshScreen();
                 break;
 
             case ActionResultKind.Error:
@@ -343,14 +348,59 @@ public sealed partial class MainWindow : Window
             switch (cmd.Kind)
             {
                 case ExchangeCommandKind.QrDisplay:
-                    break;
                 case ExchangeCommandKind.QrRequestScan:
-                    // TODO: launch camera scanner
+                    // QrCodeComponent handles display/scan modes via screen JSON.
+                    // RefreshScreen() is called after this method, which
+                    // re-renders the exchange screen with the updated QR component.
                     break;
+
+                case ExchangeCommandKind.BleStartAdvertising:
+                case ExchangeCommandKind.BleStartScanning:
+                case ExchangeCommandKind.BleConnect:
+                case ExchangeCommandKind.BleWriteCharacteristic:
+                case ExchangeCommandKind.BleReadCharacteristic:
+                case ExchangeCommandKind.BleDisconnect:
+                    HandleBleCommand(cmd);
+                    break;
+
+                case ExchangeCommandKind.AudioEmitChallenge:
+                case ExchangeCommandKind.AudioListenForResponse:
+                case ExchangeCommandKind.AudioStop:
+                    HandleAudioCommand(cmd);
+                    break;
+
+                case ExchangeCommandKind.NfcActivate:
+                case ExchangeCommandKind.NfcDeactivate:
+                    // NFC not available on desktop — report unavailable
+                    SendHardwareUnavailable("NFC");
+                    break;
+
                 default:
+                    System.Diagnostics.Debug.WriteLine(
+                        $"[Vauchi] Unknown exchange command: {cmd.Kind}");
                     break;
             }
         }
+    }
+
+    private void HandleBleCommand(ExchangeCommand cmd)
+    {
+        // Stub: BLE not yet implemented — report unavailable
+        SendHardwareUnavailable("BLE");
+    }
+
+    private void HandleAudioCommand(ExchangeCommand cmd)
+    {
+        // Stub: Audio not yet implemented — report unavailable
+        SendHardwareUnavailable("Audio");
+    }
+
+    private void SendHardwareUnavailable(string transport)
+    {
+        if (_appHandle == IntPtr.Zero) return;
+        string eventJson = ExchangeHardwareEventJson.HardwareUnavailable(transport);
+        string? resultJson = VauchiNative.AppHandleHardwareEvent(_appHandle, eventJson);
+        if (resultJson != null) HandleActionResult(resultJson);
     }
 
     private void RefreshScreen()
