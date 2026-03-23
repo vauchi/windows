@@ -22,7 +22,8 @@ public class KeyboardShortcuts
 
     private static void AddAccelerator(UIElement target, VirtualKey key, VirtualKeyModifiers modifiers, Action action)
     {
-        var accel = new KeyboardAccelerator { Key = key, Modifiers = modifiers };
+        // ScopeOwner = target hides the default tooltip from showing over all elements
+        var accel = new KeyboardAccelerator { Key = key, Modifiers = modifiers, ScopeOwner = target };
         accel.Invoked += (_, args) =>
         {
             action();

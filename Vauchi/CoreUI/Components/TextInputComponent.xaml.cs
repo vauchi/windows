@@ -8,12 +8,12 @@ using Microsoft.UI.Xaml.Input;
 using System;
 using System.Text.Json;
 using Vauchi.Helpers;
+using Windows.System;
 
 namespace Vauchi.CoreUI.Components;
 
 public sealed partial class TextInputComponent : UserControl, IRenderable
 {
-    private DispatcherTimer? _debounce;
     private Action<string>? _onAction;
     private string _componentId = "";
 
@@ -51,7 +51,9 @@ public sealed partial class TextInputComponent : UserControl, IRenderable
             PasswordInput.PlaceholderText = placeholder;
             if (maxLength > 0) PasswordInput.MaxLength = maxLength;
 
-            PasswordInput.PasswordChanged += (_, _) => DebouncedAction();
+            // Send TextChanged on LostFocus only — avoids full re-render on every keystroke
+            PasswordInput.LostFocus += (_, _) => SendTextChanged(PasswordInput.Password);
+            PasswordInput.KeyDown += OnKeyDown;
         }
         else
         {
@@ -66,7 +68,9 @@ public sealed partial class TextInputComponent : UserControl, IRenderable
             else if (inputType == "Email")
                 InputBox.InputScope = new InputScope { Names = { new InputScopeName(InputScopeNameValue.EmailNameOrAddress) } };
 
-            InputBox.TextChanged += (_, _) => DebouncedAction();
+            // Send TextChanged on LostFocus only — avoids full re-render on every keystroke
+            InputBox.LostFocus += (_, _) => SendTextChanged(InputBox.Text);
+            InputBox.KeyDown += OnKeyDown;
         }
 
         // Validation error
@@ -81,18 +85,27 @@ public sealed partial class TextInputComponent : UserControl, IRenderable
         AutomationProperties.SetName(PasswordInput, LabelText.Text);
     }
 
-    private void DebouncedAction()
+    private bool _submitted;
+
+    private void SendTextChanged(string value)
     {
-        _debounce?.Stop();
-        _debounce = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) };
-        _debounce.Tick += (_, _) =>
+        if (_submitted) return; // Skip LostFocus after Enter-submit (re-render clears field)
+        _onAction?.Invoke(ActionJson.TextChanged(_componentId, value));
+    }
+
+    private void OnKeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (e.Key == VirtualKey.Enter)
         {
-            _debounce?.Stop();
+            e.Handled = true;
+            _submitted = true;
+            // Send the current value first so core has the latest text
             string currentValue = PasswordInput.Visibility == Visibility.Visible
                 ? PasswordInput.Password
                 : InputBox.Text;
             _onAction?.Invoke(ActionJson.TextChanged(_componentId, currentValue));
-        };
-        _debounce.Start();
+            // Then send a submit action — core handles "submit_<id>" for custom groups, etc.
+            _onAction?.Invoke(ActionJson.ActionPressed($"submit_{_componentId}"));
+        }
     }
 }

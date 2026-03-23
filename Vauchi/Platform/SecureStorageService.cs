@@ -47,9 +47,27 @@ public static class SecureStorageService
     /// </summary>
     public static bool IsHelloEnabled
     {
-        get => ApplicationData.Current.LocalSettings
-            .Values["HelloEnabled"] is bool b && b;
-        set => ApplicationData.Current.LocalSettings
-            .Values["HelloEnabled"] = value;
+        get
+        {
+            try
+            {
+                return ApplicationData.Current.LocalSettings
+                    .Values["HelloEnabled"] is bool b && b;
+            }
+            catch
+            {
+                // ApplicationData.Current unavailable for unpackaged apps
+                return false;
+            }
+        }
+        set
+        {
+            try
+            {
+                ApplicationData.Current.LocalSettings
+                    .Values["HelloEnabled"] = value;
+            }
+            catch { /* unpackaged app — setting not persisted */ }
+        }
     }
 }

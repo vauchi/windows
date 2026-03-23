@@ -42,6 +42,13 @@ public sealed partial class MainWindow : Window
 
     private async System.Threading.Tasks.Task InitializeAsync()
     {
+        var diagPath = System.IO.Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "Vauchi", "diag.log");
+        try { System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(diagPath)!); } catch { }
+        try { System.IO.File.AppendAllText(diagPath, $"{DateTime.Now}: InitializeAsync entered\n"); } catch { }
+
+        try {
         // Windows Hello gate (if enabled)
         if (SecureStorageService.IsHelloEnabled)
         {
@@ -71,7 +78,22 @@ public sealed partial class MainWindow : Window
             }
         }
 
-        InitializeApp();
+        var diagLog = System.IO.Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "Vauchi", "diag.log");
+        try
+        {
+            System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(diagLog)!);
+            System.IO.File.AppendAllText(diagLog, $"{DateTime.Now}: InitializeApp starting\n");
+            InitializeApp();
+            System.IO.File.AppendAllText(diagLog, $"{DateTime.Now}: InitializeApp OK, handle={_appHandle}\n");
+            string? screenJson = VauchiNative.AppCurrentScreen(_appHandle);
+            System.IO.File.AppendAllText(diagLog, $"{DateTime.Now}: screen={screenJson?.Substring(0, Math.Min(200, screenJson?.Length ?? 0))}\n");
+        }
+        catch (Exception ex)
+        {
+            System.IO.File.AppendAllText(diagLog, $"{DateTime.Now}: FATAL: {ex}\n");
+        }
         RestoreWindowState();
 
         _tray = new SystemTrayManager(this, screenName =>
@@ -108,6 +130,10 @@ public sealed partial class MainWindow : Window
             if (resultJson != null) HandleActionResult(resultJson);
         };
         shortcuts.Register(Content as UIElement ?? throw new InvalidOperationException("Content not set"));
+
+        } catch (Exception ex) {
+            try { System.IO.File.AppendAllText(diagPath, $"{DateTime.Now}: FATAL: {ex}\n"); } catch { }
+        }
     }
 
     private void InitializeApp()
