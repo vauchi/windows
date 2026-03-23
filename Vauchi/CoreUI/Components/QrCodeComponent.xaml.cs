@@ -111,7 +111,9 @@ public sealed partial class QrCodeComponent : UserControl, IRenderable
             {
                 StreamingCaptureMode = StreamingCaptureMode.Video,
             });
-            CameraPreview.Source = _mediaCapture;
+            // WinUI 3 doesn't expose CaptureElement for live preview.
+            // Camera captures frames in the background for ZXing QR decoding;
+            // ScanStatus text provides user feedback instead of a video preview.
             await _mediaCapture.StartPreviewAsync();
             _scanning = true;
             ScanButton.Content = "Stop Scanning";

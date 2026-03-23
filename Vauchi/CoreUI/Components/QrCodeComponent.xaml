@@ -10,14 +10,16 @@
                 Background="White" HorizontalAlignment="Center"
                 Visibility="Collapsed">
             <Image x:Name="QrImage" Width="250" Height="250"
-                   Stretch="NearestNeighbor" />
+                   Stretch="None" />
         </Border>
 
-        <!-- Scan mode: camera preview -->
-        <Border x:Name="ScanBorder" CornerRadius="8"
-                Background="Black" HorizontalAlignment="Center"
-                Width="320" Height="240" Visibility="Collapsed">
-            <CaptureElement x:Name="CameraPreview" Stretch="UniformToFill" />
+        <!-- Scan mode: status feedback (no live preview in WinUI 3) -->
+        <Border x:Name="ScanBorder" CornerRadius="8" Padding="24"
+                Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
+                HorizontalAlignment="Center"
+                Width="320" Height="120" Visibility="Collapsed">
+            <SymbolIcon Symbol="Camera" HorizontalAlignment="Center"
+                        VerticalAlignment="Center" />
         </Border>
 
         <TextBlock x:Name="QrLabel" Style="{StaticResource CaptionTextBlockStyle}"
