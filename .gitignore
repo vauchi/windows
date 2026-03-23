@@ -51,3 +51,11 @@ screenshot.png
 ## OS
 .DS_Store
 Thumbs.db
+
+# Secrets & credentials (never commit)
+.env
+.env.*
+*.key
+*.pem
+credentials.json
+service-account*.json
