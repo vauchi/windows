@@ -27,5 +27,6 @@
     <Compile Include="..\Vauchi\Platform\KeyStorageService.cs" Link="Linked\KeyStorageService.cs" />
     <Compile Include="..\Vauchi\Platform\SystemTrayManager.cs" Link="Linked\SystemTrayManager.cs" />
     <Compile Include="..\Vauchi\CoreUI\ComponentRenderer.cs" Link="Linked\ComponentRenderer.cs" />
+    <Compile Include="..\Vauchi\Helpers\ActionRouter.cs" Link="Linked\ActionRouter.cs" />
   </ItemGroup>
 </Project>

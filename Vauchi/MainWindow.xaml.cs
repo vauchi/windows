@@ -258,7 +258,12 @@ public sealed partial class MainWindow : Window
 
         System.Diagnostics.Debug.WriteLine($"[Vauchi] Action: {JsonSanitizer.SafeType(actionJson)}");
 
-        string? resultJson = VauchiNative.AppHandleAction(_appHandle, actionJson);
+        // ADR-031: Hardware events (QR scanned, BLE data, audio response) go through
+        // a separate API that routes to engine.handle_hardware_event().
+        string? resultJson = ActionRouter.IsHardwareEvent(actionJson)
+            ? VauchiNative.AppHandleHardwareEvent(_appHandle, actionJson)
+            : VauchiNative.AppHandleAction(_appHandle, actionJson);
+
         System.Diagnostics.Debug.WriteLine($"[Vauchi] Result: {JsonSanitizer.SafeType(resultJson)}");
         if (resultJson == null) return;
 
