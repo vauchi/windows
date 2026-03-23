@@ -435,8 +435,62 @@ public sealed partial class MainWindow : Window
 
     private void HandleAudioCommand(ExchangeCommand cmd)
     {
-        // Stub: Audio not yet implemented — report unavailable
-        SendHardwareUnavailable("Audio");
+        // Audio commands block — run on background thread
+        switch (cmd.Kind)
+        {
+            case ExchangeCommandKind.AudioEmitChallenge:
+                var emitData = cmd.GetBytes("data") ?? Array.Empty<byte>();
+                System.Threading.Tasks.Task.Run(() =>
+                {
+                    int ok = VauchiNative.AudioEmit(emitData, (nuint)emitData.Length);
+                    if (ok != 1)
+                    {
+                        DispatcherQueue.TryEnqueue(() => SendHardwareUnavailable("Audio"));
+                    }
+                });
+                break;
+
+            case ExchangeCommandKind.AudioListenForResponse:
+                long t = cmd.GetLong("timeout_ms");
+                ulong timeoutMs = t > 0 ? (ulong)t : 5000;
+                System.Threading.Tasks.Task.Run(() =>
+                {
+                    string? json = VauchiNative.AudioListen(timeoutMs);
+                    DispatcherQueue.TryEnqueue(() =>
+                    {
+                        if (_appHandle == IntPtr.Zero) return;
+                        if (json != null)
+                        {
+                            // Parse data array from {"data":[1,2,...]}
+                            try
+                            {
+                                using var doc = JsonDocument.Parse(json);
+                                if (doc.RootElement.TryGetProperty("data", out var arr))
+                                {
+                                    byte[] bytes = new byte[arr.GetArrayLength()];
+                                    int i = 0;
+                                    foreach (var elem in arr.EnumerateArray())
+                                        bytes[i++] = (byte)elem.GetInt32();
+                                    string eventJson = ExchangeHardwareEventJson.AudioResponseReceived(bytes);
+                                    string? resultJson = VauchiNative.AppHandleHardwareEvent(_appHandle, eventJson);
+                                    if (resultJson != null) HandleActionResult(resultJson);
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                SendHardwareUnavailable("Audio");
+                                System.Diagnostics.Debug.WriteLine(
+                                    $"[Vauchi] Audio response parse error: {ex.Message}");
+                            }
+                        }
+                    });
+                });
+                break;
+
+            case ExchangeCommandKind.AudioStop:
+                System.Threading.Tasks.Task.Run(() => VauchiNative.AudioStop());
+                break;
+        }
     }
 
     private void SendHardwareUnavailable(string transport)

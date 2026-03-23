@@ -145,4 +145,28 @@ public static partial class VauchiNative
         StringFree(ptr);
         return result;
     }
+
+    // ── Audio (ultrasonic proximity, behind 'audio' feature) ────────────
+
+    [LibraryImport(LibName, EntryPoint = "vauchi_audio_is_available")]
+    public static partial int AudioIsAvailable();
+
+    [LibraryImport(LibName, EntryPoint = "vauchi_audio_emit")]
+    public static partial int AudioEmit(
+        [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] byte[] data, nuint dataLen);
+
+    [LibraryImport(LibName, EntryPoint = "vauchi_audio_listen")]
+    private static partial IntPtr AudioListenRaw(ulong timeoutMs);
+
+    public static string? AudioListen(ulong timeoutMs)
+    {
+        IntPtr ptr = AudioListenRaw(timeoutMs);
+        if (ptr == IntPtr.Zero) return null;
+        string result = System.Runtime.InteropServices.Marshal.PtrToStringUTF8(ptr)!;
+        StringFree(ptr);
+        return result;
+    }
+
+    [LibraryImport(LibName, EntryPoint = "vauchi_audio_stop")]
+    public static partial void AudioStop();
 }
