@@ -83,6 +83,20 @@ public sealed partial class TextInputComponent : UserControl, IRenderable
         // Accessibility
         AutomationProperties.SetName(InputBox, LabelText.Text);
         AutomationProperties.SetName(PasswordInput, LabelText.Text);
+
+        // Auto-focus: if rendered with empty value and a placeholder, the field
+        // was likely just cleared after submit — focus it for the next entry.
+        bool autoFocus = data.TryGetProperty("auto_focus", out var af) && af.GetBoolean();
+        if (autoFocus || (value.Length == 0 && placeholder.Length > 0))
+        {
+            DispatcherQueue.TryEnqueue(() =>
+            {
+                if (InputBox.Visibility == Visibility.Visible)
+                    InputBox.Focus(FocusState.Programmatic);
+                else
+                    PasswordInput.Focus(FocusState.Programmatic);
+            });
+        }
     }
 
     private bool _submitted;

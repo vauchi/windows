@@ -310,6 +310,10 @@ public sealed partial class MainWindow : Window
             case ActionResultKind.UpdateScreen:
             case ActionResultKind.NavigateTo:
             case ActionResultKind.ValidationError:
+                // After onboarding completes, core returns NavigateTo (not Complete).
+                // Rebuild nav tabs if they're not visible yet (idempotent).
+                if (!NavView.IsPaneVisible && _appHandle != IntPtr.Zero)
+                    ExitOnboardingMode();
                 SyncNavSelection();
                 RefreshScreen();
                 break;
