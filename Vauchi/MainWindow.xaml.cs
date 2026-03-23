@@ -17,6 +17,7 @@ public sealed partial class MainWindow : Window
     private bool _navUpdating;
     private SystemTrayManager? _tray;
     private DispatcherTimer? _toastTimer;
+    private BleExchangeService? _ble;
 
     // 5-tab navigation model (frontend abstraction, matches TUI/macOS)
     private static readonly (string screenId, string label, Symbol icon)[] NavTabs =
@@ -160,6 +161,9 @@ public sealed partial class MainWindow : Window
         }
 
         RefreshScreen();
+
+        _ble = new BleExchangeService(OnBleHardwareEvent);
+        _ = _ble.CheckAvailabilityAsync();
     }
 
     private void EnterOnboardingMode()
@@ -383,10 +387,50 @@ public sealed partial class MainWindow : Window
         }
     }
 
+    private void OnBleHardwareEvent(string eventJson)
+    {
+        // BLE events arrive on background threads — dispatch to UI thread
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            if (_appHandle == IntPtr.Zero) return;
+            string? resultJson = VauchiNative.AppHandleHardwareEvent(_appHandle, eventJson);
+            if (resultJson != null) HandleActionResult(resultJson);
+        });
+    }
+
     private void HandleBleCommand(ExchangeCommand cmd)
     {
-        // Stub: BLE not yet implemented — report unavailable
-        SendHardwareUnavailable("BLE");
+        if (_ble == null || !_ble.IsAvailable)
+        {
+            SendHardwareUnavailable("BLE");
+            return;
+        }
+
+        switch (cmd.Kind)
+        {
+            case ExchangeCommandKind.BleStartScanning:
+                _ble.StartScanning(cmd.GetString("service_uuid") ?? "");
+                break;
+            case ExchangeCommandKind.BleStartAdvertising:
+                _ble.StartAdvertising(
+                    cmd.GetString("service_uuid") ?? "",
+                    cmd.GetBytes("payload") ?? Array.Empty<byte>());
+                break;
+            case ExchangeCommandKind.BleConnect:
+                _ = _ble.ConnectAsync(cmd.GetString("device_id") ?? "");
+                break;
+            case ExchangeCommandKind.BleWriteCharacteristic:
+                _ = _ble.WriteCharacteristicAsync(
+                    cmd.GetString("uuid") ?? "",
+                    cmd.GetBytes("data") ?? Array.Empty<byte>());
+                break;
+            case ExchangeCommandKind.BleReadCharacteristic:
+                _ = _ble.ReadCharacteristicAsync(cmd.GetString("uuid") ?? "");
+                break;
+            case ExchangeCommandKind.BleDisconnect:
+                _ble.Disconnect();
+                break;
+        }
     }
 
     private void HandleAudioCommand(ExchangeCommand cmd)
@@ -523,6 +567,7 @@ public sealed partial class MainWindow : Window
 
         if (_appHandle != IntPtr.Zero)
         {
+            _ble?.Dispose();
             VauchiNative.AppDestroy(_appHandle);
             _appHandle = IntPtr.Zero;
         }
