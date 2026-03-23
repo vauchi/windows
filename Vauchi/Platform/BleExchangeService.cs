@@ -7,7 +7,6 @@ using Vauchi.Helpers;
 using Windows.Devices.Bluetooth;
 using Windows.Devices.Bluetooth.Advertisement;
 using Windows.Devices.Bluetooth.GenericAttributeProfile;
-using Windows.Devices.Enumeration;
 
 namespace Vauchi.Platform;
 
