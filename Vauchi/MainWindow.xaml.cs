@@ -271,6 +271,13 @@ public sealed partial class MainWindow : Window
         if (args.SelectedItem is not NavigationViewItem item) return;
 
         string screenId = item.Tag as string ?? "";
+        // If on a modal screen (FormDialog), navigate back first to clear it.
+        // Core's AppEngine stacks modals — tab switches must pop them.
+        string? currentJson = VauchiNative.AppCurrentScreen(_appHandle);
+        if (currentJson != null && currentJson.Contains("\"form_dialog\""))
+        {
+            VauchiNative.AppHandleAction(_appHandle, ActionJson.ActionPressed("cancel"));
+        }
         VauchiNative.AppNavigateTo(_appHandle, screenId);
         RefreshScreen();
     }
