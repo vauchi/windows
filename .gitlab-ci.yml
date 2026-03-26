@@ -24,7 +24,7 @@ stages:
   - security
   - deploy
 
-build:
+build:app:
   stage: build
   script:
     - dotnet build Vauchi.sln -c Release
@@ -33,7 +33,7 @@ build:
       - Vauchi/bin/Release/
   tags: [saas-windows-medium-amd64]
 
-test:
+test:unit:
   stage: test
   script:
     - dotnet test Vauchi.Tests/Vauchi.Tests.csproj
