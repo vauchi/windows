@@ -21,4 +21,12 @@
     <PackageReference Include="ZXing.Net" Version="0.16.9" />
     <PackageReference Include="ZXing.Net.Bindings.Windows.Compatibility" Version="0.16.9" />
   </ItemGroup>
+  <!-- CABI native library — copied to output when present -->
+  <ItemGroup>
+    <None Include="$(SolutionDir)cabi\vauchi_cabi.dll"
+          CopyToOutputDirectory="PreserveNewest"
+          Link="vauchi_cabi.dll"
+          Visible="false"
+          Condition="Exists('$(SolutionDir)cabi\vauchi_cabi.dll')" />
+  </ItemGroup>
 </Project>
