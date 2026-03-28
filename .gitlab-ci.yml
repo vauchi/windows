@@ -24,8 +24,68 @@ stages:
   - security
   - deploy
 
+# Download and verify CABI native library from core's package registry.
+# Requires CI variable: VAUCHI_CORE_PROJECT_ID (core's GitLab project ID)
+download:cabi:
+  stage: build
+  script:
+    - |
+      $config = Get-Content cabi-version.json | ConvertFrom-Json
+      if ($config.version -eq "0.0.0") {
+        Write-Host "CABI version is placeholder (0.0.0) — skipping download"
+        exit 0
+      }
+
+      # Skip if DLL already matches expected hash
+      if (Test-Path cabi/vauchi_cabi.dll) {
+        $actual = (Get-FileHash cabi/vauchi_cabi.dll -Algorithm SHA256).Hash.ToLower()
+        if ($actual -eq $config.sha256) {
+          Write-Host "CABI DLL already up to date ($($config.version))"
+          exit 0
+        }
+      }
+
+      New-Item -ItemType Directory -Force -Path cabi | Out-Null
+      $base = "$env:CI_API_V4_URL/projects/$env:VAUCHI_CORE_PROJECT_ID/packages/generic/vauchi-cabi-windows/$($config.version)"
+      $headers = @{ "JOB-TOKEN" = $env:CI_JOB_TOKEN }
+
+      Write-Host "Downloading vauchi_cabi.dll v$($config.version)..."
+      Invoke-WebRequest -Uri "$base/vauchi_cabi.dll" -Headers $headers -OutFile cabi/vauchi_cabi.dll
+      Invoke-WebRequest -Uri "$base/vauchi_cabi.dll.sha256" -Headers $headers -OutFile cabi/vauchi_cabi.dll.sha256
+      Invoke-WebRequest -Uri "$base/vauchi_cabi.dll.sha256.bundle" -Headers $headers -OutFile cabi/vauchi_cabi.dll.sha256.bundle
+
+      # Install cosign
+      $COSIGN_VERSION = "v3.0.5"
+      $COSIGN_URL = "https://github.com/sigstore/cosign/releases/download/$COSIGN_VERSION/cosign-windows-amd64.exe"
+      Invoke-WebRequest -Uri $COSIGN_URL -OutFile cosign.exe
+
+      # Verify cosign signature
+      Write-Host "Verifying cosign signature..."
+      & .\cosign.exe verify-blob --key cosign.pub --bundle cabi/vauchi_cabi.dll.sha256.bundle cabi/vauchi_cabi.dll.sha256
+      if ($LASTEXITCODE -ne 0) {
+        Write-Error "Cosign verification FAILED"
+        exit 1
+      }
+      Write-Host "Cosign signature verified"
+
+      # Verify SHA-256
+      $actual = (Get-FileHash cabi/vauchi_cabi.dll -Algorithm SHA256).Hash.ToLower()
+      if ($actual -ne $config.sha256) {
+        Write-Error "SHA-256 mismatch: expected $($config.sha256), got $actual"
+        exit 1
+      }
+      Write-Host "SHA-256 verified: $actual"
+  artifacts:
+    paths:
+      - cabi/vauchi_cabi.dll
+    expire_in: 1 day
+  tags: [saas-windows-medium-amd64]
+
 build:app:
   stage: build
+  needs:
+    - job: download:cabi
+      artifacts: true
   script:
     - dotnet build Vauchi.sln -c Release
   artifacts:
@@ -35,8 +95,11 @@ build:app:
 
 test:unit:
   stage: test
+  needs:
+    - job: build:app
+      artifacts: true
   script:
-    - dotnet test Vauchi.Tests/Vauchi.Tests.csproj
+    - dotnet test Vauchi.UnitTests/Vauchi.UnitTests.csproj
   tags: [saas-windows-medium-amd64]
 
 # ============================================================
