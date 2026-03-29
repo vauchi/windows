@@ -64,6 +64,7 @@ public static class ComponentRenderer
             "ShowToast" => CreateAndRender<ShowToastComponent>(data!.Value, onAction),
             "InlineConfirm" => CreateAndRender<InlineConfirmComponent>(data!.Value, onAction),
             "EditableText" => CreateAndRender<EditableTextComponent>(data!.Value, onAction),
+            "Banner" => CreateAndRender<BannerComponent>(data!.Value, onAction),
             "Divider" => new DividerComponent(),
             _ => null,
         };
