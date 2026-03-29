@@ -352,7 +352,7 @@ public sealed partial class MainWindow : Window
                 break;
 
             case ActionResultKind.ShowAlert:
-                ShowAlertAsync(resultJson);
+                ShowAlert(resultJson);
                 break;
 
             case ActionResultKind.OpenUrl:
@@ -393,20 +393,15 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    private async void ShowAlertAsync(string resultJson)
+    private void ShowAlert(string resultJson)
     {
         using var doc = JsonDocument.Parse(resultJson);
         if (!doc.RootElement.TryGetProperty("ShowAlert", out var alert)) return;
         string title = alert.TryGetProperty("title", out var t) ? t.GetString() ?? "" : "";
         string message = alert.TryGetProperty("message", out var m) ? m.GetString() ?? "" : "";
-        var dialog = new ContentDialog
-        {
-            Title = title,
-            Content = message,
-            CloseButtonText = "OK",
-            XamlRoot = Content.XamlRoot,
-        };
-        await dialog.ShowAsync();
+        AlertBar.Title = title;
+        AlertBar.Message = message;
+        AlertBar.IsOpen = true;
     }
 
     private async void OpenUrlAsync(string resultJson)

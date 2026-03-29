@@ -22,13 +22,22 @@
             <Grid>
                 <coreui:ScreenRenderer x:Name="Renderer" />
 
+                <!-- Alert overlay (screen-state driven, replaces ContentDialog) -->
+                <InfoBar x:Name="AlertBar"
+                         IsOpen="False"
+                         IsClosable="True"
+                         Severity="Warning"
+                         VerticalAlignment="Top"
+                         HorizontalAlignment="Stretch"
+                         Margin="8,8,8,0" />
+
                 <!-- Floating toast overlay -->
                 <InfoBar x:Name="FloatingToast"
                          IsOpen="False"
                          IsClosable="True"
                          VerticalAlignment="Top"
                          HorizontalAlignment="Stretch"
-                         Margin="8,8,8,0" />
+                         Margin="8,52,8,0" />
             </Grid>
         </NavigationView>
     </Grid>
