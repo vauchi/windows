@@ -71,6 +71,30 @@ public static partial class VauchiNative
         [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 3)] byte[] keyBytes,
         int keyLen);
 
+    // ── Config builder API ─────────────────────────────────────────
+
+    [LibraryImport(LibName, EntryPoint = "vauchi_config_new", StringMarshalling = StringMarshalling.Utf8)]
+    public static partial IntPtr ConfigNew(string dataDir, string? relayUrl);
+
+    [LibraryImport(LibName, EntryPoint = "vauchi_config_set_storage_key")]
+    [return: MarshalAs(UnmanagedType.U1)]
+    public static partial bool ConfigSetStorageKey(
+        IntPtr config,
+        [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2)] byte[] key,
+        nuint keyLen);
+
+    [LibraryImport(LibName, EntryPoint = "vauchi_config_enable_ble")]
+    public static partial void ConfigEnableBle(IntPtr config, [MarshalAs(UnmanagedType.U1)] bool enabled);
+
+    [LibraryImport(LibName, EntryPoint = "vauchi_config_enable_audio")]
+    public static partial void ConfigEnableAudio(IntPtr config, [MarshalAs(UnmanagedType.U1)] bool enabled);
+
+    [LibraryImport(LibName, EntryPoint = "vauchi_app_create_from_config")]
+    public static partial IntPtr AppCreateFromConfig(IntPtr config);
+
+    [LibraryImport(LibName, EntryPoint = "vauchi_config_free")]
+    public static partial void ConfigFree(IntPtr config);
+
     [LibraryImport(LibName, EntryPoint = "vauchi_app_destroy")]
     public static partial void AppDestroy(IntPtr handle);
 
