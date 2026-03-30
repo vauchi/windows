@@ -126,6 +126,61 @@ secret_detection:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
+# Visual snapshot tests — capture each screen, compare against baselines.
+# Requires Debug build (--reset-for-testing) and desktop session.
+# Manual until self-hosted Windows runner with VS MSBuild is available.
+test:snapshots:
+  stage: test
+  needs:
+    - job: download:cabi
+      artifacts: true
+  variables:
+    VRT_PLATFORM: windows
+    VRT_SCREENSHOT_DIR: tests/snapshots/actual
+  script:
+    - dotnet build Vauchi/Vauchi.csproj -c Debug -p:Platform=x64
+    - |
+      $debugDir = "Vauchi\bin\x64\Debug\net8.0-windows10.0.22621.0\win-x64"
+      Copy-Item cabi/vauchi_cabi.dll -Destination $debugDir -Force
+    - powershell -ExecutionPolicy Bypass -File tests/capture-snapshots.ps1
+  after_script:
+    - !reference [.vrt-upload-script, script]
+  artifacts:
+    when: always
+    paths:
+      - tests/snapshots/actual/
+    expire_in: 7 days
+  tags: [saas-windows-medium-amd64]
+  when: manual
+  allow_failure: true
+
+# Record new baselines — manual job, commits via PROJECT_ACCESS_TOKEN.
+test:snapshots:record:
+  stage: test
+  needs:
+    - job: download:cabi
+      artifacts: true
+  script:
+    - dotnet build Vauchi/Vauchi.csproj -c Debug -p:Platform=x64
+    - |
+      $debugDir = "Vauchi\bin\x64\Debug\net8.0-windows10.0.22621.0\win-x64"
+      Copy-Item cabi/vauchi_cabi.dll -Destination $debugDir -Force
+    - powershell -ExecutionPolicy Bypass -File tests/capture-snapshots.ps1 -UpdateBaselines
+    - |
+      git config user.name "vauchi-bot"
+      git config user.email "bot@vauchi.app"
+      git add tests/snapshots/baseline/*.png
+      $changes = git diff --cached --name-only
+      if ($changes) {
+        git commit -m "test: update Windows snapshot baselines [skip ci]"
+        git push "https://project-access-token:$env:PROJECT_ACCESS_TOKEN@gitlab.com/vauchi/windows.git" HEAD:$env:CI_COMMIT_REF_NAME
+      } else {
+        Write-Host "No baseline changes to commit"
+      }
+  tags: [saas-windows-medium-amd64]
+  when: manual
+  allow_failure: true
+
 # Design drift: verify all design-spec components are implemented
 test:a11y:
   stage: test
