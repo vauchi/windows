@@ -88,7 +88,10 @@ build:app:
     - job: download:cabi
       artifacts: true
   script:
-    - dotnet build Vauchi.sln -c Release
+    # PRI tooling disabled: SaaS runners lack Visual Studio's
+    # Microsoft.Build.Packaging.Pri.Tasks.dll. Unpackaged WinUI apps
+    # don't need PRI at runtime (XAML loads from loose .xbf files).
+    - dotnet build Vauchi.sln -c Release -p:EnableCoreMrtTooling=false -p:AppxGeneratePriEnabled=false
   artifacts:
     paths:
       - Vauchi/bin/Release/
@@ -128,7 +131,7 @@ secret_detection:
 
 # Visual snapshot tests — capture each screen, compare against baselines.
 # Requires Debug build (--reset-for-testing) and desktop session.
-# Manual until self-hosted Windows runner with VS MSBuild is available.
+# Manual: SaaS runners may lack a desktop session for UI rendering.
 test:snapshots:
   stage: test
   needs:
@@ -138,7 +141,7 @@ test:snapshots:
     VRT_PLATFORM: windows
     VRT_SCREENSHOT_DIR: tests/snapshots/actual
   script:
-    - dotnet build Vauchi/Vauchi.csproj -c Debug -p:Platform=x64
+    - dotnet build Vauchi/Vauchi.csproj -c Debug -p:Platform=x64 -p:EnableCoreMrtTooling=false -p:AppxGeneratePriEnabled=false
     - |
       $debugDir = "Vauchi\bin\x64\Debug\net8.0-windows10.0.22621.0\win-x64"
       Copy-Item cabi/vauchi_cabi.dll -Destination $debugDir -Force
@@ -161,7 +164,7 @@ test:snapshots:record:
     - job: download:cabi
       artifacts: true
   script:
-    - dotnet build Vauchi/Vauchi.csproj -c Debug -p:Platform=x64
+    - dotnet build Vauchi/Vauchi.csproj -c Debug -p:Platform=x64 -p:EnableCoreMrtTooling=false -p:AppxGeneratePriEnabled=false
     - |
       $debugDir = "Vauchi\bin\x64\Debug\net8.0-windows10.0.22621.0\win-x64"
       Copy-Item cabi/vauchi_cabi.dll -Destination $debugDir -Force
