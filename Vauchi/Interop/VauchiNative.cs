@@ -170,6 +170,14 @@ public static partial class VauchiNative
         return result;
     }
 
+    // ── Identity (testing) ───────────────────────────────────────────────
+
+    [LibraryImport(LibName, EntryPoint = "vauchi_app_has_identity")]
+    public static partial int AppHasIdentity(IntPtr handle);
+
+    [LibraryImport(LibName, EntryPoint = "vauchi_app_create_identity", StringMarshalling = StringMarshalling.Utf8)]
+    public static partial int AppCreateIdentity(IntPtr handle, string? displayName);
+
     // ── Audio (ultrasonic proximity, behind 'audio' feature) ────────────
 
     [LibraryImport(LibName, EntryPoint = "vauchi_audio_is_available")]
