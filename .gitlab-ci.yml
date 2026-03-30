@@ -102,8 +102,20 @@ build:app:
       if ($exe) { $metrics["vauchi_binary_size_bytes{component=`"exe`",platform=`"windows`"}"] = $exe.Length }
       if ($dll) { $metrics["vauchi_binary_size_bytes{component=`"app_dll`",platform=`"windows`"}"] = $dll.Length }
       if ($cabi) { $metrics["vauchi_binary_size_bytes{component=`"cabi_dll`",platform=`"windows`"}"] = $cabi.Length }
-      $metrics.GetEnumerator() | ForEach-Object { Write-Host "$($_.Key) $($_.Value)" }
+      # Print to job log + save as artifact
+      $promText = ($metrics.GetEnumerator() | ForEach-Object { "$($_.Key) $($_.Value)" }) -join "`n"
+      Write-Host $promText
       $metrics | ConvertTo-Json | Set-Content metrics.json
+      # Push to Prometheus pushgateway (if configured via CI variable)
+      if ($env:PUSHGATEWAY_URL) {
+        try {
+          Invoke-RestMethod -Uri "$env:PUSHGATEWAY_URL/metrics/job/vauchi_binary_size/platform/windows" `
+            -Method Post -Body $promText -ContentType "text/plain" -ErrorAction Stop
+          Write-Host "[metrics] Pushed to pushgateway"
+        } catch {
+          Write-Warning "[metrics] Pushgateway push failed (advisory): $_"
+        }
+      }
   artifacts:
     paths:
       - Vauchi/bin/x64/Release/
