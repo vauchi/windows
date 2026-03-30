@@ -62,3 +62,4 @@ service-account*.json
 
 ## CABI native library (downloaded at build time)
 cabi/
+test-results/
