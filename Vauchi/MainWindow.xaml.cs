@@ -4,7 +4,6 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System;
-using System.Linq;
 using System.Text.Json;
 using Vauchi.Helpers;
 using Vauchi.Interop;
@@ -161,7 +160,7 @@ public sealed partial class MainWindow : Window
 
 #if DEBUG
         // --reset-for-testing: create a test identity so the app skips onboarding.
-        if (Environment.GetCommandLineArgs().Contains("--reset-for-testing"))
+        if (Array.Exists(Environment.GetCommandLineArgs(), a => a == "--reset-for-testing"))
         {
             if (VauchiNative.AppHasIdentity(_appHandle) != 1)
             {
