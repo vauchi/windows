@@ -149,8 +149,12 @@ public sealed partial class MainWindow : Window
             KeyStorageService.StoreKey(key);
         }
 
-        _appHandle = VauchiNative.AppCreateWithKey(dataDir, null, key, key.Length);
+        var config = VauchiNative.ConfigNew(dataDir, null);
+        VauchiNative.ConfigSetStorageKey(config, key, (nuint)key.Length);
         Array.Clear(key);
+        VauchiNative.ConfigEnableBle(config, true);
+        VauchiNative.ConfigEnableAudio(config, true);
+        _appHandle = VauchiNative.AppCreateFromConfig(config);
 
         if (_appHandle == IntPtr.Zero)
         {
