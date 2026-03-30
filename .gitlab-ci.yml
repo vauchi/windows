@@ -92,9 +92,22 @@ build:app:
     # Microsoft.Build.Packaging.Pri.Tasks.dll. Unpackaged WinUI apps
     # don't need PRI at runtime (XAML loads from loose .xbf files).
     - dotnet build Vauchi.sln -c Release -p:EnableCoreMrtTooling=false -p:AppxGeneratePriEnabled=false
+    - |
+      # Report binary sizes for Grafana tracking
+      $outDir = "Vauchi\bin\x64\Release\net8.0-windows10.0.22621.0\win-x64"
+      $exe = Get-Item "$outDir\Vauchi.exe" -ErrorAction SilentlyContinue
+      $dll = Get-Item "$outDir\Vauchi.dll" -ErrorAction SilentlyContinue
+      $cabi = Get-Item "cabi\vauchi_cabi.dll" -ErrorAction SilentlyContinue
+      $metrics = @{}
+      if ($exe) { $metrics["vauchi_binary_size_bytes{component=`"exe`",platform=`"windows`"}"] = $exe.Length }
+      if ($dll) { $metrics["vauchi_binary_size_bytes{component=`"app_dll`",platform=`"windows`"}"] = $dll.Length }
+      if ($cabi) { $metrics["vauchi_binary_size_bytes{component=`"cabi_dll`",platform=`"windows`"}"] = $cabi.Length }
+      $metrics.GetEnumerator() | ForEach-Object { Write-Host "$($_.Key) $($_.Value)" }
+      $metrics | ConvertTo-Json | Set-Content metrics.json
   artifacts:
     paths:
-      - Vauchi/bin/Release/
+      - Vauchi/bin/x64/Release/
+      - metrics.json
   tags: [saas-windows-medium-amd64]
 
 test:unit:
@@ -103,7 +116,11 @@ test:unit:
     - job: build:app
       artifacts: true
   script:
-    - dotnet test Vauchi.UnitTests/Vauchi.UnitTests.csproj
+    - dotnet test Vauchi.UnitTests/Vauchi.UnitTests.csproj --logger "junit;LogFilePath=../../test-results/unit.xml"
+  artifacts:
+    when: always
+    reports:
+      junit: test-results/unit.xml
   tags: [saas-windows-medium-amd64]
 
 # ============================================================
