@@ -3,11 +3,12 @@
 
 > **Mirror:** This repo is a read-only mirror of [gitlab.com/vauchi/windows](https://gitlab.com/vauchi/windows). Please open issues and merge requests there.
 
-[![Pipeline](https://vauchi.gitlab.io/windows/badges/pipeline.svg)](https://gitlab.com/vauchi/windows/-/pipelines)
+[![Pipeline](https://img.shields.io/endpoint?url=https://vauchi.gitlab.io/windows/badges/pipeline.json&label=pipeline)](https://gitlab.com/vauchi/windows/-/pipelines)
 [![REUSE](https://api.reuse.software/badge/gitlab.com/vauchi/windows)](https://api.reuse.software/info/gitlab.com/vauchi/windows)
 
 > [!WARNING]
-> **Pre-Alpha Software** - This project is under heavy development and not ready for production use.
+> **Pre-Alpha Software** - This project is under heavy development
+> and not ready for production use.
 > APIs may change without notice. Use at your own risk.
 
 # Vauchi Windows
