@@ -19,12 +19,20 @@ public class KeyStorageServiceTests
     {
         try
         {
-            _ = new PasswordVault();
+            var vault = new PasswordVault();
+            // Probe actual vault access — constructor succeeds even without
+            // an interactive session; only operations throw.
+            vault.Retrieve("__vauchi_probe__", "__vauchi_probe__");
             return true;
         }
         catch (UnauthorizedAccessException)
         {
             return false;
+        }
+        catch (Exception)
+        {
+            // Credential not found — vault is accessible, entry just missing.
+            return true;
         }
     }
 
