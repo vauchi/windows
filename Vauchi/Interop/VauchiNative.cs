@@ -180,6 +180,21 @@ public static partial class VauchiNative
 
     // ── Audio (ultrasonic proximity, behind 'audio' feature) ────────────
 
+    // ── Event callback (Phase 2E) ────────────────────────────────────
+
+    /// <summary>
+    /// Callback signature matching VauchiEventCallback in vauchi.h.
+    /// Called by core on background threads when screen data changes.
+    /// <c>screenIdsJson</c> is a JSON array, e.g. <c>["contacts","sync"]</c>.
+    /// </summary>
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    public delegate void VauchiEventCallback(IntPtr screenIdsJson, IntPtr userData);
+
+    [LibraryImport(LibName, EntryPoint = "vauchi_app_set_event_callback")]
+    public static partial void AppSetEventCallback(IntPtr handle, VauchiEventCallback? callback, IntPtr userData);
+
+    // ── Audio (ultrasonic proximity, behind 'audio' feature) ────────────
+
     [LibraryImport(LibName, EntryPoint = "vauchi_audio_is_available")]
     public static partial int AudioIsAvailable();
 

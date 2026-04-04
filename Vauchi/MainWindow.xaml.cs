@@ -18,6 +18,8 @@ public sealed partial class MainWindow : Window
     private SystemTrayManager? _tray;
     private DispatcherTimer? _toastTimer;
     private BleExchangeService? _ble;
+    // Prevent GC collection of the event callback delegate (P/Invoke requirement)
+    private VauchiNative.VauchiEventCallback? _eventCallback;
 
     // 5-tab navigation model (frontend abstraction, matches TUI/macOS)
     private static readonly (string screenId, string label, Symbol icon)[] NavTabs =
@@ -207,6 +209,20 @@ public sealed partial class MainWindow : Window
 
         _ble = new BleExchangeService(OnBleHardwareEvent);
         _ = _ble.CheckAvailabilityAsync();
+
+        // Register event callback for async core notifications (Phase 2E).
+        // Background operations (sync, delivery, device link) fire on arbitrary
+        // threads. Marshal to the UI thread via DispatcherQueue before touching UI.
+        _eventCallback = OnCoreEvent;
+        VauchiNative.AppSetEventCallback(_appHandle, _eventCallback, IntPtr.Zero);
+    }
+
+    private void OnCoreEvent(IntPtr screenIdsJsonPtr, IntPtr userData)
+    {
+        if (_appHandle == IntPtr.Zero || screenIdsJsonPtr == IntPtr.Zero) return;
+
+        // Marshal to UI thread — callback fires on core's background thread
+        DispatcherQueue.TryEnqueue(() => RefreshScreen());
     }
 
     private void EnterOnboardingMode()
@@ -516,6 +532,10 @@ public sealed partial class MainWindow : Window
 
         if (_appHandle != IntPtr.Zero)
         {
+            // Unregister event callback before destroying the app handle
+            VauchiNative.AppSetEventCallback(_appHandle, null, IntPtr.Zero);
+            _eventCallback = null;
+
             _ble?.Dispose();
             VauchiNative.AppDestroy(_appHandle);
             _appHandle = IntPtr.Zero;
