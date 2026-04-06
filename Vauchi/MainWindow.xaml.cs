@@ -356,11 +356,17 @@ public sealed partial class MainWindow : Window
                     ExitOnboardingMode();
                 SyncNavSelection();
                 RefreshScreen();
+                // Device link: when UI transitions to Syncing, run the protocol handshake
+                if (_deviceLinkInitiator != IntPtr.Zero &&
+                    resultJson.Contains("\"link_syncing\""))
+                {
+                    _ = CompleteDeviceLinkAsync();
+                }
                 break;
 
             case ActionResultKind.Complete:
             case ActionResultKind.WipeComplete:
-                // Onboarding complete or wipe — rebuild nav, refresh
+                CleanupDeviceLink();
                 ExitOnboardingMode();
                 string? defaultScreen = VauchiNative.AppDefaultScreen(_appHandle);
                 if (defaultScreen != null)
@@ -372,10 +378,13 @@ public sealed partial class MainWindow : Window
             case ActionResultKind.OpenContact:
             case ActionResultKind.EditContact:
             case ActionResultKind.OpenEntryDetail:
-            case ActionResultKind.StartDeviceLink:
             case ActionResultKind.StartBackupImport:
                 SyncNavSelection();
                 RefreshScreen();
+                break;
+
+            case ActionResultKind.StartDeviceLink:
+                StartDeviceLinkFlow();
                 break;
 
             case ActionResultKind.ExchangeCommands:
