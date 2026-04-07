@@ -67,9 +67,11 @@ download:cabi:
       $headers = @{ "JOB-TOKEN" = $env:CI_JOB_TOKEN }
 
       Write-Host "Downloading vauchi_cabi.dll v$($config.version)..."
-      Invoke-WebRequest -Uri "$base/vauchi_cabi.dll" -Headers $headers -OutFile cabi/vauchi_cabi.dll
-      Invoke-WebRequest -Uri "$base/vauchi_cabi.dll.sha256" -Headers $headers -OutFile cabi/vauchi_cabi.dll.sha256
-      Invoke-WebRequest -Uri "$base/vauchi_cabi.dll.sha256.bundle" -Headers $headers -OutFile cabi/vauchi_cabi.dll.sha256.bundle
+      # -MaximumRedirection: GitLab package registry returns 308 to CDN;
+      # Windows PowerShell 5.1 doesn't follow 308 by default.
+      Invoke-WebRequest -Uri "$base/vauchi_cabi.dll" -Headers $headers -OutFile cabi/vauchi_cabi.dll -MaximumRedirection 5
+      Invoke-WebRequest -Uri "$base/vauchi_cabi.dll.sha256" -Headers $headers -OutFile cabi/vauchi_cabi.dll.sha256 -MaximumRedirection 5
+      Invoke-WebRequest -Uri "$base/vauchi_cabi.dll.sha256.bundle" -Headers $headers -OutFile cabi/vauchi_cabi.dll.sha256.bundle -MaximumRedirection 5
 
       # Install cosign
       $COSIGN_VERSION = "v3.0.5"
