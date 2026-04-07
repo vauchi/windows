@@ -63,8 +63,9 @@ download:cabi:
       }
 
       New-Item -ItemType Directory -Force -Path cabi | Out-Null
-      $base = "$env:CI_API_V4_URL/projects/$env:VAUCHI_CORE_PROJECT_ID/packages/generic/vauchi-cabi-windows/$($config.version)"
-      $headers = @{ "JOB-TOKEN" = $env:CI_JOB_TOKEN }
+      # Hardcoded core project ID (77874344) — eliminates dependency on
+      # VAUCHI_CORE_PROJECT_ID CI variable which is protected (empty on MR pipelines).
+      $base = "$env:CI_API_V4_URL/projects/77874344/packages/generic/vauchi-cabi-windows/$($config.version)"
 
       Write-Host "Downloading vauchi_cabi.dll v$($config.version)..."
       Write-Host "URL base: $base"
