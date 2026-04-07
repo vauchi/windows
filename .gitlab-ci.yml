@@ -67,19 +67,33 @@ download:cabi:
       $headers = @{ "JOB-TOKEN" = $env:CI_JOB_TOKEN }
 
       Write-Host "Downloading vauchi_cabi.dll v$($config.version)..."
-      # Use curl.exe (ships with Windows 10+) instead of Invoke-WebRequest:
-      # GitLab package registry returns HTTP 308 Permanent Redirect to CDN.
-      # PowerShell 5.1 doesn't recognize 308 as a redirect (only 301/302/307).
-      # curl.exe handles all redirect types natively with -L.
-      $authHeader = "JOB-TOKEN: $env:CI_JOB_TOKEN"
-      curl.exe -fSL -H $authHeader -o cabi/vauchi_cabi.dll "$base/vauchi_cabi.dll"
-      curl.exe -fSL -H $authHeader -o cabi/vauchi_cabi.dll.sha256 "$base/vauchi_cabi.dll.sha256"
-      curl.exe -fSL -H $authHeader -o cabi/vauchi_cabi.dll.sha256.bundle "$base/vauchi_cabi.dll.sha256.bundle"
+      Write-Host "URL base: $base"
+      # Use curl.exe with HTTP Basic Auth (gitlab-ci-token:<JOB_TOKEN>).
+      # JOB-TOKEN header triggers 308 redirect to CDN which may 404;
+      # Basic Auth avoids the CDN redirect path entirely.
+      $curlAuth = "gitlab-ci-token:$env:CI_JOB_TOKEN"
+      foreach ($file in @("vauchi_cabi.dll", "vauchi_cabi.dll.sha256", "vauchi_cabi.dll.sha256.bundle")) {
+        $attempt = 0
+        $ok = $false
+        while ($attempt -lt 3 -and -not $ok) {
+          $attempt++
+          Write-Host "  $file (attempt $attempt)..."
+          curl.exe -fSL -u $curlAuth --retry 2 -o "cabi/$file" "$base/$file"
+          if ($LASTEXITCODE -eq 0) { $ok = $true } else {
+            Write-Host "  Failed (exit $LASTEXITCODE), retrying..."
+            Start-Sleep -Seconds 2
+          }
+        }
+        if (-not $ok) {
+          Write-Error "Failed to download $file after 3 attempts"
+          exit 1
+        }
+      }
 
       # Install cosign
       $COSIGN_VERSION = "v3.0.5"
       $COSIGN_URL = "https://github.com/sigstore/cosign/releases/download/$COSIGN_VERSION/cosign-windows-amd64.exe"
-      curl.exe -fSL -o cosign.exe $COSIGN_URL
+      curl.exe -fSL --retry 2 -o cosign.exe $COSIGN_URL
 
       # Verify cosign signature
       Write-Host "Verifying cosign signature..."
