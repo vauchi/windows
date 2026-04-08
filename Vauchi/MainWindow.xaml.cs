@@ -3,6 +3,8 @@
 
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.Windows.AppNotifications;
+using Microsoft.Windows.AppNotifications.Builder;
 using System;
 using System.Text.Json;
 using Vauchi.Helpers;
@@ -31,6 +33,8 @@ public sealed partial class MainWindow : Window
         ("settings", "More",     Symbol.More),  // "More" defaults to settings screen
     ];
 
+    private DispatcherTimer _notificationTimer;
+
     public MainWindow()
     {
         InitializeComponent();
@@ -40,6 +44,59 @@ public sealed partial class MainWindow : Window
 
         // Async init with optional Windows Hello gate
         _ = InitializeAsync();
+        Activated += OnActivated;
+
+        // Setup notification polling timer (E)
+        _notificationTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromSeconds(30)
+        };
+        _notificationTimer.Tick += (s, e) => PollNotifications();
+        _notificationTimer.Start();
+    }
+
+    private void OnActivated(object sender, WindowActivatedEventArgs args)
+    {
+        if (args.WindowActivationState == WindowActivationState.Deactivated)
+        {
+            // Trigger auto-lock if enabled when app loses focus (C1)
+            if (_appHandle != IntPtr.Zero)
+            {
+                VauchiNative.AppHandleAppBackgrounded(_appHandle);
+            }
+        }
+        else
+        {
+            // Poll for notifications when app is activated (E)
+            PollNotifications();
+        }
+    }
+
+    private void PollNotifications()
+    {
+        if (_appHandle == IntPtr.Zero) return;
+
+        try
+        {
+            string? json = VauchiNative.AppPollNotifications(_appHandle);
+            if (string.IsNullOrEmpty(json)) return;
+
+            using JsonDocument doc = JsonDocument.Parse(json);
+            foreach (JsonElement element in doc.RootElement.EnumerateArray())
+            {
+                string title = element.GetProperty("title").GetString() ?? "Vauchi";
+                string body = element.GetProperty("body").GetString() ?? "";
+
+                new AppNotificationBuilder()
+                    .AddText(title)
+                    .AddText(body)
+                    .Show();
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"PollNotifications error: {ex.Message}");
+        }
     }
 
     private async System.Threading.Tasks.Task InitializeAsync()

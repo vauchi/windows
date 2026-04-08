@@ -101,6 +101,18 @@ public static partial class VauchiNative
     [LibraryImport(LibName, EntryPoint = "vauchi_app_current_screen")]
     private static partial IntPtr AppCurrentScreenRaw(IntPtr handle);
 
+    [LibraryImport(LibName, EntryPoint = "vauchi_app_poll_notifications")]
+    private static partial IntPtr AppPollNotificationsRaw(IntPtr handle);
+
+    public static string? AppPollNotifications(IntPtr handle)
+    {
+        IntPtr ptr = AppPollNotificationsRaw(handle);
+        if (ptr == IntPtr.Zero) return null;
+        string result = Marshal.PtrToStringUTF8(ptr)!;
+        StringFree(ptr);
+        return result;
+    }
+
     [LibraryImport(LibName, EntryPoint = "vauchi_app_handle_action", StringMarshalling = StringMarshalling.Utf8)]
     private static partial IntPtr AppHandleActionRaw(IntPtr handle, string actionJson);
 
