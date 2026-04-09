@@ -87,10 +87,11 @@ public sealed partial class MainWindow : Window
                 string title = element.GetProperty("title").GetString() ?? "Vauchi";
                 string body = element.GetProperty("body").GetString() ?? "";
 
-                new AppNotificationBuilder()
+                var notification = new AppNotificationBuilder()
                     .AddText(title)
                     .AddText(body)
-                    .Show();
+                    .BuildNotification();
+                AppNotificationManager.Default.Show(notification);
             }
         }
         catch (Exception ex)

@@ -278,6 +278,20 @@ public static partial class VauchiNative
         return result;
     }
 
+    // ── App backgrounded (auto-lock) ──────────────────────────────────
+
+    [LibraryImport(LibName, EntryPoint = "vauchi_app_handle_app_backgrounded")]
+    private static partial IntPtr AppHandleAppBackgroundedRaw(IntPtr handle);
+
+    public static string? AppHandleAppBackgrounded(IntPtr handle)
+    {
+        IntPtr ptr = AppHandleAppBackgroundedRaw(handle);
+        if (ptr == IntPtr.Zero) return null;
+        string result = Marshal.PtrToStringUTF8(ptr)!;
+        StringFree(ptr);
+        return result;
+    }
+
     // ── Audio (ultrasonic proximity, behind 'audio' feature) ────────────
 
     // ── Event callback (Phase 2E) ────────────────────────────────────
