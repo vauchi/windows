@@ -60,6 +60,11 @@ public class SystemTrayManager : IDisposable
         _window.Activate();
     }
 
+    public void ShowNotification(string title, string body)
+    {
+        _trayIcon?.ShowNotification(title, body);
+    }
+
     public void Dispose()
     {
         _trayIcon?.Dispose();

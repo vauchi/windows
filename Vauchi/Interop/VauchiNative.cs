@@ -307,6 +307,20 @@ public static partial class VauchiNative
     [LibraryImport(LibName, EntryPoint = "vauchi_app_set_event_callback")]
     public static partial void AppSetEventCallback(IntPtr handle, VauchiEventCallback? callback, IntPtr userData);
 
+    // ── Notification drain ────────────────────────────────────────────
+
+    [LibraryImport(LibName, EntryPoint = "vauchi_app_drain_notifications")]
+    private static partial IntPtr AppDrainNotificationsRaw(IntPtr handle);
+
+    public static string? AppDrainNotifications(IntPtr handle)
+    {
+        IntPtr ptr = AppDrainNotificationsRaw(handle);
+        if (ptr == IntPtr.Zero) return null;
+        string result = Marshal.PtrToStringUTF8(ptr)!;
+        StringFree(ptr);
+        return result;
+    }
+
     // ── Audio (ultrasonic proximity, behind 'audio' feature) ────────────
 
     [LibraryImport(LibName, EntryPoint = "vauchi_audio_is_available")]

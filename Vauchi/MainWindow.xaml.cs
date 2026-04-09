@@ -280,7 +280,31 @@ public sealed partial class MainWindow : Window
         if (_appHandle == IntPtr.Zero || screenIdsJsonPtr == IntPtr.Zero) return;
 
         // Marshal to UI thread — callback fires on core's background thread
-        DispatcherQueue.TryEnqueue(() => RefreshScreen());
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            RefreshScreen();
+            DrainAndShowNotifications();
+        });
+    }
+
+    private void DrainAndShowNotifications()
+    {
+        if (_appHandle == IntPtr.Zero || _tray == null) return;
+
+        string? json = VauchiNative.AppDrainNotifications(_appHandle);
+        if (json == null || json == "[]") return;
+
+        try
+        {
+            using var doc = JsonDocument.Parse(json);
+            foreach (var notif in doc.RootElement.EnumerateArray())
+            {
+                string title = notif.GetProperty("title").GetString() ?? "Vauchi";
+                string body = notif.GetProperty("body").GetString() ?? "";
+                _tray.ShowNotification(title, body);
+            }
+        }
+        catch (JsonException) { }
     }
 
     private void EnterOnboardingMode()
