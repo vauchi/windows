@@ -62,7 +62,8 @@ public sealed partial class MainWindow : Window
             // Trigger auto-lock if enabled when app loses focus (C1)
             if (_appHandle != IntPtr.Zero)
             {
-                VauchiNative.AppHandleAppBackgrounded(_appHandle);
+                string? resultJson = VauchiNative.AppHandleAppBackgrounded(_appHandle);
+                if (resultJson != null) HandleActionResult(resultJson);
             }
         }
         else
