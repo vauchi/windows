@@ -84,6 +84,28 @@ public sealed partial class TextInputComponent : UserControl, IRenderable
         AutomationProperties.SetName(InputBox, LabelText.Text);
         AutomationProperties.SetName(PasswordInput, LabelText.Text);
 
+        if (data.TryGetProperty("a11y", out var a11yElem))
+        {
+            if (a11yElem.TryGetProperty("label", out var labelElem))
+            {
+                var a11yLabel = labelElem.GetString();
+                if (!string.IsNullOrEmpty(a11yLabel))
+                {
+                    AutomationProperties.SetName(InputBox, a11yLabel);
+                    AutomationProperties.SetName(PasswordInput, a11yLabel);
+                }
+            }
+            if (a11yElem.TryGetProperty("hint", out var hintElem))
+            {
+                var hint = hintElem.GetString();
+                if (!string.IsNullOrEmpty(hint))
+                {
+                    AutomationProperties.SetHelpText(InputBox, hint);
+                    AutomationProperties.SetHelpText(PasswordInput, hint);
+                }
+            }
+        }
+
         // Auto-focus: if rendered with empty value and a placeholder, the field
         // was likely just cleared after submit — focus it for the next entry.
         bool autoFocus = data.TryGetProperty("auto_focus", out var af) && af.GetBoolean();

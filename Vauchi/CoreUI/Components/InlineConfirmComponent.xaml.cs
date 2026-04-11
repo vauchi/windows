@@ -58,6 +58,22 @@ public sealed partial class InlineConfirmComponent : UserControl, IRenderable
         AutomationProperties.SetName(CancelButton,
             (string?)CancelButton.Content ?? "Cancel");
 
+        if (data.TryGetProperty("a11y", out var a11yElem))
+        {
+            if (a11yElem.TryGetProperty("label", out var labelElem))
+            {
+                var a11yLabel = labelElem.GetString();
+                if (!string.IsNullOrEmpty(a11yLabel))
+                    AutomationProperties.SetName(this, a11yLabel);
+            }
+            if (a11yElem.TryGetProperty("hint", out var hintElem))
+            {
+                var hint = hintElem.GetString();
+                if (!string.IsNullOrEmpty(hint))
+                    AutomationProperties.SetHelpText(this, hint);
+            }
+        }
+
         // Initially collapsed; tap warning text to expand
         ButtonPanel.Visibility = Visibility.Collapsed;
 
