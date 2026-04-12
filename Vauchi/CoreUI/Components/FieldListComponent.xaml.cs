@@ -39,6 +39,22 @@ public sealed partial class FieldListComponent : UserControl, IRenderable
             UIElement row = BuildFieldRow(fieldId, label, value, currentlyVisible, visibilityMode, onAction);
             FieldContainer.Children.Add(row);
         }
+
+        if (data.TryGetProperty("a11y", out var a11yElem))
+        {
+            if (a11yElem.TryGetProperty("label", out var labelElem))
+            {
+                var a11yLabel = labelElem.GetString();
+                if (!string.IsNullOrEmpty(a11yLabel))
+                    AutomationProperties.SetName(this, a11yLabel);
+            }
+            if (a11yElem.TryGetProperty("hint", out var hintElem))
+            {
+                var hint = hintElem.GetString();
+                if (!string.IsNullOrEmpty(hint))
+                    AutomationProperties.SetHelpText(this, hint);
+            }
+        }
     }
 
     private static bool IsFieldVisible(JsonElement field)

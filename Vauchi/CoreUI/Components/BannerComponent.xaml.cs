@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Mattia Egloff <mattia.egloff@pm.me>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using System;
 using System.Text.Json;
@@ -36,6 +37,22 @@ public sealed partial class BannerComponent : UserControl, IRenderable
                 button.Click += (_, _) =>
                     onAction(ActionJson.ActionPressed(capturedId));
                 Banner.ActionButton = button;
+            }
+        }
+
+        if (data.TryGetProperty("a11y", out var a11yElem))
+        {
+            if (a11yElem.TryGetProperty("label", out var labelElem))
+            {
+                var a11yLabel = labelElem.GetString();
+                if (!string.IsNullOrEmpty(a11yLabel))
+                    AutomationProperties.SetName(this, a11yLabel);
+            }
+            if (a11yElem.TryGetProperty("hint", out var hintElem))
+            {
+                var hint = hintElem.GetString();
+                if (!string.IsNullOrEmpty(hint))
+                    AutomationProperties.SetHelpText(this, hint);
             }
         }
     }
