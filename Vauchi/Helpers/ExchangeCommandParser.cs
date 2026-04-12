@@ -20,6 +20,7 @@ public enum ExchangeCommandKind
     AudioEmitChallenge,
     AudioListenForResponse,
     AudioStop,
+    DirectSend,
     Unknown,
 }
 
@@ -69,6 +70,13 @@ public readonly struct ExchangeCommand
             return 0;
         return v.GetInt64();
     }
+
+    public bool GetBool(string field)
+    {
+        if (!_hasPayload || !_payload.TryGetProperty(field, out var v))
+            return false;
+        return v.GetBoolean();
+    }
 }
 
 public static class ExchangeCommandParser
@@ -80,6 +88,7 @@ public static class ExchangeCommandParser
         "BleWriteCharacteristic", "BleReadCharacteristic", "BleDisconnect",
         "NfcActivate", "NfcDeactivate",
         "AudioEmitChallenge", "AudioListenForResponse", "AudioStop",
+        "DirectSend",
     ];
 
     /// <summary>
@@ -150,6 +159,7 @@ public static class ExchangeCommandParser
         "AudioEmitChallenge" => ExchangeCommandKind.AudioEmitChallenge,
         "AudioListenForResponse" => ExchangeCommandKind.AudioListenForResponse,
         "AudioStop" => ExchangeCommandKind.AudioStop,
+        "DirectSend" => ExchangeCommandKind.DirectSend,
         _ => ExchangeCommandKind.Unknown,
     };
 }

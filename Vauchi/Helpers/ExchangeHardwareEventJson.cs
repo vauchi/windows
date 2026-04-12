@@ -49,6 +49,9 @@ public static class ExchangeHardwareEventJson
     public static string AudioResponseReceived(byte[] data) =>
         WriteVariantWithData("AudioResponseReceived", data);
 
+    public static string DirectPayloadReceived(byte[] data) =>
+        WriteVariantWithData("DirectPayloadReceived", data);
+
     public static string HardwareError(string transport, string error) =>
         JsonSerializer.Serialize(new { HardwareError = new { transport, error } });
 

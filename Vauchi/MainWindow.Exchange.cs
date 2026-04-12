@@ -5,6 +5,7 @@ using System;
 using System.Text.Json;
 using Vauchi.Helpers;
 using Vauchi.Interop;
+using Vauchi.Services;
 
 namespace Vauchi;
 
@@ -47,6 +48,10 @@ public sealed partial class MainWindow
                 case ExchangeCommandKind.NfcDeactivate:
                     // NFC not available on desktop — report unavailable
                     SendHardwareUnavailable("NFC");
+                    break;
+
+                case ExchangeCommandKind.DirectSend:
+                    HandleDirectSend(cmd);
                     break;
 
                 default:
@@ -169,5 +174,36 @@ public sealed partial class MainWindow
         string eventJson = ExchangeHardwareEventJson.HardwareUnavailable(transport);
         string? resultJson = VauchiNative.AppHandleHardwareEvent(_appHandle, eventJson);
         if (resultJson != null) HandleActionResult(resultJson);
+    }
+
+    private async void HandleDirectSend(ExchangeCommand cmd)
+    {
+        var payload = cmd.GetBytes("payload") ?? Array.Empty<byte>();
+        var isInitiator = cmd.GetBool("is_initiator");
+        var service = new DirectSendService();
+
+        service.OnPayloadReceived += eventJson =>
+        {
+            DispatcherQueue.TryEnqueue(() =>
+            {
+                if (_appHandle == IntPtr.Zero) return;
+                string? resultJson = VauchiNative.AppHandleHardwareEvent(_appHandle, eventJson);
+                if (resultJson != null) HandleActionResult(resultJson);
+            });
+        };
+
+        service.OnError += (transport, error) =>
+        {
+            DispatcherQueue.TryEnqueue(() =>
+            {
+                if (_appHandle == IntPtr.Zero) return;
+                string eventJson = ExchangeHardwareEventJson.HardwareError(transport, error);
+                string? resultJson = VauchiNative.AppHandleHardwareEvent(_appHandle, eventJson);
+                if (resultJson != null) HandleActionResult(resultJson);
+            });
+        };
+
+        var address = $"127.0.0.1:{DirectSendService.DefaultPort}";
+        await service.ExchangeAsync(address, payload, isInitiator);
     }
 }
