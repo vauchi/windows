@@ -6,6 +6,7 @@ using System.Text.Json;
 using Vauchi.Helpers;
 using Vauchi.Interop;
 using Vauchi.Services;
+using Windows.Storage.Pickers;
 
 namespace Vauchi;
 
@@ -52,6 +53,20 @@ public sealed partial class MainWindow
 
                 case ExchangeCommandKind.DirectSend:
                     HandleDirectSend(cmd);
+                    break;
+
+                case ExchangeCommandKind.ImagePickFromFile:
+                    HandleImagePickFromFile();
+                    break;
+
+                case ExchangeCommandKind.ImageCaptureFromCamera:
+                    // Camera capture not available on desktop Windows
+                    SendHardwareUnavailable("Camera");
+                    break;
+
+                case ExchangeCommandKind.ImagePickFromLibrary:
+                    // Photo library picker not available on desktop — report unavailable
+                    SendHardwareUnavailable("PhotoLibrary");
                     break;
 
                 default:
@@ -165,6 +180,55 @@ public sealed partial class MainWindow
             case ExchangeCommandKind.AudioStop:
                 System.Threading.Tasks.Task.Run(() => VauchiNative.AudioStop());
                 break;
+        }
+    }
+
+    private async void HandleImagePickFromFile()
+    {
+        try
+        {
+            var picker = new FileOpenPicker();
+            picker.SuggestedStartLocation = PickerLocationId.PicturesLibrary;
+            picker.FileTypeFilter.Add(".png");
+            picker.FileTypeFilter.Add(".jpg");
+            picker.FileTypeFilter.Add(".jpeg");
+            picker.FileTypeFilter.Add(".bmp");
+            picker.FileTypeFilter.Add(".webp");
+
+            // WinUI 3 requires initializing the picker with the window handle
+            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
+            WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
+
+            var file = await picker.PickSingleFileAsync();
+            if (file == null)
+            {
+                // User cancelled
+                if (_appHandle == IntPtr.Zero) return;
+                string cancelJson = ExchangeHardwareEventJson.ImagePickCancelled();
+                string? resultJson = VauchiNative.AppHandleHardwareEvent(_appHandle, cancelJson);
+                if (resultJson != null) HandleActionResult(resultJson);
+                return;
+            }
+
+            byte[] imageBytes;
+            using (var stream = await file.OpenReadAsync())
+            {
+                imageBytes = new byte[stream.Size];
+                using var reader = new Windows.Storage.Streams.DataReader(stream);
+                await reader.LoadAsync((uint)stream.Size);
+                reader.ReadBytes(imageBytes);
+            }
+
+            if (_appHandle == IntPtr.Zero) return;
+            string eventJson = ExchangeHardwareEventJson.ImageReceived(imageBytes);
+            string? result = VauchiNative.AppHandleHardwareEvent(_appHandle, eventJson);
+            if (result != null) HandleActionResult(result);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine(
+                $"[Vauchi] Image pick failed: {ex.Message}");
+            SendHardwareUnavailable("FilePicker");
         }
     }
 

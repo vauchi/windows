@@ -58,6 +58,11 @@ public static class ExchangeHardwareEventJson
     public static string HardwareUnavailable(string transport) =>
         JsonSerializer.Serialize(new { HardwareUnavailable = new { transport } });
 
+    public static string ImageReceived(byte[] data) =>
+        WriteVariantWithData("ImageReceived", data);
+
+    public static string ImagePickCancelled() => "\"ImagePickCancelled\"";
+
     private static string WriteVariantWithData(string variant, byte[] data)
     {
         using var stream = new MemoryStream();

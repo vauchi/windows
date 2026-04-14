@@ -4,9 +4,11 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media.Imaging;
 using System;
 using System.Collections.Generic;
 using System.Text.Json;
+using Windows.Storage.Streams;
 using Vauchi.Helpers;
 
 namespace Vauchi.CoreUI.Components;
@@ -23,6 +25,25 @@ public sealed partial class CardPreviewComponent : UserControl, IRenderable
         NameHeader.Text = data.TryGetProperty("name", out var nameEl)
             ? nameEl.GetString() ?? ""
             : "";
+
+        // Render avatar image if present
+        AvatarArea.Visibility = Visibility.Collapsed;
+        if (data.TryGetProperty("avatar_data", out var avatarEl)
+            && avatarEl.ValueKind == JsonValueKind.Array
+            && avatarEl.GetArrayLength() > 0)
+        {
+            try
+            {
+                byte[] avatarBytes = ParseByteArray(avatarEl);
+                LoadAvatarAsync(avatarBytes);
+                AvatarArea.Visibility = Visibility.Visible;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine(
+                    $"[Vauchi] CardPreview avatar load failed: {ex.Message}");
+            }
+        }
 
         GroupTabBar.Children.Clear();
         GroupTabBar.Visibility = Visibility.Collapsed;
@@ -169,6 +190,25 @@ public sealed partial class CardPreviewComponent : UserControl, IRenderable
             }
         }
 
+        return result;
+    }
+
+    private async void LoadAvatarAsync(byte[] imageBytes)
+    {
+        var bitmapImage = new BitmapImage();
+        using var stream = new InMemoryRandomAccessStream();
+        await stream.WriteAsync(imageBytes.AsBuffer());
+        stream.Seek(0);
+        await bitmapImage.SetSourceAsync(stream);
+        AvatarBrush.ImageSource = bitmapImage;
+    }
+
+    private static byte[] ParseByteArray(JsonElement arrayEl)
+    {
+        var result = new byte[arrayEl.GetArrayLength()];
+        int i = 0;
+        foreach (var el in arrayEl.EnumerateArray())
+            result[i++] = (byte)el.GetInt32();
         return result;
     }
 }

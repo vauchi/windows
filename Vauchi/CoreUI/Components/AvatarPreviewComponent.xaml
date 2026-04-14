@@ -1,0 +1,43 @@
+<!-- SPDX-FileCopyrightText: 2026 Mattia Egloff <mattia.egloff@pm.me> -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<UserControl
+    x:Class="Vauchi.CoreUI.Components.AvatarPreviewComponent"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid x:Name="AvatarContainer"
+          Width="96" Height="96"
+          HorizontalAlignment="Center"
+          CornerRadius="48">
+        <!-- Fallback initials circle -->
+        <Ellipse x:Name="InitialsCircle"
+                 Width="96" Height="96" />
+        <TextBlock x:Name="InitialsText"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center"
+                   FontSize="28"
+                   FontWeight="SemiBold"
+                   Foreground="White" />
+
+        <!-- Image avatar (hidden until image_data is present) -->
+        <Ellipse x:Name="ImageCircle"
+                 Width="96" Height="96"
+                 Visibility="Collapsed">
+            <Ellipse.Fill>
+                <ImageBrush x:Name="AvatarImageBrush"
+                            Stretch="UniformToFill" />
+            </Ellipse.Fill>
+        </Ellipse>
+
+        <!-- Edit overlay (shown when editable) -->
+        <Grid x:Name="EditOverlay"
+              Visibility="Collapsed"
+              Background="#40000000"
+              CornerRadius="48">
+            <FontIcon Glyph="&#xE722;"
+                      FontSize="20"
+                      Foreground="White"
+                      HorizontalAlignment="Center"
+                      VerticalAlignment="Center" />
+        </Grid>
+    </Grid>
+</UserControl>

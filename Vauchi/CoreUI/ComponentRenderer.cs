@@ -65,6 +65,8 @@ public static class ComponentRenderer
             "InlineConfirm" => CreateAndRender<InlineConfirmComponent>(data!.Value, onAction),
             "EditableText" => CreateAndRender<EditableTextComponent>(data!.Value, onAction),
             "Banner" => CreateAndRender<BannerComponent>(data!.Value, onAction),
+            "AvatarPreview" => CreateAndRender<AvatarPreviewComponent>(data!.Value, onAction),
+            "Slider" => CreateAndRender<SliderComponent>(data!.Value, onAction),
             "Divider" => new DividerComponent(),
             _ => null,
         };

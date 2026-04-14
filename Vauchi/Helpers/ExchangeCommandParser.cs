@@ -21,6 +21,9 @@ public enum ExchangeCommandKind
     AudioListenForResponse,
     AudioStop,
     DirectSend,
+    ImagePickFromFile,
+    ImageCaptureFromCamera,
+    ImagePickFromLibrary,
     Unknown,
 }
 
@@ -89,6 +92,7 @@ public static class ExchangeCommandParser
         "NfcActivate", "NfcDeactivate",
         "AudioEmitChallenge", "AudioListenForResponse", "AudioStop",
         "DirectSend",
+        "ImagePickFromFile", "ImageCaptureFromCamera", "ImagePickFromLibrary",
     ];
 
     /// <summary>
@@ -160,6 +164,9 @@ public static class ExchangeCommandParser
         "AudioListenForResponse" => ExchangeCommandKind.AudioListenForResponse,
         "AudioStop" => ExchangeCommandKind.AudioStop,
         "DirectSend" => ExchangeCommandKind.DirectSend,
+        "ImagePickFromFile" => ExchangeCommandKind.ImagePickFromFile,
+        "ImageCaptureFromCamera" => ExchangeCommandKind.ImageCaptureFromCamera,
+        "ImagePickFromLibrary" => ExchangeCommandKind.ImagePickFromLibrary,
         _ => ExchangeCommandKind.Unknown,
     };
 }

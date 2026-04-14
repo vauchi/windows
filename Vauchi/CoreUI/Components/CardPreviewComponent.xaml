@@ -7,6 +7,13 @@
     <Border BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
             BorderThickness="1" CornerRadius="8" Padding="16">
         <StackPanel Spacing="12">
+            <Grid x:Name="AvatarArea" HorizontalAlignment="Center" Visibility="Collapsed">
+                <Ellipse x:Name="AvatarCircle" Width="64" Height="64">
+                    <Ellipse.Fill>
+                        <ImageBrush x:Name="AvatarBrush" Stretch="UniformToFill" />
+                    </Ellipse.Fill>
+                </Ellipse>
+            </Grid>
             <TextBlock x:Name="NameHeader"
                        FontSize="22"
                        FontWeight="SemiBold" />

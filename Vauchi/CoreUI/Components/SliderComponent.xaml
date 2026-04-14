@@ -1,0 +1,16 @@
+<!-- SPDX-FileCopyrightText: 2026 Mattia Egloff <mattia.egloff@pm.me> -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<UserControl
+    x:Class="Vauchi.CoreUI.Components.SliderComponent"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <StackPanel Spacing="4">
+        <TextBlock x:Name="SliderLabel"
+                   Style="{StaticResource CaptionTextBlockStyle}"
+                   Visibility="Collapsed" />
+        <Slider x:Name="SliderControl"
+                Minimum="0" Maximum="1000"
+                StepFrequency="1"
+                SnapsTo="StepValues" />
+    </StackPanel>
+</UserControl>

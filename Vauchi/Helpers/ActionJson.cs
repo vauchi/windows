@@ -82,4 +82,12 @@ public static class ActionJson
             UndoPressed = new { action_id = actionId }
         });
     }
+
+    public static string SliderChanged(string componentId, int valueMilli)
+    {
+        return JsonSerializer.Serialize(new
+        {
+            SliderChanged = new { component_id = componentId, value_milli = valueMilli }
+        });
+    }
 }
