@@ -9,6 +9,7 @@ using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using System;
 using System.Text.Json;
+using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Storage.Streams;
 using Vauchi.Helpers;
 
