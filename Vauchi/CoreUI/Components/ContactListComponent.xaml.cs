@@ -10,6 +10,7 @@ using Microsoft.UI.Xaml.Shapes;
 using System;
 using System.Text.Json;
 using Vauchi.Helpers;
+using Vauchi.UI;
 
 namespace Vauchi.CoreUI.Components;
 
@@ -111,8 +112,8 @@ public sealed partial class ContactListComponent : UserControl, IRenderable
         var row = new StackPanel
         {
             Orientation = Orientation.Horizontal,
-            Spacing = 12,
-            Padding = new Thickness(8),
+            Spacing = Tokens.SpacingDirection.ListItemInlineStart,
+            Padding = new Thickness(Tokens.Spacing.Sm),
         };
 
         row.Children.Add(avatar);

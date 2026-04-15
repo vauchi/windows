@@ -7,6 +7,7 @@ using Microsoft.UI.Xaml.Controls;
 using System;
 using System.Text.Json;
 using Vauchi.Helpers;
+using Vauchi.UI;
 
 namespace Vauchi.CoreUI.Components;
 
@@ -80,7 +81,7 @@ public sealed partial class FieldListComponent : UserControl, IRenderable
         string visibilityMode,
         Action<string>? onAction)
     {
-        var grid = new Grid { Padding = new Thickness(0, 4, 0, 4) };
+        var grid = new Grid { Padding = new Thickness(0, Tokens.Spacing.Xs, 0, Tokens.Spacing.Xs) };
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
@@ -112,7 +113,7 @@ public sealed partial class FieldListComponent : UserControl, IRenderable
             var eyeButton = new Button
             {
                 Content = isVisible ? "👁" : "👁\u0338",
-                Padding = new Thickness(4),
+                Padding = new Thickness(Tokens.Spacing.Xs),
                 VerticalAlignment = VerticalAlignment.Center,
             };
 

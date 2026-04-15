@@ -7,6 +7,7 @@ using Microsoft.UI.Xaml.Controls;
 using System;
 using System.Text.Json;
 using Vauchi.Helpers;
+using Vauchi.UI;
 
 namespace Vauchi.CoreUI.Components;
 
@@ -66,7 +67,7 @@ public sealed partial class ToggleListComponent : UserControl, IRenderable
                     Text = subtitle,
                     Style = (Style)Application.Current.Resources["CaptionTextBlockStyle"],
                     Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["TextFillColorSecondaryBrush"],
-                    Margin = new Thickness(0, -4, 0, 0),
+                    Margin = new Thickness(0, -Tokens.Spacing.Xs, 0, 0),
                 });
             }
         }

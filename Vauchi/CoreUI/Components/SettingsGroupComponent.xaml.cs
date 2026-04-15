@@ -9,6 +9,7 @@ using Microsoft.UI.Xaml.Media;
 using System;
 using System.Text.Json;
 using Vauchi.Helpers;
+using Vauchi.UI;
 
 namespace Vauchi.CoreUI.Components;
 
@@ -54,7 +55,7 @@ public sealed partial class SettingsGroupComponent : UserControl, IRenderable
     {
         var container = new StackPanel
         {
-            Padding = new Thickness(16, 12, 16, 12),
+            Padding = new Thickness(Tokens.Spacing.Md, Tokens.SpacingDirection.ListItemInlineStart, Tokens.Spacing.Md, Tokens.SpacingDirection.ListItemInlineEnd),
         };
 
         // Determine kind by first property name (externally-tagged enum)
@@ -65,7 +66,7 @@ public sealed partial class SettingsGroupComponent : UserControl, IRenderable
                 case "Toggle":
                 {
                     bool enabled = prop.Value.TryGetProperty("enabled", out var enEl) && enEl.GetBoolean();
-                    var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+                    var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = Tokens.Spacing.Sm };
                     var labelBlock = new TextBlock
                     {
                         Text = label,
@@ -156,7 +157,7 @@ public sealed partial class SettingsGroupComponent : UserControl, IRenderable
                         Text = ">",
                         Opacity = 0.4,
                         VerticalAlignment = VerticalAlignment.Center,
-                        Margin = new Thickness(4, 0, 0, 0),
+                        Margin = new Thickness(Tokens.Spacing.Xs, 0, 0, 0),
                     };
 
                     Grid.SetColumn(labelBlock, 0);
