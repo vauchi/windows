@@ -164,6 +164,18 @@ public static partial class VauchiNative
         return result;
     }
 
+    [LibraryImport(LibName, EntryPoint = "vauchi_app_navigate_to_param", StringMarshalling = StringMarshalling.Utf8)]
+    private static partial IntPtr AppNavigateToParamRaw(IntPtr handle, string screenName, string param);
+
+    public static string? AppNavigateToParam(IntPtr handle, string screenName, string param)
+    {
+        IntPtr ptr = AppNavigateToParamRaw(handle, screenName, param);
+        if (ptr == IntPtr.Zero) return null;
+        string result = Marshal.PtrToStringUTF8(ptr)!;
+        StringFree(ptr);
+        return result;
+    }
+
     public static string? AppAvailableScreens(IntPtr handle)
     {
         IntPtr ptr = AppAvailableScreensRaw(handle);
@@ -189,6 +201,23 @@ public static partial class VauchiNative
 
     [LibraryImport(LibName, EntryPoint = "vauchi_app_create_identity", StringMarshalling = StringMarshalling.Utf8)]
     public static partial int AppCreateIdentity(IntPtr handle, string? displayName);
+
+    // ── Contact import ──────────────────────────────────────────────────
+
+    [LibraryImport(LibName, EntryPoint = "vauchi_app_import_contacts_from_vcf")]
+    private static partial IntPtr AppImportContactsFromVcfRaw(
+        IntPtr handle,
+        [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2)] byte[] data,
+        nuint dataLen);
+
+    public static string? AppImportContactsFromVcf(IntPtr handle, byte[] data)
+    {
+        IntPtr ptr = AppImportContactsFromVcfRaw(handle, data, (nuint)data.Length);
+        if (ptr == IntPtr.Zero) return null;
+        string result = Marshal.PtrToStringUTF8(ptr)!;
+        StringFree(ptr);
+        return result;
+    }
 
     // ── Device link UI transitions ────────────────────────────────────────
 

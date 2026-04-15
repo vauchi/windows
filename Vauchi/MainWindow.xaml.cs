@@ -375,7 +375,8 @@ public sealed partial class MainWindow : Window
     {
         "my_info" or "entry_detail" => 0,
         "contacts" or "contact_detail" or "contact_edit" or "contact_visibility"
-            or "contact_duplicates" or "contact_merge" or "contact_limit" => 1,
+            or "contact_duplicates" or "contact_merge" or "contact_limit"
+            or "archived_contacts" => 1,
         "exchange" => 2,
         "groups" or "group_detail" => 3,
         _ => 4, // settings, help, backup, recovery, sync, etc. → More
@@ -459,11 +460,19 @@ public sealed partial class MainWindow : Window
                 break;
 
             case ActionResultKind.OpenContact:
+                NavigateToParamScreen(resultJson, "OpenContact", "contact_id", "contact_detail");
+                break;
+
             case ActionResultKind.EditContact:
+                NavigateToParamScreen(resultJson, "EditContact", "contact_id", "contact_edit");
+                break;
+
             case ActionResultKind.OpenEntryDetail:
+                NavigateToParamScreen(resultJson, "OpenEntryDetail", "field_id", "entry_detail");
+                break;
+
             case ActionResultKind.StartBackupImport:
-                SyncNavSelection();
-                RefreshScreen();
+                HandleContactImport();
                 break;
 
             case ActionResultKind.StartDeviceLink:
@@ -505,6 +514,30 @@ public sealed partial class MainWindow : Window
                 RefreshScreen();
                 break;
         }
+    }
+
+    /// <summary>
+    /// Extract a parameter from an action result and navigate to a parameterized screen.
+    /// </summary>
+    private void NavigateToParamScreen(string resultJson, string variant, string paramField, string screenName)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(resultJson);
+            if (doc.RootElement.TryGetProperty(variant, out var inner) &&
+                inner.TryGetProperty(paramField, out var paramEl))
+            {
+                string? param = paramEl.GetString();
+                if (param != null)
+                {
+                    VauchiNative.AppNavigateToParam(_appHandle, screenName, param);
+                }
+            }
+        }
+        catch (JsonException) { }
+
+        SyncNavSelection();
+        RefreshScreen();
     }
 
     // Exchange command dispatch (BLE, audio, NFC, QR) is in MainWindow.Exchange.cs
