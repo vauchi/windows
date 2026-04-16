@@ -337,6 +337,26 @@ check:removed-symbols:
 # Deploy Stage — Badge Pages
 # ============================================================
 
+package:msix:
+  stage: deploy
+  tags: [saas-windows-medium-amd64]
+  needs: ["build:app"]
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
+  script:
+    - $VERSION = "$env:CI_COMMIT_TAG" -replace '^v', ''
+    - >
+      dotnet publish Vauchi.sln -c Release
+      -p:Platform=x64
+      -o publish-output
+    - >
+      & "${env:ProgramFiles(x86)}\Windows Kits\10\bin\10.0.22621.0\x64\MakeAppx.exe"
+      pack /d publish-output /p "Vauchi-${VERSION}.msix" /nv
+  artifacts:
+    paths:
+      - "Vauchi-*.msix"
+    expire_in: 1 week
+
 pages:
   extends: .badges-pages
 
