@@ -118,6 +118,13 @@ public class ActionResultParserTests
     }
 
     [Fact]
+    public void Classify_BackupExportComplete_ReturnsCorrectKind()
+    {
+        string json = """{"BackupExportComplete": {"data": "deadbeef"}}""";
+        Assert.Equal(ActionResultKind.BackupExportComplete, ActionResultParser.Classify(json));
+    }
+
+    [Fact]
     public void Classifies_NativeError()
     {
         string json = """{"error":"null action JSON"}""";

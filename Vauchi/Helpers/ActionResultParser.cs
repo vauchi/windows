@@ -25,6 +25,7 @@ public enum ActionResultKind
     OpenEntryDetail,
     ShowToast,
     ExchangeCommands,
+    BackupExportComplete,
     Error,
     Unknown,
 }
@@ -37,6 +38,7 @@ public static class ActionResultParser
         "WipeComplete", "StartDeviceLink", "StartBackupImport",
         "OpenContact", "EditContact", "OpenUrl", "ShowAlert",
         "RequestCamera", "OpenEntryDetail", "ShowToast", "ExchangeCommands",
+        "BackupExportComplete",
     ];
 
     /// <summary>
@@ -86,6 +88,7 @@ public static class ActionResultParser
         "OpenEntryDetail" => ActionResultKind.OpenEntryDetail,
         "ShowToast" => ActionResultKind.ShowToast,
         "ExchangeCommands" => ActionResultKind.ExchangeCommands,
+        "BackupExportComplete" => ActionResultKind.BackupExportComplete,
         _ => ActionResultKind.Unknown,
     };
 }

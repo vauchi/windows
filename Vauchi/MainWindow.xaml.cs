@@ -472,7 +472,7 @@ public sealed partial class MainWindow : Window
                 break;
 
             case ActionResultKind.StartBackupImport:
-                HandleContactImport();
+                HandleBackupImport();
                 break;
 
             case ActionResultKind.StartDeviceLink:
@@ -495,6 +495,11 @@ public sealed partial class MainWindow : Window
 
             case ActionResultKind.ShowToast:
                 ShowFloatingToast(resultJson);
+                break;
+
+            case ActionResultKind.BackupExportComplete:
+                HandleBackupExportComplete(resultJson);
+                RefreshScreen();
                 break;
 
             case ActionResultKind.RequestCamera:
