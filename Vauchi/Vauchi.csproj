@@ -21,9 +21,10 @@
     <PackageReference Include="ZXing.Net" Version="0.16.9" />
     <PackageReference Include="ZXing.Net.Bindings.Windows.Compatibility" Version="0.16.9" />
   </ItemGroup>
-  <!-- Design tokens — linked from shared themes/generated/ -->
+  <!-- Design tokens — vendored from themes/generated/Tokens.cs -->
+  <!-- Regenerate: cp themes/generated/Tokens.cs windows/Vauchi/CoreUI/Tokens.cs -->
   <ItemGroup>
-    <Compile Include="..\..\themes\generated\Tokens.cs" Link="CoreUI\Tokens.cs" />
+    <Compile Include="CoreUI\Tokens.cs" />
   </ItemGroup>
   <!-- CABI native library — copied to output when present -->
   <ItemGroup>
