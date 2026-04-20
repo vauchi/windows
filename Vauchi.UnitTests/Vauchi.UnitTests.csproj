@@ -26,8 +26,10 @@
     <Compile Include="..\Vauchi\Helpers\ExchangeCommandParser.cs" Link="Linked\ExchangeCommandParser.cs" />
     <Compile Include="..\Vauchi\Helpers\ExchangeHardwareEventJson.cs" Link="Linked\ExchangeHardwareEventJson.cs" />
     <Compile Include="..\Vauchi\Helpers\JsonSanitizer.cs" Link="Linked\JsonSanitizer.cs" />
+    <Compile Include="..\Vauchi\Interop\VauchiNative.cs" Link="Linked\VauchiNative.cs" />
     <Compile Include="..\Vauchi\Platform\KeyStorageService.cs" Link="Linked\KeyStorageService.cs" />
     <Compile Include="..\Vauchi\Platform\SystemTrayManager.cs" Link="Linked\SystemTrayManager.cs" />
+    <Compile Include="..\Vauchi\Services\Localizer.cs" Link="Linked\Localizer.cs" />
     <Compile Include="..\Vauchi\CoreUI\ComponentRenderer.cs" Link="Linked\ComponentRenderer.cs" />
     <Compile Include="..\Vauchi\Helpers\ActionRouter.cs" Link="Linked\ActionRouter.cs" />
   </ItemGroup>
