@@ -112,7 +112,27 @@ public sealed partial class ScreenRenderer : UserControl
                 string capturedId = actionId;
                 btn.Click += (_, _) => RaiseAction(ActionJson.ActionPressed(capturedId));
 
-                AutomationProperties.SetName(btn, label);
+                // Core-provided a11y override (plan Task 3.1 /
+                // _private/docs/problems/2026-04-20-screen-action-a11y-identifier-gap).
+                // When `a11y.label` is present it replaces the visible-text-
+                // derived screen-reader announcement; `a11y.hint` maps to
+                // UIA HelpText. Absent → fall back to `label`.
+                string a11yLabel = label;
+                string? a11yHint = null;
+                if (action.TryGetProperty("a11y", out var a11y) && a11y.ValueKind == JsonValueKind.Object)
+                {
+                    if (a11y.TryGetProperty("label", out var al) && al.ValueKind == JsonValueKind.String)
+                        a11yLabel = al.GetString() ?? label;
+                    if (a11y.TryGetProperty("hint", out var ah) && ah.ValueKind == JsonValueKind.String)
+                        a11yHint = ah.GetString();
+                }
+
+                // AutomationId = stable test-driver identifier (equivalent
+                // to GTK's widget name / Qt's objectName / Compose testTag).
+                AutomationProperties.SetAutomationId(btn, actionId);
+                AutomationProperties.SetName(btn, a11yLabel);
+                if (!string.IsNullOrEmpty(a11yHint))
+                    AutomationProperties.SetHelpText(btn, a11yHint);
 
                 ActionButtonPanel.Children.Add(btn);
             }
