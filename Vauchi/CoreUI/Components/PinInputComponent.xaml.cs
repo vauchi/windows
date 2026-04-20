@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: 2026 Mattia Egloff <mattia.egloff@pm.me>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
@@ -9,6 +8,7 @@ using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Shapes;
 using System;
 using System.Text.Json;
+using Vauchi.CoreUI;
 using Vauchi.Helpers;
 
 namespace Vauchi.CoreUI.Components;
@@ -40,7 +40,7 @@ public sealed partial class PinInputComponent : UserControl, IRenderable
             {
                 Width = 14,
                 Height = 14,
-                Fill = new SolidColorBrush(i < filled ? Colors.DodgerBlue : Colors.Gray),
+                Fill = new SolidColorBrush(i < filled ? ThemeColors.Info : ThemeColors.Neutral),
             });
         }
 

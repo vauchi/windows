@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: 2026 Mattia Egloff <mattia.egloff@pm.me>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
@@ -11,6 +10,7 @@ using System;
 using System.Text.Json;
 using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Storage.Streams;
+using Vauchi.CoreUI;
 using Vauchi.Helpers;
 
 namespace Vauchi.CoreUI.Components;
@@ -28,8 +28,8 @@ public sealed partial class AvatarPreviewComponent : UserControl, IRenderable
             ? initEl.GetString() ?? ""
             : "";
         string bgColor = data.TryGetProperty("bg_color", out var bgEl)
-            ? bgEl.GetString() ?? "#4682B4"
-            : "#4682B4";
+            ? bgEl.GetString() ?? ThemeColors.AvatarFallbackHex
+            : ThemeColors.AvatarFallbackHex;
         bool editable = data.TryGetProperty("editable", out var editEl) && editEl.GetBoolean();
 
         // Parse background color for initials circle
@@ -126,6 +126,6 @@ public sealed partial class AvatarPreviewComponent : UserControl, IRenderable
             }
         }
         catch { }
-        return new SolidColorBrush(Colors.SteelBlue);
+        return new SolidColorBrush(ThemeColors.AvatarFallback);
     }
 }

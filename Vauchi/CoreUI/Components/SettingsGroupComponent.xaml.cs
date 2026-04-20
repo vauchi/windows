@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: 2026 Mattia Egloff <mattia.egloff@pm.me>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using System;
 using System.Text.Json;
+using Vauchi.CoreUI;
 using Vauchi.Helpers;
 using Vauchi.UI;
 
@@ -186,7 +186,7 @@ public sealed partial class SettingsGroupComponent : UserControl, IRenderable
                     var btn = new Button
                     {
                         Content = btnLabel,
-                        Foreground = new SolidColorBrush(Colors.Red),
+                        Foreground = new SolidColorBrush(ThemeColors.Destructive),
                         HorizontalAlignment = HorizontalAlignment.Left,
                     };
                     AutomationProperties.SetName(btn, btnLabel);

@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: 2026 Mattia Egloff <mattia.egloff@pm.me>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using System;
 using System.Text.Json;
+using Vauchi.CoreUI;
 using Vauchi.Helpers;
 
 namespace Vauchi.CoreUI.Components;
@@ -53,7 +53,7 @@ public sealed partial class ConfirmationDialogComponent : UserControl, IRenderab
         bool destructive = data.TryGetProperty("destructive", out var destEl) && destEl.GetBoolean();
         if (destructive)
         {
-            ConfirmButton.Foreground = new SolidColorBrush(Microsoft.UI.Colors.Tomato);
+            ConfirmButton.Foreground = new SolidColorBrush(ThemeColors.Destructive);
         }
 
         AutomationProperties.SetName(ConfirmButton,

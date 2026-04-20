@@ -107,7 +107,7 @@ public sealed partial class ScreenRenderer : UserControl
                 if (style == "Primary")
                     btn.Style = (Style)Application.Current.Resources["AccentButtonStyle"];
                 else if (style == "Destructive")
-                    btn.Foreground = new SolidColorBrush(Microsoft.UI.Colors.Red);
+                    btn.Foreground = new SolidColorBrush(ThemeColors.Destructive);
 
                 string capturedId = actionId;
                 btn.Click += (_, _) => RaiseAction(ActionJson.ActionPressed(capturedId));

@@ -8,6 +8,7 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using System;
 using System.Text.Json;
+using Vauchi.CoreUI;
 using Vauchi.Helpers;
 
 namespace Vauchi.CoreUI.Components;
@@ -49,7 +50,7 @@ public sealed partial class InlineConfirmComponent : UserControl, IRenderable
         var destructive = data.TryGetProperty("destructive", out var d) && d.GetBoolean();
         if (destructive)
         {
-            ConfirmButton.Foreground = new SolidColorBrush(Microsoft.UI.Colors.Tomato);
+            ConfirmButton.Foreground = new SolidColorBrush(ThemeColors.Destructive);
         }
 
         AutomationProperties.SetName(WarningText, WarningText.Text);

@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: 2026 Mattia Egloff <mattia.egloff@pm.me>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
@@ -9,6 +8,7 @@ using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Shapes;
 using System;
 using System.Text.Json;
+using Vauchi.CoreUI;
 using Vauchi.Helpers;
 using Vauchi.UI;
 
@@ -73,7 +73,7 @@ public sealed partial class ContactListComponent : UserControl, IRenderable
         {
             Width = 40,
             Height = 40,
-            Fill = new SolidColorBrush(Colors.SteelBlue),
+            Fill = new SolidColorBrush(ThemeColors.AvatarFallback),
         };
 
         var initialsBlock = new TextBlock
@@ -81,7 +81,7 @@ public sealed partial class ContactListComponent : UserControl, IRenderable
             Text = initials,
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Center,
-            Foreground = new SolidColorBrush(Colors.White),
+            Foreground = new SolidColorBrush(ThemeColors.OnColored),
             FontSize = 14,
         };
 
