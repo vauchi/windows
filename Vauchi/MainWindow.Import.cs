@@ -2,9 +2,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 using System;
+using System.Collections.Generic;
+using System.Text;
 using System.Text.Json;
 using Microsoft.UI.Xaml.Controls;
 using Vauchi.Interop;
+using Vauchi.Services;
 using Windows.Storage.Pickers;
 
 namespace Vauchi;
@@ -45,25 +48,44 @@ public sealed partial class MainWindow
 
             if (root.TryGetProperty("error", out var err))
             {
-                await ShowImportResultDialog("Import Failed", err.GetString() ?? "Unknown error");
+                await ShowImportResultDialog(
+                    Localizer.T("import_contacts.result_failed"),
+                    err.GetString() ?? Localizer.T("error.unknown")
+                );
                 return;
             }
 
             int imported = root.TryGetProperty("imported", out var imp) ? imp.GetInt32() : 0;
             int skipped = root.TryGetProperty("skipped", out var skip) ? skip.GetInt32() : 0;
 
-            string message = $"Imported {imported} contact(s)";
-            if (skipped > 0) message += $", skipped {skipped}";
+            var message = new StringBuilder();
+            message.Append(Localizer.T(
+                "import_contacts.result_imported",
+                new Dictionary<string, string> { ["count"] = imported.ToString() }
+            ));
+            if (skipped > 0)
+            {
+                message.Append(", ");
+                message.Append(Localizer.T(
+                    "import_contacts.result_skipped",
+                    new Dictionary<string, string> { ["count"] = skipped.ToString() }
+                ));
+            }
 
             if (root.TryGetProperty("warnings", out var warnings) &&
                 warnings.GetArrayLength() > 0)
             {
-                message += "\n\nWarnings:";
+                message.Append("\n\n");
                 foreach (var w in warnings.EnumerateArray())
-                    message += $"\n\u2022 {w.GetString()}";
+                {
+                    message.Append('\n');
+                    message.Append('\u2022');
+                    message.Append(' ');
+                    message.Append(w.GetString());
+                }
             }
 
-            await ShowImportResultDialog("Import Complete", message);
+            await ShowImportResultDialog(Localizer.T("import_contacts.result_complete"), message.ToString());
 
             RefreshScreen();
         }
@@ -79,7 +101,7 @@ public sealed partial class MainWindow
         {
             Title = title,
             Content = message,
-            CloseButtonText = "OK",
+            CloseButtonText = Localizer.T("action.ok"),
             XamlRoot = Content.XamlRoot,
         };
         await dialog.ShowAsync();

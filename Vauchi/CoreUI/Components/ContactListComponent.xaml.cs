@@ -10,6 +10,7 @@ using System;
 using System.Text.Json;
 using Vauchi.CoreUI;
 using Vauchi.Helpers;
+using Vauchi.Services;
 using Vauchi.UI;
 
 namespace Vauchi.CoreUI.Components;
@@ -19,6 +20,7 @@ public sealed partial class ContactListComponent : UserControl, IRenderable
     public ContactListComponent()
     {
         InitializeComponent();
+        SearchBox.PlaceholderText = Localizer.T("contacts.search_placeholder");
     }
 
     public void Render(JsonElement data, Action<string>? onAction)
@@ -27,7 +29,7 @@ public sealed partial class ContactListComponent : UserControl, IRenderable
         bool searchable = data.TryGetProperty("searchable", out var searchEl) && searchEl.GetBoolean();
 
         SearchBox.Visibility = searchable ? Visibility.Visible : Visibility.Collapsed;
-        AutomationProperties.SetName(SearchBox, "Search contacts");
+        AutomationProperties.SetName(SearchBox, Localizer.T("a11y.search_contacts"));
 
         if (searchable && onAction != null)
         {

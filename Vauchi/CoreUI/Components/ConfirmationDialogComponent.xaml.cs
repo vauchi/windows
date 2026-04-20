@@ -9,6 +9,7 @@ using System;
 using System.Text.Json;
 using Vauchi.CoreUI;
 using Vauchi.Helpers;
+using Vauchi.Services;
 
 namespace Vauchi.CoreUI.Components;
 
@@ -17,6 +18,8 @@ public sealed partial class ConfirmationDialogComponent : UserControl, IRenderab
     public ConfirmationDialogComponent()
     {
         InitializeComponent();
+        ConfirmButton.Content = Localizer.T("action.confirm");
+        CancelButton.Content = Localizer.T("action.cancel");
     }
 
     public void Render(JsonElement data, Action<string>? onAction)
@@ -41,12 +44,12 @@ public sealed partial class ConfirmationDialogComponent : UserControl, IRenderab
         // Use confirm_text (not confirm_label)
         if (data.TryGetProperty("confirm_text", out var confirmText))
         {
-            ConfirmButton.Content = confirmText.GetString() ?? "Confirm";
+            ConfirmButton.Content = confirmText.GetString() ?? Localizer.T("action.confirm");
         }
 
         if (data.TryGetProperty("cancel_label", out var cancelLabel))
         {
-            CancelButton.Content = cancelLabel.GetString() ?? "Cancel";
+            CancelButton.Content = cancelLabel.GetString() ?? Localizer.T("action.cancel");
         }
 
         // Apply destructive style (themed confirm button foreground)
@@ -57,9 +60,9 @@ public sealed partial class ConfirmationDialogComponent : UserControl, IRenderab
         }
 
         AutomationProperties.SetName(ConfirmButton,
-            (string?)ConfirmButton.Content ?? "Confirm");
+            (string?)ConfirmButton.Content ?? Localizer.T("action.confirm"));
         AutomationProperties.SetName(CancelButton,
-            (string?)CancelButton.Content ?? "Cancel");
+            (string?)CancelButton.Content ?? Localizer.T("action.cancel"));
 
         if (onAction != null && componentId.Length > 0)
         {

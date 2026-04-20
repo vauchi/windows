@@ -10,6 +10,7 @@ using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Vauchi.Helpers;
+using Vauchi.Services;
 using Windows.Graphics.Imaging;
 using Windows.Media.Capture;
 using ZXing;
@@ -29,6 +30,10 @@ public sealed partial class QrCodeComponent : UserControl, IRenderable
     public QrCodeComponent()
     {
         InitializeComponent();
+        // Localize ScanButton after the XAML tree is instantiated; the XAML
+        // defaults act as English fallbacks for the brief window before
+        // this runs (and for designer previews without CABI).
+        ScanButton.Content = Localizer.T("qr.scan_button");
         Unloaded += async (_, _) => await StopCameraAsync();
     }
 
@@ -132,8 +137,8 @@ public sealed partial class QrCodeComponent : UserControl, IRenderable
             // ScanStatus text provides user feedback instead of a video preview.
             await _mediaCapture.StartPreviewAsync();
             _scanning = true;
-            ScanButton.Content = "Stop Scanning";
-            ScanStatus.Text = "Point camera at QR code...";
+            ScanButton.Content = Localizer.T("qr.stop_scanning");
+            ScanStatus.Text = Localizer.T("qr.point_camera");
 
             _scanTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
             _scanTimer.Tick += async (_, _) => await TryDecodeFrameAsync();
@@ -212,6 +217,6 @@ public sealed partial class QrCodeComponent : UserControl, IRenderable
             _mediaCapture.Dispose();
             _mediaCapture = null;
         }
-        ScanButton.Content = "Scan QR Code";
+        ScanButton.Content = Localizer.T("qr.scan_button");
     }
 }

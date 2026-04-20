@@ -6,10 +6,12 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.Windows.AppNotifications;
 using Microsoft.Windows.AppNotifications.Builder;
 using System;
+using System.Collections.Generic;
 using System.Text.Json;
 using Vauchi.Helpers;
 using Vauchi.Interop;
 using Vauchi.Platform;
+using Vauchi.Services;
 
 namespace Vauchi;
 
@@ -23,14 +25,17 @@ public sealed partial class MainWindow : Window
     // Prevent GC collection of the event callback delegate (P/Invoke requirement)
     private VauchiNative.VauchiEventCallback? _eventCallback;
 
-    // 5-tab navigation model (frontend abstraction, matches TUI/macOS)
-    private static readonly (string screenId, string label, Symbol icon)[] NavTabs =
+    // 5-tab navigation model (frontend abstraction, matches TUI/macOS).
+    // Labels resolve through Localizer — each entry stores the i18n key and
+    // the visible text is fetched at build-menu time so switching locales
+    // doesn't require rebuilding the table.
+    private static readonly (string screenId, string labelKey, Symbol icon)[] NavTabs =
     [
-        ("my_info",  "My Card",  Symbol.ContactInfo),
-        ("contacts", "Contacts", Symbol.People),
-        ("exchange", "Exchange", Symbol.Send),
-        ("groups",   "Groups",   Symbol.People),
-        ("settings", "More",     Symbol.More),  // "More" defaults to settings screen
+        ("my_info",  "nav.myCard",   Symbol.ContactInfo),
+        ("contacts", "nav.contacts", Symbol.People),
+        ("exchange", "nav.exchange", Symbol.Send),
+        ("groups",   "nav.groups",   Symbol.People),
+        ("settings", "nav.more",     Symbol.More),  // "More" defaults to settings screen
     ];
 
     private DispatcherTimer _notificationTimer;
@@ -38,7 +43,7 @@ public sealed partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
-        Title = "Vauchi";
+        Title = Localizer.T("app.name");
 
         Renderer.ActionRequested += OnActionRequested;
 
@@ -119,10 +124,10 @@ public sealed partial class MainWindow : Window
                 // Show locked state — user can retry
                 var dialog = new ContentDialog
                 {
-                    Title = "Authentication Required",
-                    Content = "Windows Hello authentication is required to access Vauchi.",
-                    PrimaryButtonText = "Retry",
-                    CloseButtonText = "Quit",
+                    Title = Localizer.T("auth.required_title"),
+                    Content = Localizer.T("auth.windows_hello_required"),
+                    PrimaryButtonText = Localizer.T("action.retry"),
+                    CloseButtonText = Localizer.T("action.quit"),
                     XamlRoot = Content.XamlRoot,
                 };
                 var result = await dialog.ShowAsync();
@@ -327,11 +332,11 @@ public sealed partial class MainWindow : Window
         _navUpdating = true;
         NavView.MenuItems.Clear();
 
-        foreach (var (screenId, label, icon) in NavTabs)
+        foreach (var (screenId, labelKey, icon) in NavTabs)
         {
             NavView.MenuItems.Add(new NavigationViewItem
             {
-                Content = label,
+                Content = Localizer.T(labelKey),
                 Icon = new SymbolIcon(icon),
                 Tag = screenId,
             });
@@ -598,7 +603,7 @@ public sealed partial class MainWindow : Window
 
     private async void ShowFatalErrorAsync(string resultJson)
     {
-        string errorMsg = "Unknown error";
+        string errorMsg = Localizer.T("error.unknown");
         try
         {
             using var doc = JsonDocument.Parse(resultJson);
@@ -609,9 +614,9 @@ public sealed partial class MainWindow : Window
 
         var dialog = new ContentDialog
         {
-            Title = "Vauchi Error",
-            Content = $"An unrecoverable error occurred:\n\n{errorMsg}\n\nThe app may need to be restarted.",
-            CloseButtonText = "OK",
+            Title = Localizer.T("app.error_title"),
+            Content = Localizer.T("error.unrecoverable_body", new Dictionary<string, string> { ["message"] = errorMsg }),
+            CloseButtonText = Localizer.T("action.ok"),
             XamlRoot = Content.XamlRoot,
         };
         await dialog.ShowAsync();

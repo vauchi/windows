@@ -6,6 +6,7 @@ using H.NotifyIcon.Core;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System;
+using Vauchi.Services;
 
 namespace Vauchi.Platform;
 
@@ -28,24 +29,24 @@ public class SystemTrayManager : IDisposable
     {
         var menu = new MenuFlyout();
 
-        var exchangeItem = new MenuFlyoutItem { Text = "Exchange" };
+        var exchangeItem = new MenuFlyoutItem { Text = Localizer.T("nav.exchange") };
         exchangeItem.Click += (_, _) => { ShowWindow(); _navigateAction?.Invoke("exchange"); };
         menu.Items.Add(exchangeItem);
         menu.Items.Add(new MenuFlyoutSeparator());
 
-        var showItem = new MenuFlyoutItem { Text = "Show Vauchi" };
+        var showItem = new MenuFlyoutItem { Text = Localizer.T("tray.show_app") };
         showItem.Click += (_, _) => ShowWindow();
         menu.Items.Add(showItem);
 
         menu.Items.Add(new MenuFlyoutSeparator());
 
-        var quitItem = new MenuFlyoutItem { Text = "Quit" };
+        var quitItem = new MenuFlyoutItem { Text = Localizer.T("action.quit") };
         quitItem.Click += (_, _) => Application.Current.Exit();
         menu.Items.Add(quitItem);
 
         _trayIcon = new TaskbarIcon
         {
-            ToolTipText = "Vauchi",
+            ToolTipText = Localizer.T("app.name"),
             MenuActivation = PopupActivationMode.RightClick,
             ContextFlyout = menu,
         };

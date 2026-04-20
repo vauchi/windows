@@ -6,6 +6,7 @@ using Microsoft.UI.Xaml.Controls;
 using System;
 using System.Text.Json;
 using Vauchi.Helpers;
+using Vauchi.Services;
 
 namespace Vauchi.CoreUI.Components;
 
@@ -43,7 +44,7 @@ public sealed partial class ShowToastComponent : UserControl, IRenderable
             if (!string.IsNullOrEmpty(undoId))
             {
                 string capturedUndoId = undoId;
-                var undoButton = new Button { Content = "Undo" };
+                var undoButton = new Button { Content = Localizer.T("action.undo") };
                 undoButton.Click += (_, _) =>
                     onAction(ActionJson.UndoPressed(capturedUndoId));
                 Toast.ActionButton = undoButton;

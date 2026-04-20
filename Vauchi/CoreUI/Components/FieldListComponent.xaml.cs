@@ -7,6 +7,7 @@ using Microsoft.UI.Xaml.Controls;
 using System;
 using System.Text.Json;
 using Vauchi.Helpers;
+using Vauchi.Services;
 using Vauchi.UI;
 
 namespace Vauchi.CoreUI.Components;
@@ -135,7 +136,7 @@ public sealed partial class FieldListComponent : UserControl, IRenderable
             // Show which groups can see this field (read-only text)
             var groupsNote = new TextBlock
             {
-                Text = "Groups",
+                Text = Localizer.T("nav.groups"),
                 Opacity = 0.4,
                 FontSize = 11,
                 VerticalAlignment = VerticalAlignment.Center,

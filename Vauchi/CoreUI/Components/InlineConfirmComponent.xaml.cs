@@ -10,6 +10,7 @@ using System;
 using System.Text.Json;
 using Vauchi.CoreUI;
 using Vauchi.Helpers;
+using Vauchi.Services;
 
 namespace Vauchi.CoreUI.Components;
 
@@ -23,6 +24,8 @@ public sealed partial class InlineConfirmComponent : UserControl, IRenderable
     public InlineConfirmComponent()
     {
         InitializeComponent();
+        ConfirmButton.Content = Localizer.T("action.confirm");
+        CancelButton.Content = Localizer.T("action.cancel");
     }
 
     public void Render(JsonElement data, Action<string>? onAction)
@@ -39,12 +42,12 @@ public sealed partial class InlineConfirmComponent : UserControl, IRenderable
 
         if (data.TryGetProperty("confirm_text", out var confirmText))
         {
-            ConfirmButton.Content = confirmText.GetString() ?? "Confirm";
+            ConfirmButton.Content = confirmText.GetString() ?? Localizer.T("action.confirm");
         }
 
         if (data.TryGetProperty("cancel_text", out var cancelText))
         {
-            CancelButton.Content = cancelText.GetString() ?? "Cancel";
+            CancelButton.Content = cancelText.GetString() ?? Localizer.T("action.cancel");
         }
 
         var destructive = data.TryGetProperty("destructive", out var d) && d.GetBoolean();
@@ -55,9 +58,9 @@ public sealed partial class InlineConfirmComponent : UserControl, IRenderable
 
         AutomationProperties.SetName(WarningText, WarningText.Text);
         AutomationProperties.SetName(ConfirmButton,
-            (string?)ConfirmButton.Content ?? "Confirm");
+            (string?)ConfirmButton.Content ?? Localizer.T("action.confirm"));
         AutomationProperties.SetName(CancelButton,
-            (string?)CancelButton.Content ?? "Cancel");
+            (string?)CancelButton.Content ?? Localizer.T("action.cancel"));
 
         if (data.TryGetProperty("a11y", out var a11yElem))
         {

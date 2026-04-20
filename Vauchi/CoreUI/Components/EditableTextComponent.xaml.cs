@@ -5,8 +5,10 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using System;
+using System.Collections.Generic;
 using System.Text.Json;
 using Vauchi.Helpers;
+using Vauchi.Services;
 
 namespace Vauchi.CoreUI.Components;
 
@@ -17,6 +19,9 @@ public sealed partial class EditableTextComponent : UserControl, IRenderable
     public EditableTextComponent()
     {
         InitializeComponent();
+        EditButton.Content = Localizer.T("action.edit");
+        SaveButton.Content = Localizer.T("action.save");
+        CancelButton.Content = Localizer.T("action.cancel");
     }
 
     public void Render(JsonElement data, Action<string>? onAction)
@@ -38,7 +43,7 @@ public sealed partial class EditableTextComponent : UserControl, IRenderable
         {
             DisplayPanel.Visibility = Visibility.Visible;
             EditPanel.Visibility = Visibility.Collapsed;
-            DisplayValue.Text = value.Length > 0 ? value : "(empty)";
+            DisplayValue.Text = value.Length > 0 ? value : Localizer.T("editable.empty_value");
         }
 
         // Validation error
@@ -69,7 +74,10 @@ public sealed partial class EditableTextComponent : UserControl, IRenderable
         }
 
         AutomationProperties.SetName(EditBox, label);
-        AutomationProperties.SetName(EditButton, $"Edit {label}");
+        AutomationProperties.SetName(
+            EditButton,
+            Localizer.T("a11y.edit_field", new Dictionary<string, string> { ["label"] = label })
+        );
 
         if (data.TryGetProperty("a11y", out var a11yElem))
         {

@@ -10,6 +10,7 @@ using System;
 using System.Text.Json;
 using Vauchi.CoreUI;
 using Vauchi.Helpers;
+using Vauchi.Services;
 
 namespace Vauchi.CoreUI.Components;
 
@@ -20,12 +21,14 @@ public sealed partial class PinInputComponent : UserControl, IRenderable
     public PinInputComponent()
     {
         InitializeComponent();
+        PinLabel.Text = Localizer.T("pin.enter");
     }
 
     public void Render(JsonElement data, Action<string>? onAction)
     {
         string componentId = data.TryGetProperty("id", out var id) ? id.GetString() ?? "" : "";
-        string label = data.TryGetProperty("label", out var l) ? l.GetString() ?? "Enter PIN" : "Enter PIN";
+        string defaultLabel = Localizer.T("pin.enter");
+        string label = data.TryGetProperty("label", out var l) ? l.GetString() ?? defaultLabel : defaultLabel;
         int length = data.TryGetProperty("length", out var len) ? len.GetInt32() : 6;
         int filled = data.TryGetProperty("filled", out var f) ? f.GetInt32() : 0;
 
