@@ -11,6 +11,9 @@ obj/
 *.userosscache
 *.sln.docstates
 
+## Pre-commit hook marker — records SHA of last commit that passed checks
+target/
+
 ## Build results
 [Dd]ebug/
 [Rr]elease/
