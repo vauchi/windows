@@ -3,7 +3,9 @@
 
 using Microsoft.UI.Xaml;
 using System;
+using System.IO;
 using System.Threading;
+using Vauchi.Services;
 
 namespace Vauchi;
 
@@ -25,6 +27,13 @@ public partial class App : Application
             Environment.Exit(0);
             return;
         }
+
+        // Point the CABI i18n subsystem at the bundled locale files so
+        // Localizer.T("key") returns translated strings. The `locales`
+        // folder is copied next to the executable via Vauchi.csproj.
+        // Failure here is non-fatal — Localizer falls back to raw keys.
+        string localesDir = Path.Combine(AppContext.BaseDirectory, "locales");
+        Localizer.Init(localesDir);
 
         try
         {

@@ -32,4 +32,15 @@
           Visible="false"
           Condition="Exists('$(SolutionDir)cabi\vauchi_cabi.dll')" />
   </ItemGroup>
+  <!-- Locale JSON files — copied to $(OutDir)/locales/ for Localizer.Init().
+       Source is the vauchi/locales sibling repo; path resolves from the
+       Windows working copy. Consumed by CABI vauchi_i18n_init at startup. -->
+  <ItemGroup>
+    <Content Include="$(SolutionDir)..\locales\*.json"
+             Exclude="$(SolutionDir)..\locales\locales.schema.json"
+             CopyToOutputDirectory="PreserveNewest"
+             Link="locales\%(Filename)%(Extension)"
+             Visible="false"
+             Condition="Exists('$(SolutionDir)..\locales')" />
+  </ItemGroup>
 </Project>

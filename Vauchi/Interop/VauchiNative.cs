@@ -35,6 +35,47 @@ public static partial class VauchiNative
     [LibraryImport(LibName, EntryPoint = "vauchi_string_free")]
     private static partial void StringFree(IntPtr ptr);
 
+    // i18n (internationalization) — see core/vauchi-cabi/src/i18n.rs
+
+    [LibraryImport(LibName, EntryPoint = "vauchi_i18n_init", StringMarshalling = StringMarshalling.Utf8)]
+    public static partial int I18nInit(string resourceDir);
+
+    [LibraryImport(LibName, EntryPoint = "vauchi_i18n_is_initialized")]
+    public static partial int I18nIsInitialized();
+
+    [LibraryImport(LibName, EntryPoint = "vauchi_i18n_get_string", StringMarshalling = StringMarshalling.Utf8)]
+    private static partial IntPtr I18nGetStringRaw(string localeCode, string key);
+
+    [LibraryImport(LibName, EntryPoint = "vauchi_i18n_available_locales")]
+    private static partial IntPtr I18nAvailableLocalesRaw();
+
+    /// <summary>
+    /// Look up a translated string via the CABI i18n helper.
+    /// Returns null when the locale or key is unknown, or the native
+    /// lookup failed. Caller code is expected to fall back to the key
+    /// itself (see <see cref="Services.Localizer"/>).
+    /// </summary>
+    public static string? I18nGetString(string localeCode, string key)
+    {
+        IntPtr ptr = I18nGetStringRaw(localeCode, key);
+        if (ptr == IntPtr.Zero) return null;
+        string result = Marshal.PtrToStringUTF8(ptr)!;
+        StringFree(ptr);
+        return result;
+    }
+
+    /// <summary>
+    /// JSON array of BCP-47 locale codes loaded by core.
+    /// </summary>
+    public static string? I18nAvailableLocales()
+    {
+        IntPtr ptr = I18nAvailableLocalesRaw();
+        if (ptr == IntPtr.Zero) return null;
+        string result = Marshal.PtrToStringUTF8(ptr)!;
+        StringFree(ptr);
+        return result;
+    }
+
     public static string? WorkflowCurrentScreen(IntPtr handle)
     {
         IntPtr ptr = WorkflowCurrentScreenRaw(handle);
