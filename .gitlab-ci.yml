@@ -333,18 +333,17 @@ check:removed-symbols:
   variables:
     SEARCH_DIRS: "Vauchi/"
 
-# Design token drift: warn on named Colors.* / Color.FromArgb / hex
-# string literals that bypass Tokens.cs and the theme. Script lives in
-# vauchi/scripts — fetched via API to avoid duplicating it here.
-# Current baseline is non-zero (see §5 of
-# `2026-04-16-frontend-pure-renderer-violations`) so this is a warning
-# gate; flip to `--strict` once the three different reds are unified.
+# Design token drift: block named Colors.* / Color.FromArgb / hex
+# string literals that bypass Tokens.cs and the ThemeColors accessor.
+# Script lives in vauchi/scripts — fetched via API to avoid duplicating
+# it here. Baseline is 0 as of 2026-04-20 (ThemeColors.cs added,
+# destructive Red/Tomato unified, avatar SteelBlue / status dots all
+# routed through semantic accessors).
 check:design-tokens:
   stage: lint
   image: alpine:3.21
   tags: [docker]
   needs: []
-  allow_failure: true
   before_script:
     - apk add --no-cache bash findutils grep curl
   script:
@@ -353,7 +352,7 @@ check:design-tokens:
         "${CI_API_V4_URL}/projects/vauchi%2Fscripts/repository/files/scripts%2Fcheck-design-tokens.sh/raw?ref=main" \
         -o check-design-tokens.sh
       chmod +x check-design-tokens.sh
-    - ./check-design-tokens.sh Vauchi/
+    - ./check-design-tokens.sh --strict Vauchi/
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       changes:
