@@ -7,7 +7,7 @@
 
 .DESCRIPTION
     Launches the app with --reset-for-testing (Debug build), navigates through
-    each screen via UI Automation, and captures window screenshots as PNGs.
+    each screen via UI Automation, and captures window screenshots as PNG images.
 
     Requires: Debug build with vauchi_cabi.dll in the output directory.
 
@@ -15,7 +15,7 @@
     Path to Vauchi.exe (Debug build). Defaults to standard Debug output path.
 
 .PARAMETER OutputDir
-    Directory for captured PNGs. Defaults to tests/snapshots/actual.
+    Directory for captured PNG images. Defaults to tests/snapshots/actual.
 
 .PARAMETER UpdateBaselines
     If set, copies captures to tests/snapshots/baseline instead.
@@ -212,9 +212,27 @@ Write-Host "[snapshots] Window appeared after ${elapsed}s"
 # Extra settle time for rendering
 Start-Sleep -Seconds 3
 
+# WinAppSDK windows can briefly return IntPtr.Zero on MainWindowHandle
+# immediately after appearing, because the visible top-level window is
+# owned by a child/composition process. Retry with exponential backoff
+# up to 10 s (see 2026-04-20-windows-test-jobs-broken). On every retry,
+# refresh the process handle and re-query MainWindowHandle.
+$hwnd = $proc.MainWindowHandle
+$retry = 0
+while ($hwnd -eq [IntPtr]::Zero -and $retry -lt 10) {
+    Start-Sleep -Milliseconds (200 * [Math]::Pow(2, $retry))
+    $proc.Refresh()
+    $hwnd = $proc.MainWindowHandle
+    $retry++
+}
+if ($hwnd -eq [IntPtr]::Zero) {
+    Write-Error "MainWindowHandle still IntPtr.Zero after ${retry} retries (~10s). The visible window is likely owned by a child process — enumerate top-level windows by PID in a future fix."
+    $proc.Kill()
+    exit 1
+}
+
 # Get automation element for the window
-$windowElement = [System.Windows.Automation.AutomationElement]::FromHandle(
-    $proc.MainWindowHandle)
+$windowElement = [System.Windows.Automation.AutomationElement]::FromHandle($hwnd)
 
 $captured = 0
 $failed = 0

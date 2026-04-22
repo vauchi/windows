@@ -328,7 +328,11 @@ test:snapshots:record:
 test:a11y:
   stage: test
   script:
-    - dotnet test Vauchi.Tests/Vauchi.Tests.csproj --filter "FullyQualifiedName~AccessibilityTests"
+    # Suppress PRI tooling exactly like build:app + test:snapshots:record do.
+    # Without these flags, MRT restore fails with MSB4062 on SaaS Windows
+    # runners whose SDK layout lacks Microsoft.Build.Packaging.Pri.Tasks.dll.
+    # See 2026-04-20-windows-test-jobs-broken.
+    - dotnet test Vauchi.Tests/Vauchi.Tests.csproj --filter "FullyQualifiedName~AccessibilityTests" -p:EnableCoreMrtTooling=false -p:AppxGeneratePriEnabled=false
   tags: [saas-windows-medium-amd64]
   when: manual
 
