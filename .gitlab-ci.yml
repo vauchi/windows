@@ -43,8 +43,21 @@ default:
 
 # Download and verify CABI native library from core's package registry.
 # Requires CI variable: VAUCHI_CORE_PROJECT_ID (core's GitLab project ID)
+#
+# Cache keyed on cabi-version.json so the DLL only re-downloads when the
+# file changes. Internal SHA-skip (see script body) bails out even if
+# cache miss drops an old DLL in place. Added 2026-04-22 under
+# 2026-04-07-windows-pipeline-performance — saves ~9 min on runs where
+# the CABI version is unchanged.
 download:cabi:
   stage: build
+  cache:
+    key:
+      files:
+        - cabi-version.json
+    paths:
+      - cabi/
+    policy: pull-push
   script:
     - |
       $config = Get-Content cabi-version.json | ConvertFrom-Json
