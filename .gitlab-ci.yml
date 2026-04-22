@@ -167,6 +167,14 @@ build:app:
   artifacts:
     paths:
       - Vauchi/bin/x64/Release/
+      # Include UnitTests build output so test:unit / coverage:unit can
+      # run with `dotnet test --no-build` and skip the per-job recompile
+      # that otherwise runs on top of the SaaS Windows cold-start tax.
+      # Added 2026-04-22 as Solution 2 of windows-main-pipeline-speed
+      # (T3.3) — expected savings of a few minutes per test job since
+      # dotnet test's default compile is redundant with build:app.
+      - Vauchi.UnitTests/bin/
+      - Vauchi.UnitTests/obj/
       - cabi/vauchi_cabi.dll
       - metrics.json
   tags: [saas-windows-medium-amd64]
@@ -177,7 +185,10 @@ test:unit:
     - job: build:app
       artifacts: true
   script:
-    - dotnet test Vauchi.UnitTests/Vauchi.UnitTests.csproj --logger "junit;LogFilePath=../../test-results/unit.xml"
+    # --no-build: reuse build:app's Release output. Matches the -c Release
+    # build that build:app runs above. Saves the implicit recompile
+    # `dotnet test` would otherwise do (Solution 2 of T3.3).
+    - dotnet test Vauchi.UnitTests/Vauchi.UnitTests.csproj --no-build -c Release --logger "junit;LogFilePath=../../test-results/unit.xml"
   artifacts:
     when: always
     reports:
@@ -193,8 +204,11 @@ coverage:unit:
     - job: build:app
       artifacts: true
   script:
+    # --no-build: same rationale as test:unit — reuse build:app's
+    # Release output. Coverlet's XPlat Code Coverage collector
+    # instruments at runtime, so no recompile is needed to attach it.
     - |
-      dotnet test Vauchi.UnitTests/Vauchi.UnitTests.csproj `
+      dotnet test Vauchi.UnitTests/Vauchi.UnitTests.csproj --no-build -c Release `
         --collect:"XPlat Code Coverage" `
         --results-directory coverage-results `
         --logger "junit;LogFilePath=../../test-results/coverage-unit.xml"
