@@ -41,23 +41,20 @@ workflow:
 default:
   interruptible: true
 
-# Download and verify CABI native library from core's package registry.
-# Requires CI variable: VAUCHI_CORE_PROJECT_ID (core's GitLab project ID)
+# Shared CABI download-and-verify logic, invoked via !reference from
+# before_script in any job that needs vauchi_cabi.dll. Consolidated
+# 2026-04-22 (T3.3 of 2026-04-22-windows-main-pipeline-speed) — the
+# separate download:cabi job spent ~4 min on SaaS Windows runner
+# cold-start for ~20 s of real work, and every consumer had to pay
+# that tax via the `needs:` graph. Moving the download into the
+# before_script of the jobs that need it removes one cold-start from
+# the critical path.
 #
-# Cache keyed on cabi-version.json so the DLL only re-downloads when the
-# file changes. Internal SHA-skip (see script body) bails out even if
-# cache miss drops an old DLL in place. Added 2026-04-22 under
-# 2026-04-07-windows-pipeline-performance — saves ~9 min on runs where
-# the CABI version is unchanged.
-download:cabi:
-  stage: build
-  cache:
-    key:
-      files:
-        - cabi-version.json
-    paths:
-      - cabi/
-    policy: pull-push
+# Still internally idempotent (SHA-skip on existing DLL) so repeated
+# calls in parallel jobs that share a runner disk are safe. Still
+# keyed on cabi-version.json for the cache slot, so repeated runs
+# with the same cabi version reuse the cached DLL.
+.cabi-download-script:
   script:
     - |
       $config = Get-Content cabi-version.json | ConvertFrom-Json
@@ -66,12 +63,12 @@ download:cabi:
         exit 0
       }
 
-      # Skip if DLL already matches expected hash
+      # Skip if DLL already matches expected hash (from cache or prior job)
       if (Test-Path cabi/vauchi_cabi.dll) {
         $actual = (Get-FileHash cabi/vauchi_cabi.dll -Algorithm SHA256).Hash.ToLower()
         if ($actual -eq $config.sha256) {
           Write-Host "CABI DLL already up to date ($($config.version))"
-          exit 0
+          return
         }
       }
 
@@ -125,17 +122,19 @@ download:cabi:
         exit 1
       }
       Write-Host "SHA-256 verified: $actual"
-  artifacts:
-    paths:
-      - cabi/vauchi_cabi.dll
-    expire_in: 1 day
-  tags: [saas-windows-medium-amd64]
 
 build:app:
   stage: build
-  needs:
-    - job: download:cabi
-      artifacts: true
+  needs: []
+  cache:
+    key:
+      files:
+        - cabi-version.json
+    paths:
+      - cabi/
+    policy: pull-push
+  before_script:
+    - !reference [.cabi-download-script, script]
   script:
     # PRI tooling disabled: SaaS runners lack Visual Studio's
     # Microsoft.Build.Packaging.Pri.Tasks.dll. Unpackaged WinUI apps
@@ -168,6 +167,7 @@ build:app:
   artifacts:
     paths:
       - Vauchi/bin/x64/Release/
+      - cabi/vauchi_cabi.dll
       - metrics.json
   tags: [saas-windows-medium-amd64]
 
@@ -274,9 +274,16 @@ secret_detection:
 # Manual: SaaS runners may lack a desktop session for UI rendering.
 test:snapshots:
   stage: test
-  needs:
-    - job: download:cabi
-      artifacts: true
+  needs: []
+  cache:
+    key:
+      files:
+        - cabi-version.json
+    paths:
+      - cabi/
+    policy: pull
+  before_script:
+    - !reference [.cabi-download-script, script]
   variables:
     VRT_PLATFORM: windows
     VRT_SCREENSHOT_DIR: tests/snapshots/actual
@@ -300,9 +307,16 @@ test:snapshots:
 # Record new baselines — manual job, commits via PROJECT_ACCESS_TOKEN.
 test:snapshots:record:
   stage: test
-  needs:
-    - job: download:cabi
-      artifacts: true
+  needs: []
+  cache:
+    key:
+      files:
+        - cabi-version.json
+    paths:
+      - cabi/
+    policy: pull
+  before_script:
+    - !reference [.cabi-download-script, script]
   script:
     - dotnet build Vauchi/Vauchi.csproj -c Debug -p:Platform=x64 -p:EnableCoreMrtTooling=false -p:AppxGeneratePriEnabled=false
     - |
