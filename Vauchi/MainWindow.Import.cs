@@ -81,7 +81,7 @@ public sealed partial class MainWindow
                     message.Append('\n');
                     message.Append('\u2022');
                     message.Append(' ');
-                    message.Append(w.GetString());
+                    message.Append(RenderWarning(w));
                 }
             }
 
@@ -105,5 +105,47 @@ public sealed partial class MainWindow
             XamlRoot = Content.XamlRoot,
         };
         await dialog.ShowAsync();
+    }
+
+    /// <summary>
+    /// Render a single warning entry from the CABI import result.
+    ///
+    /// Each entry is a <c>{key, args, legacy_text}</c> object (matching
+    /// the UniFFI <c>MobileImportWarning</c> record); we look up <c>key</c>
+    /// via <see cref="Localizer.T(string, IReadOnlyDictionary{string, string})"/>
+    /// and fall back to <c>legacy_text</c> when the key is missing from
+    /// the locale (Localizer returns the key verbatim for unknown keys).
+    /// </summary>
+    private static string RenderWarning(JsonElement warning)
+    {
+        if (warning.ValueKind != JsonValueKind.Object)
+        {
+            return warning.GetString() ?? string.Empty;
+        }
+
+        string key = warning.TryGetProperty("key", out var keyEl)
+            ? keyEl.GetString() ?? string.Empty
+            : string.Empty;
+        string legacy = warning.TryGetProperty("legacy_text", out var legacyEl)
+            ? legacyEl.GetString() ?? string.Empty
+            : string.Empty;
+
+        var args = new Dictionary<string, string>();
+        if (warning.TryGetProperty("args", out var argsEl)
+            && argsEl.ValueKind == JsonValueKind.Object)
+        {
+            foreach (var prop in argsEl.EnumerateObject())
+            {
+                args[prop.Name] = prop.Value.GetString() ?? string.Empty;
+            }
+        }
+
+        if (string.IsNullOrEmpty(key))
+        {
+            return legacy;
+        }
+
+        string localized = Localizer.T(key, args);
+        return localized == key ? legacy : localized;
     }
 }
