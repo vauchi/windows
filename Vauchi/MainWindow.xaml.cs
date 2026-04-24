@@ -26,8 +26,15 @@ public sealed partial class MainWindow : Window
     private VauchiNative.VauchiEventCallback? _eventCallback;
 
     // Icon map: screen_id → SymbolIcon. Core owns the screen set,
-    // labels, and their locale; Windows only owns its preferred native
-    // icon. Missing entries fall back to Symbol.Home.
+    // labels, and their locale; Windows only owns its preferred
+    // native icon. Missing entries fall back to Symbol.Home.
+    //
+    // Only Symbol values confirmed to exist in the project's
+    // WindowsAppSDK version (1.7) are used — Shield and Protected
+    // are present in the enum per Microsoft docs but missing in
+    // this SDK build. "privacy" intentionally falls back to Home
+    // until a better Symbol is validated or replaced with a
+    // FontIcon glyph.
     private static readonly Dictionary<string, Symbol> NavIcons = new()
     {
         ["my_info"]           = Symbol.ContactInfo,
@@ -38,7 +45,6 @@ public sealed partial class MainWindow : Window
         ["recovery"]          = Symbol.Permissions,
         ["device_management"] = Symbol.PhoneBook,
         ["backup"]            = Symbol.SaveLocal,
-        ["privacy"]           = Symbol.Protected,
         ["support"]           = Symbol.Comment,
         ["help"]              = Symbol.Help,
         ["activity_log"]      = Symbol.List,
