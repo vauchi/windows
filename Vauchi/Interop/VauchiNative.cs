@@ -169,6 +169,12 @@ public static partial class VauchiNative
     [LibraryImport(LibName, EntryPoint = "vauchi_app_default_screen")]
     private static partial IntPtr AppDefaultScreenRaw(IntPtr handle);
 
+    [LibraryImport(LibName, EntryPoint = "vauchi_app_tab_info", StringMarshalling = StringMarshalling.Utf8)]
+    private static partial IntPtr AppTabInfoRaw(IntPtr handle, string? localeCode);
+
+    [LibraryImport(LibName, EntryPoint = "vauchi_app_sidebar_items", StringMarshalling = StringMarshalling.Utf8)]
+    private static partial IntPtr AppSidebarItemsRaw(IntPtr handle, string? localeCode);
+
     public static string? AppCurrentScreen(IntPtr handle)
     {
         IntPtr ptr = AppCurrentScreenRaw(handle);
@@ -229,6 +235,34 @@ public static partial class VauchiNative
     public static string? AppDefaultScreen(IntPtr handle)
     {
         IntPtr ptr = AppDefaultScreenRaw(handle);
+        if (ptr == IntPtr.Zero) return null;
+        string result = Marshal.PtrToStringUTF8(ptr)!;
+        StringFree(ptr);
+        return result;
+    }
+
+    /// <summary>
+    /// Returns the mobile tab-bar JSON:
+    /// <c>[{"id","label","icon","badge_count"}, ...]</c>. Labels are
+    /// pre-localized via core i18n; `localeCode` accepts <c>"en"</c>,
+    /// <c>"de"</c>, ...; null falls back to the default locale.
+    /// </summary>
+    public static string? AppTabInfo(IntPtr handle, string? localeCode)
+    {
+        IntPtr ptr = AppTabInfoRaw(handle, localeCode);
+        if (ptr == IntPtr.Zero) return null;
+        string result = Marshal.PtrToStringUTF8(ptr)!;
+        StringFree(ptr);
+        return result;
+    }
+
+    /// <summary>
+    /// Returns the desktop sidebar JSON (broader 14-entry top-level
+    /// set; same element shape as <see cref="AppTabInfo"/>).
+    /// </summary>
+    public static string? AppSidebarItems(IntPtr handle, string? localeCode)
+    {
+        IntPtr ptr = AppSidebarItemsRaw(handle, localeCode);
         if (ptr == IntPtr.Zero) return null;
         string result = Marshal.PtrToStringUTF8(ptr)!;
         StringFree(ptr);

@@ -25,18 +25,27 @@ public sealed partial class MainWindow : Window
     // Prevent GC collection of the event callback delegate (P/Invoke requirement)
     private VauchiNative.VauchiEventCallback? _eventCallback;
 
-    // 5-tab navigation model (frontend abstraction, matches TUI/macOS).
-    // Labels resolve through Localizer — each entry stores the i18n key and
-    // the visible text is fetched at build-menu time so switching locales
-    // doesn't require rebuilding the table.
-    private static readonly (string screenId, string labelKey, Symbol icon)[] NavTabs =
-    [
-        ("my_info",  "nav.myCard",   Symbol.ContactInfo),
-        ("contacts", "nav.contacts", Symbol.People),
-        ("exchange", "nav.exchange", Symbol.Send),
-        ("groups",   "nav.groups",   Symbol.People),
-        ("settings", "nav.more",     Symbol.More),  // "More" defaults to settings screen
-    ];
+    // Icon map: screen_id → SymbolIcon. Core owns the screen set,
+    // labels, and their locale; Windows only owns its preferred native
+    // icon. Missing entries fall back to Symbol.Home.
+    private static readonly Dictionary<string, Symbol> NavIcons = new()
+    {
+        ["my_info"]           = Symbol.ContactInfo,
+        ["contacts"]          = Symbol.People,
+        ["exchange"]          = Symbol.Send,
+        ["groups"]            = Symbol.People,
+        ["settings"]          = Symbol.Setting,
+        ["recovery"]          = Symbol.Permissions,
+        ["device_management"] = Symbol.PhoneBook,
+        ["backup"]            = Symbol.SaveLocal,
+        ["privacy"]           = Symbol.Shield,
+        ["support"]           = Symbol.Comment,
+        ["help"]              = Symbol.Help,
+        ["activity_log"]      = Symbol.List,
+        ["sync"]              = Symbol.Sync,
+        ["more"]              = Symbol.More,
+        ["onboarding"]        = Symbol.Add,
+    };
 
     private DispatcherTimer _notificationTimer;
 
@@ -332,14 +341,30 @@ public sealed partial class MainWindow : Window
         _navUpdating = true;
         NavView.MenuItems.Clear();
 
-        foreach (var (screenId, labelKey, icon) in NavTabs)
+        // Core owns the screen set and localized labels — Windows only
+        // picks the native SymbolIcon per screen_id. Sidebar_items
+        // returns the broader desktop set (14 top-level screens
+        // post-identity, or just Onboarding before).
+        string? json = VauchiNative.AppSidebarItems(_appHandle, Localizer.CurrentLocale);
+        if (json is not null)
         {
-            NavView.MenuItems.Add(new NavigationViewItem
+            try
             {
-                Content = Localizer.T(labelKey),
-                Icon = new SymbolIcon(icon),
-                Tag = screenId,
-            });
+                using var doc = JsonDocument.Parse(json);
+                foreach (JsonElement tab in doc.RootElement.EnumerateArray())
+                {
+                    string screenId = tab.GetProperty("id").GetString() ?? "";
+                    string label = tab.GetProperty("label").GetString() ?? screenId;
+                    Symbol icon = NavIcons.TryGetValue(screenId, out var sym) ? sym : Symbol.Home;
+                    NavView.MenuItems.Add(new NavigationViewItem
+                    {
+                        Content = label,
+                        Icon = new SymbolIcon(icon),
+                        Tag = screenId,
+                    });
+                }
+            }
+            catch (JsonException) { }
         }
 
         _navUpdating = false;
@@ -366,25 +391,39 @@ public sealed partial class MainWindow : Window
             catch (JsonException) { }
         }
 
-        int tabIndex = MapScreenToTab(screenId);
-        if (tabIndex >= 0 && tabIndex < NavView.MenuItems.Count)
-            NavView.SelectedItem = NavView.MenuItems[tabIndex];
+        string parentId = MapScreenToParentId(screenId);
+        for (int i = 0; i < NavView.MenuItems.Count; i++)
+        {
+            if (NavView.MenuItems[i] is NavigationViewItem item
+                && item.Tag is string tag
+                && tag == parentId)
+            {
+                NavView.SelectedItem = item;
+                break;
+            }
+        }
 
         _navUpdating = false;
     }
 
     /// <summary>
-    /// Map screen_id to tab index (0-4). Matches TUI nav_index() mapping.
+    /// Map a possibly-parameterized sub-screen back to the top-level
+    /// screen_id that should be highlighted in the sidebar. Sub-screens
+    /// not listed here pass through unchanged — which matches a
+    /// top-level tab when the sidebar carries one (e.g. "settings",
+    /// "recovery"), or leaves no selection for transient screens like
+    /// <c>form_dialog</c> or <c>lock</c>.
     /// </summary>
-    private static int MapScreenToTab(string screenId) => screenId switch
+    private static string MapScreenToParentId(string screenId) => screenId switch
     {
-        "my_info" or "entry_detail" => 0,
-        "contacts" or "contact_detail" or "contact_edit" or "contact_visibility"
+        "entry_detail" => "my_info",
+        "contact_detail" or "contact_edit" or "contact_visibility"
             or "contact_duplicates" or "contact_merge" or "contact_limit"
-            or "archived_contacts" => 1,
-        "exchange" => 2,
-        "groups" or "group_detail" => 3,
-        _ => 4, // settings, help, backup, recovery, sync, etc. → More
+            or "archived_contacts" or "verify_fingerprint" => "contacts",
+        "group_detail" => "groups",
+        "recovery_help" or "recovery_claim_review" => "recovery",
+        "device_linking" or "device_replacement" => "device_management",
+        _ => screenId,
     };
 
     private void OnNavSelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
