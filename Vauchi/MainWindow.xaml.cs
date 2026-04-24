@@ -38,7 +38,7 @@ public sealed partial class MainWindow : Window
         ["recovery"]          = Symbol.Permissions,
         ["device_management"] = Symbol.PhoneBook,
         ["backup"]            = Symbol.SaveLocal,
-        ["privacy"]           = Symbol.Shield,
+        ["privacy"]           = Symbol.Protected,
         ["support"]           = Symbol.Comment,
         ["help"]              = Symbol.Help,
         ["activity_log"]      = Symbol.List,
