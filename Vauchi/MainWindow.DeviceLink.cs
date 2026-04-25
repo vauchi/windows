@@ -90,8 +90,12 @@ public sealed partial class MainWindow
             var verificationCode = confirmJson.RootElement
                 .GetProperty("confirmation_code").GetString()!;
 
-            // Store sender token for the confirm step
+            // Remember sender token + verification code for the confirm step.
+            // Reading the code back out of the rendered ScreenModel was an
+            // ADR-021 violation (frontend treating UI presentation as
+            // protocol state); core's confirmation_code is the source.
             _deviceLinkSenderToken = senderToken;
+            _deviceLinkVerificationCode = verificationCode;
 
             // Transition UI to VerifyCode screen (must run on UI thread)
             DispatcherQueue.TryEnqueue(() =>
@@ -112,6 +116,7 @@ public sealed partial class MainWindow
     }
 
     private string? _deviceLinkSenderToken;
+    private string? _deviceLinkVerificationCode;
 
     /// <summary>
     /// Called when the user confirms the verification code on the VerifyCode screen.
@@ -119,40 +124,19 @@ public sealed partial class MainWindow
     /// </summary>
     private async Task CompleteDeviceLinkAsync()
     {
-        if (_deviceLinkInitiator == IntPtr.Zero || _deviceLinkSenderToken == null)
+        if (_deviceLinkInitiator == IntPtr.Zero ||
+            _deviceLinkSenderToken == null ||
+            _deviceLinkVerificationCode == null)
             return;
 
         try
         {
-            // Get the confirmation code from the current screen
-            var screenJson = VauchiNative.AppCurrentScreen(_appHandle);
-            if (screenJson == null) return;
-
-            var screen = JsonDocument.Parse(screenJson);
-            string? code = null;
-
-            // The code is in the Text component with id "code"
-            if (screen.RootElement.TryGetProperty("components", out var components))
-            {
-                foreach (var component in components.EnumerateArray())
-                {
-                    if (component.TryGetProperty("Text", out var text) &&
-                        text.TryGetProperty("id", out var id) &&
-                        id.GetString() == "code")
-                    {
-                        code = text.GetProperty("content").GetString();
-                        break;
-                    }
-                }
-            }
-
-            if (code == null) return;
-
             var now = (ulong)DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
             // Confirm link with manual verification (compute HMAC in Rust)
             var confirmResult = await Task.Run(() =>
-                VauchiNative.DeviceLinkConfirmManual(_deviceLinkInitiator, code, now));
+                VauchiNative.DeviceLinkConfirmManual(
+                    _deviceLinkInitiator, _deviceLinkVerificationCode, now));
 
             if (confirmResult == null) return;
 
@@ -203,5 +187,6 @@ public sealed partial class MainWindow
         }
 
         _deviceLinkSenderToken = null;
+        _deviceLinkVerificationCode = null;
     }
 }
