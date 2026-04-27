@@ -382,6 +382,62 @@ public static partial class VauchiNative
         return result;
     }
 
+    // ── Device link orchestrator session (CABI listener) ──────────────────
+    //
+    // Listener-driven replacement for the per-step DeviceLinkStart /
+    // DeviceLinkListen / DeviceLinkPrepareConfirmation /
+    // DeviceLinkConfirmManual / DeviceLinkSendResponse entries above.
+    // Mirrors vauchi-platform's MobileDeviceLinkSession surface; the cycle
+    // thread, QR-expiry deadline, and protocol clock all live in core.
+    // See <see cref="DeviceLinkBridge"/> for the consumer-side wrapper.
+
+    /// <summary>
+    /// Sequential layout matching <c>VauchiDeviceLinkListener</c> in
+    /// vauchi.h. Each <see cref="IntPtr"/> field is either
+    /// <see cref="IntPtr.Zero"/> or a function pointer obtained via
+    /// <c>(IntPtr)(delegate* unmanaged&lt;...&gt;)&amp;Trampoline</c>. The
+    /// CABI side guards each call with an <c>if let Some(cb)</c> match.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public struct VauchiDeviceLinkListener
+    {
+        public IntPtr OnQrReady;
+        public IntPtr OnConfirmationRequired;
+        public IntPtr OnRequestSent;
+        public IntPtr OnCompleted;
+        public IntPtr OnFailed;
+        public IntPtr OnSessionEnded;
+        public IntPtr UserData;
+    }
+
+    [LibraryImport(LibName, EntryPoint = "vauchi_device_link_session_create")]
+    public static partial IntPtr DeviceLinkSessionCreate(IntPtr appHandle);
+
+    [LibraryImport(LibName, EntryPoint = "vauchi_device_link_session_set_listener")]
+    public static partial void DeviceLinkSessionSetListener(IntPtr session, VauchiDeviceLinkListener listener);
+
+    [LibraryImport(LibName, EntryPoint = "vauchi_device_link_session_start")]
+    public static partial void DeviceLinkSessionStart(IntPtr session);
+
+    [LibraryImport(LibName, EntryPoint = "vauchi_device_link_session_confirm_manual", StringMarshalling = StringMarshalling.Utf8)]
+    public static partial int DeviceLinkSessionConfirmManual(IntPtr session, string confirmationCode, ulong confirmedAt);
+
+    [LibraryImport(LibName, EntryPoint = "vauchi_device_link_session_confirm_ultrasonic")]
+    public static partial int DeviceLinkSessionConfirmUltrasonic(
+        IntPtr session,
+        [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2)] byte[] challengeResponse,
+        nuint challengeResponseLen,
+        ulong verifiedAt);
+
+    [LibraryImport(LibName, EntryPoint = "vauchi_device_link_session_deny")]
+    public static partial void DeviceLinkSessionDeny(IntPtr session);
+
+    [LibraryImport(LibName, EntryPoint = "vauchi_device_link_session_cancel")]
+    public static partial void DeviceLinkSessionCancel(IntPtr session);
+
+    [LibraryImport(LibName, EntryPoint = "vauchi_device_link_session_destroy")]
+    public static partial void DeviceLinkSessionDestroy(IntPtr session);
+
     // ── App backgrounded (auto-lock) ──────────────────────────────────
 
     [LibraryImport(LibName, EntryPoint = "vauchi_app_handle_app_backgrounded")]

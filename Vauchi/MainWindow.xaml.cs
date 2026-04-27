@@ -502,8 +502,11 @@ public sealed partial class MainWindow : Window
                     ExitOnboardingMode();
                 SyncNavSelection();
                 RefreshScreen();
-                // Device link: when UI transitions to Syncing, run the protocol handshake
-                if (_deviceLinkInitiator != IntPtr.Zero &&
+                // Device link: when UI transitions to Syncing, forward the
+                // user-confirmation tap to the orchestrator session. The
+                // bridge swallows the call when no session is active so a
+                // null check on _deviceLinkBridge is enough.
+                if (_deviceLinkBridge != null &&
                     resultJson.Contains("\"link_syncing\""))
                 {
                     _ = CompleteDeviceLinkAsync();

@@ -2,191 +2,130 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 using System;
-using System.Text.Json;
-using System.Threading;
 using System.Threading.Tasks;
 using Vauchi.Interop;
 
 namespace Vauchi;
 
 /// <summary>
-/// Device link orchestration — relay listener, protocol handshake,
-/// and UI engine transitions for the device linking flow.
+/// Device link orchestration — thin adapter over <see cref="DeviceLinkBridge"/>.
+/// The relay-poll loop, QR-expiry deadline, confirmation prompt timing, and
+/// protocol clock all live in core's <c>DeviceLinkSession</c>; this file
+/// subscribes to bridge events and forwards UI transitions onto the
+/// <see cref="Microsoft.UI.Xaml.Window.DispatcherQueue"/>-based engine.
 /// </summary>
 public sealed partial class MainWindow
 {
-    private IntPtr _deviceLinkInitiator;
-    private CancellationTokenSource? _deviceLinkCts;
+    private DeviceLinkBridge? _deviceLinkBridge;
+    private string? _deviceLinkVerificationCode;
 
     /// <summary>
-    /// Starts the full device link initiator flow:
-    /// 1. Creates an initiator (generates QR)
-    /// 2. Navigates to the device_linking screen
-    /// 3. Starts a background relay listener
-    /// 4. On peer connect: prepares confirmation, transitions UI to VerifyCode
+    /// Starts the device link initiator flow:
+    /// 1. Creates a session via the CABI bridge (core builds the QR + cycle thread).
+    /// 2. Navigates to the device_linking screen so the QR is visible.
+    /// 3. Subscribes to bridge events to drive UI transitions.
+    /// 4. Calls <c>session.start()</c> to spawn the cycle thread.
     /// </summary>
     private void StartDeviceLinkFlow()
     {
-        // Create protocol-level initiator
-        _deviceLinkInitiator = VauchiNative.DeviceLinkStart(_appHandle);
-        if (_deviceLinkInitiator == IntPtr.Zero)
+        _deviceLinkBridge = DeviceLinkBridge.Create(_appHandle, DispatcherQueue);
+        if (_deviceLinkBridge == null)
         {
-            System.Diagnostics.Debug.WriteLine("[Vauchi] DeviceLink: failed to create initiator");
+            System.Diagnostics.Debug.WriteLine(
+                "[Vauchi] DeviceLink: failed to create session (no identity / storage key)");
             return;
         }
 
-        // Navigate UI engine to device_linking screen (shows QR)
+        // QR data does not need to flow through here — core renders it via
+        // its own ScreenModel for the device_linking screen. We just route
+        // the UI to that screen and start the cycle thread.
         VauchiNative.AppNavigateTo(_appHandle, "device_linking");
         SyncNavSelection();
         RefreshScreen();
 
-        // Start background relay listener
-        _deviceLinkCts = new CancellationTokenSource();
-        _ = ListenForDeviceLinkRequestAsync(_deviceLinkCts.Token);
+        _deviceLinkBridge.QrReady += OnDeviceLinkQrReady;
+        _deviceLinkBridge.ConfirmationRequired += OnDeviceLinkConfirmationRequired;
+        _deviceLinkBridge.Completed += OnDeviceLinkCompleted;
+        _deviceLinkBridge.Failed += OnDeviceLinkFailed;
+        _deviceLinkBridge.SessionEnded += OnDeviceLinkSessionEnded;
+
+        _deviceLinkBridge.Start();
     }
 
-    /// <summary>
-    /// Background task that polls the relay for a device link request.
-    /// When a peer connects, prepares confirmation and transitions the UI.
-    /// </summary>
-    private async Task ListenForDeviceLinkRequestAsync(CancellationToken ct)
+    private void OnDeviceLinkQrReady(string qrData, ulong expiresAtUnix)
     {
-        try
-        {
-            // Blocking relay call — run on thread pool
-            var listenResult = await Task.Run(() =>
-                VauchiNative.DeviceLinkListen(_appHandle, 300), ct);
-
-            if (ct.IsCancellationRequested || listenResult == null)
-                return;
-
-            var listenJson = JsonDocument.Parse(listenResult);
-            if (listenJson.RootElement.TryGetProperty("error", out var errorProp))
-            {
-                System.Diagnostics.Debug.WriteLine(
-                    $"[Vauchi] DeviceLink listen error: {errorProp.GetString()}");
-                return;
-            }
-
-            var encryptedPayloadB64 = listenJson.RootElement
-                .GetProperty("encrypted_payload").GetString()!;
-            var senderToken = listenJson.RootElement
-                .GetProperty("sender_token").GetString()!;
-
-            // Prepare confirmation (decrypt request, get verification code)
-            var confirmResult = VauchiNative.DeviceLinkPrepareConfirmation(
-                _deviceLinkInitiator, encryptedPayloadB64);
-            if (confirmResult == null)
-                return;
-
-            var confirmJson = JsonDocument.Parse(confirmResult);
-            if (confirmJson.RootElement.TryGetProperty("error", out var confirmError))
-            {
-                System.Diagnostics.Debug.WriteLine(
-                    $"[Vauchi] DeviceLink prepare error: {confirmError.GetString()}");
-                return;
-            }
-
-            var verificationCode = confirmJson.RootElement
-                .GetProperty("confirmation_code").GetString()!;
-
-            // Remember sender token + verification code for the confirm step.
-            // Reading the code back out of the rendered ScreenModel was an
-            // ADR-021 violation (frontend treating UI presentation as
-            // protocol state); core's confirmation_code is the source.
-            _deviceLinkSenderToken = senderToken;
-            _deviceLinkVerificationCode = verificationCode;
-
-            // Transition UI to VerifyCode screen (must run on UI thread)
-            DispatcherQueue.TryEnqueue(() =>
-            {
-                VauchiNative.AppDeviceLinkPeerConnected(_appHandle, verificationCode);
-                RefreshScreen();
-            });
-        }
-        catch (OperationCanceledException)
-        {
-            // Flow cancelled — expected
-        }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine(
-                $"[Vauchi] DeviceLink listener error: {ex.Message}");
-        }
+        // The QR is already rendered by core's ScreenModel when we navigate
+        // to device_linking. The QR-ready callback exists so future UI
+        // could (e.g.) show a countdown to expires_at_unix; today we just
+        // log it for diagnostics.
+        System.Diagnostics.Debug.WriteLine(
+            $"[Vauchi] DeviceLink QR ready (expires_at={expiresAtUnix})");
     }
 
-    private string? _deviceLinkSenderToken;
-    private string? _deviceLinkVerificationCode;
-
-    /// <summary>
-    /// Called when the user confirms the verification code on the VerifyCode screen.
-    /// Completes the protocol handshake and sends the response via relay.
-    /// </summary>
-    private async Task CompleteDeviceLinkAsync()
+    private void OnDeviceLinkConfirmationRequired(DeviceLinkConfirmationArgs args)
     {
-        if (_deviceLinkInitiator == IntPtr.Zero ||
-            _deviceLinkSenderToken == null ||
-            _deviceLinkVerificationCode == null)
-            return;
+        // Remember the verification code so the UI's "Codes Match" button
+        // can call ConfirmManual without scraping it back out of the
+        // rendered ScreenModel.
+        _deviceLinkVerificationCode = args.ConfirmationCode;
 
-        try
-        {
-            var now = (ulong)DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        VauchiNative.AppDeviceLinkPeerConnected(_appHandle, args.ConfirmationCode);
+        RefreshScreen();
+    }
 
-            // Confirm link with manual verification (compute HMAC in Rust)
-            var confirmResult = await Task.Run(() =>
-                VauchiNative.DeviceLinkConfirmManual(
-                    _deviceLinkInitiator, _deviceLinkVerificationCode, now));
+    private void OnDeviceLinkCompleted(string deviceName, uint deviceIndex)
+    {
+        VauchiNative.AppDeviceLinkSyncComplete(_appHandle);
+        RefreshScreen();
+    }
 
-            if (confirmResult == null) return;
+    private void OnDeviceLinkFailed(string reason)
+    {
+        System.Diagnostics.Debug.WriteLine($"[Vauchi] DeviceLink failed: {reason}");
+        // UI surfacing of failure reasons is tracked by the device-link
+        // ScreenModel — core decides what message to render for each
+        // stable reason ("qr_expired", "user_denied", etc.).
+        RefreshScreen();
+    }
 
-            var confirmJson = JsonDocument.Parse(confirmResult);
-            if (confirmJson.RootElement.TryGetProperty("error", out var error))
-            {
-                System.Diagnostics.Debug.WriteLine(
-                    $"[Vauchi] DeviceLink confirm error: {error.GetString()}");
-                return;
-            }
-
-            var encryptedResponseB64 = confirmJson.RootElement
-                .GetProperty("encrypted_response").GetString()!;
-
-            // Send response via relay
-            await Task.Run(() =>
-                VauchiNative.DeviceLinkSendResponse(
-                    _appHandle, _deviceLinkSenderToken, encryptedResponseB64));
-
-            // Transition UI to Complete
-            DispatcherQueue.TryEnqueue(() =>
-            {
-                VauchiNative.AppDeviceLinkSyncComplete(_appHandle);
-                RefreshScreen();
-            });
-        }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine(
-                $"[Vauchi] DeviceLink confirm error: {ex.Message}");
-        }
+    private void OnDeviceLinkSessionEnded()
+    {
+        // Always-last callback; safe place to release the bridge handle.
+        // CleanupDeviceLink is also called from the UI when the user
+        // closes the screen — guard there ensures it's idempotent.
+        CleanupDeviceLink();
     }
 
     /// <summary>
-    /// Cleans up device link state (initiator handle, cancellation token).
-    /// Called when the flow completes or is cancelled.
+    /// Called when the user confirms the verification code on the
+    /// VerifyCode screen. The cycle thread takes it from here.
+    /// </summary>
+    private Task CompleteDeviceLinkAsync()
+    {
+        if (_deviceLinkBridge == null || _deviceLinkVerificationCode == null)
+            return Task.CompletedTask;
+
+        var now = (ulong)DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        _deviceLinkBridge.ConfirmManual(_deviceLinkVerificationCode, now);
+        return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// Cleans up the device link bridge. Idempotent — safe to call from
+    /// both the SessionEnded callback and from explicit cancel.
     /// </summary>
     private void CleanupDeviceLink()
     {
-        _deviceLinkCts?.Cancel();
-        _deviceLinkCts?.Dispose();
-        _deviceLinkCts = null;
-
-        if (_deviceLinkInitiator != IntPtr.Zero)
+        if (_deviceLinkBridge != null)
         {
-            VauchiNative.DeviceLinkInitiatorDestroy(_deviceLinkInitiator);
-            _deviceLinkInitiator = IntPtr.Zero;
+            _deviceLinkBridge.QrReady -= OnDeviceLinkQrReady;
+            _deviceLinkBridge.ConfirmationRequired -= OnDeviceLinkConfirmationRequired;
+            _deviceLinkBridge.Completed -= OnDeviceLinkCompleted;
+            _deviceLinkBridge.Failed -= OnDeviceLinkFailed;
+            _deviceLinkBridge.SessionEnded -= OnDeviceLinkSessionEnded;
+            _deviceLinkBridge.Dispose();
+            _deviceLinkBridge = null;
         }
-
-        _deviceLinkSenderToken = null;
         _deviceLinkVerificationCode = null;
     }
 }
