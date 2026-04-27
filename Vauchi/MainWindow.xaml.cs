@@ -423,16 +423,37 @@ public sealed partial class MainWindow : Window
         _ => screenId,
     };
 
+    /// <summary>
+    /// Returns true when core's current screen is FormDialog. Reads the
+    /// typed `screen_id` field from the ScreenModel JSON; matches the
+    /// canonical id emitted by `AppScreen::FormDialog.screen_id()`
+    /// (`"form_dialog"`).
+    /// </summary>
+    private bool IsCurrentScreenFormDialog()
+    {
+        string? currentJson = VauchiNative.AppCurrentScreen(_appHandle);
+        if (currentJson == null) return false;
+        try
+        {
+            using var doc = JsonDocument.Parse(currentJson);
+            return doc.RootElement.TryGetProperty("screen_id", out var idElem)
+                && idElem.ValueKind == JsonValueKind.String
+                && idElem.GetString() == "form_dialog";
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
+    }
+
     private void OnNavSelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
     {
         if (_navUpdating || _appHandle == IntPtr.Zero) return;
         if (args.SelectedItem is not NavigationViewItem item) return;
 
         string screenId = item.Tag as string ?? "";
-        // If on a modal screen (FormDialog), navigate back first to clear it.
         // Core's AppEngine stacks modals — tab switches must pop them.
-        string? currentJson = VauchiNative.AppCurrentScreen(_appHandle);
-        if (currentJson != null && currentJson.Contains("\"form_dialog\""))
+        if (IsCurrentScreenFormDialog())
         {
             VauchiNative.AppHandleAction(_appHandle, ActionJson.ActionPressed("cancel"));
         }
