@@ -256,20 +256,11 @@ public sealed partial class MainWindow : Window
         }
 #endif
 
-        // Check if onboarding needed
-        bool isOnboarding = false;
-        string? availableJson = VauchiNative.AppAvailableScreens(_appHandle);
-        if (availableJson != null)
-        {
-            try
-            {
-                using var doc = JsonDocument.Parse(availableJson);
-                var arr = doc.RootElement;
-                if (arr.GetArrayLength() == 1 && arr[0].GetString() == "onboarding")
-                    isOnboarding = true;
-            }
-            catch (JsonException) { }
-        }
+        // §1D pure-renderer remediation: ask core directly via
+        // AppHasIdentity instead of inspecting available_screens for
+        // the literal string "onboarding". The screen-id catalogue is a
+        // presentation concern; identity presence is the real predicate.
+        bool isOnboarding = VauchiNative.AppHasIdentity(_appHandle) != 1;
 
         if (isOnboarding)
         {
