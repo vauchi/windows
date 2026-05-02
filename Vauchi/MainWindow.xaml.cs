@@ -262,18 +262,16 @@ public sealed partial class MainWindow : Window
         // presentation concern; identity presence is the real predicate.
         bool isOnboarding = VauchiNative.AppHasIdentity(_appHandle) != 1;
 
+        // Window chrome only — no explicit navigate. Core's startup
+        // decision (Onboarding / Lock / MyInfo) is already set by
+        // `vauchi_app_create*` and surfaces through
+        // `AppCurrentScreen` in `RefreshScreen()`. An explicit
+        // `AppDefaultScreen()` + `AppNavigateTo()` here would bypass
+        // the Lock state for password-protected installs.
         if (isOnboarding)
-        {
             EnterOnboardingMode();
-            VauchiNative.AppNavigateTo(_appHandle, "onboarding");
-        }
         else
-        {
             ExitOnboardingMode();
-            string? defaultScreen = VauchiNative.AppDefaultScreen(_appHandle);
-            if (defaultScreen != null)
-                VauchiNative.AppNavigateTo(_appHandle, defaultScreen);
-        }
 
         RefreshScreen();
 
