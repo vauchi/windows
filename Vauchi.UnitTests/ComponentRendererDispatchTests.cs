@@ -26,6 +26,7 @@ public class ComponentRendererDispatchTests
     [InlineData("""{"ShowToast": {"id": "st1", "message": "Done", "duration_ms": 3000}}""", "ShowToast")]
     [InlineData("""{"InlineConfirm": {"id": "ic1", "warning": "Delete?", "confirm_text": "Yes", "cancel_text": "No", "destructive": true}}""", "InlineConfirm")]
     [InlineData("""{"EditableText": {"id": "et1", "label": "Name", "value": "Alice", "editing": false}}""", "EditableText")]
+    [InlineData("""{"Dropdown": {"id": "dd1", "label": "Pick", "selected": null, "options": [{"id": "a", "label": "A"}]}}""", "Dropdown")]
     public void ExternallyTagged_Object_Dispatches(string json, string expectedVariant)
     {
         using var doc = JsonDocument.Parse(json);

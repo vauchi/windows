@@ -67,6 +67,7 @@ public static class ComponentRenderer
             "Banner" => CreateAndRender<BannerComponent>(data!.Value, onAction),
             "AvatarPreview" => CreateAndRender<AvatarPreviewComponent>(data!.Value, onAction),
             "Slider" => CreateAndRender<SliderComponent>(data!.Value, onAction),
+            "Dropdown" => CreateAndRender<DropdownComponent>(data!.Value, onAction),
             "Divider" => new DividerComponent(),
             _ => null,
         };

@@ -1,0 +1,14 @@
+<!-- SPDX-FileCopyrightText: 2026 Mattia Egloff <mattia.egloff@pm.me> -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<UserControl
+    x:Class="Vauchi.CoreUI.Components.DropdownComponent"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <StackPanel Spacing="4">
+        <TextBlock x:Name="DropdownLabel"
+                   Style="{StaticResource CaptionTextBlockStyle}"
+                   Visibility="Collapsed" />
+        <ComboBox x:Name="DropdownControl"
+                  HorizontalAlignment="Stretch" />
+    </StackPanel>
+</UserControl>
