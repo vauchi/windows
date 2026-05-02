@@ -8,6 +8,7 @@ include:
     ref: main
     file:
       - '/ci-templates/design-drift.yml'
+      - '/ci-templates/parser-parity.yml'
       - '/ci-templates/removed-symbols.yml'
       - '/ci-templates/badges.yml'
       - '/ci-templates/github-mirror.yml'
@@ -357,6 +358,16 @@ check:design-drift:
     DESIGN_DRIFT_FILE_EXT: ".xaml.cs"
     DESIGN_DRIFT_FILE_SUFFIX: "Component"
     DESIGN_DRIFT_CASE: "pascal"
+
+# Parser-parity gate: verify the C# switch dispatch in
+# `Vauchi/CoreUI/ComponentRenderer.cs` covers every variant declared
+# in core's canonical `Component` enum. Catches silent drift when
+# core adds a variant.
+check:parser-parity:
+  extends: .parser-parity-job
+  variables:
+    FRONTEND_NAME: "windows"
+    PARSER_FILE: "Vauchi/CoreUI/ComponentRenderer.cs"
 
 # Removed symbols: detect stale references to removed features
 check:removed-symbols:
