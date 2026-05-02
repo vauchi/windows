@@ -88,6 +88,11 @@ public sealed partial class MainWindow : Window
         }
         else
         {
+            // Re-fetch the current screen on background→foreground.
+            // Listener events cover most state changes during
+            // backgrounding, but a missed event would leave the UI
+            // stale until the next user action.
+            RefreshScreen();
             // Poll for notifications when app is activated (E)
             PollNotifications();
         }
