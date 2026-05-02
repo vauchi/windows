@@ -60,6 +60,10 @@ public sealed partial class MainWindow : Window
         InitializeComponent();
         Title = Localizer.T("app.name");
 
+        // Opt the window out of screen capture (matches iOS / Android
+        // behaviour). DEBUG builds are exempt for UI-automation tooling.
+        ScreenCaptureProtection.Enable(this);
+
         Renderer.ActionRequested += OnActionRequested;
 
         // Async init with optional Windows Hello gate
