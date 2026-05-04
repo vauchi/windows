@@ -383,7 +383,7 @@ check:removed-symbols:
 # routed through semantic accessors).
 check:design-tokens:
   stage: lint
-  image: alpine:3.21
+  image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/alpine:3.21
   tags: [docker]
   needs: []
   before_script:
