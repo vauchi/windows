@@ -376,26 +376,17 @@ public sealed partial class MainWindow : Window
     }
 
     /// <summary>
-    /// After any screen change, highlight the correct tab based on current screen_id.
+    /// After any screen change, highlight the correct tab based on
+    /// core-provided screen metadata. Reads `parent_screen_id` (the
+    /// sidebar tab a sub-screen belongs to, surfaced by
+    /// `2026-05-01-screen-id-metadata-in-core` G1) and falls back to
+    /// `screen_id` for top-level tabs that are their own parent.
     /// </summary>
     private void SyncNavSelection()
     {
         _navUpdating = true;
 
-        string? screenJson = VauchiNative.AppCurrentScreen(_appHandle);
-        string screenId = "";
-        if (screenJson != null)
-        {
-            try
-            {
-                using var doc = JsonDocument.Parse(screenJson);
-                screenId = doc.RootElement.TryGetProperty("screen_id", out var sid)
-                    ? sid.GetString() ?? "" : "";
-            }
-            catch (JsonException) { }
-        }
-
-        string parentId = MapScreenToParentId(screenId);
+        string parentId = ReadParentTabId();
         for (int i = 0; i < NavView.MenuItems.Count; i++)
         {
             if (NavView.MenuItems[i] is NavigationViewItem item
@@ -411,41 +402,51 @@ public sealed partial class MainWindow : Window
     }
 
     /// <summary>
-    /// Map a possibly-parameterized sub-screen back to the top-level
-    /// screen_id that should be highlighted in the sidebar. Sub-screens
-    /// not listed here pass through unchanged — which matches a
-    /// top-level tab when the sidebar carries one (e.g. "settings",
-    /// "recovery"), or leaves no selection for transient screens like
-    /// <c>form_dialog</c> or <c>lock</c>.
+    /// Returns the sidebar tab id that should be highlighted for the
+    /// current screen. Reads core-provided `parent_screen_id` first;
+    /// when absent (top-level tab or transient screen) returns
+    /// `screen_id` so existing tabs select themselves.
     /// </summary>
-    private static string MapScreenToParentId(string screenId) => screenId switch
+    private string ReadParentTabId()
     {
-        "entry_detail" => "my_info",
-        "contact_detail" or "contact_edit" or "contact_visibility"
-            or "contact_duplicates" or "contact_merge" or "contact_limit"
-            or "archived_contacts" or "verify_fingerprint" => "contacts",
-        "group_detail" => "groups",
-        "recovery_help" or "recovery_claim_review" => "recovery",
-        "device_linking" or "device_replacement" => "device_management",
-        _ => screenId,
-    };
+        string? screenJson = VauchiNative.AppCurrentScreen(_appHandle);
+        if (screenJson == null) return "";
+        try
+        {
+            using var doc = JsonDocument.Parse(screenJson);
+            var root = doc.RootElement;
+            if (root.TryGetProperty("parent_screen_id", out var pid)
+                && pid.ValueKind == JsonValueKind.String)
+            {
+                return pid.GetString() ?? "";
+            }
+            return root.TryGetProperty("screen_id", out var sid)
+                && sid.ValueKind == JsonValueKind.String
+                ? sid.GetString() ?? "" : "";
+        }
+        catch (JsonException)
+        {
+            return "";
+        }
+    }
 
     /// <summary>
-    /// Returns true when core's current screen is FormDialog. Reads the
-    /// typed `screen_id` field from the ScreenModel JSON; matches the
-    /// canonical id emitted by `AppScreen::FormDialog.screen_id()`
-    /// (`"form_dialog"`).
+    /// Returns true when core's current screen is presented as a modal
+    /// (e.g. form dialog, confirmation). Reads the typed
+    /// `presentation_kind` field surfaced by
+    /// `2026-05-01-screen-id-metadata-in-core` G2 — replaces the
+    /// previous `screen_id == "form_dialog"` substring check.
     /// </summary>
-    private bool IsCurrentScreenFormDialog()
+    private bool IsCurrentScreenModal()
     {
         string? currentJson = VauchiNative.AppCurrentScreen(_appHandle);
         if (currentJson == null) return false;
         try
         {
             using var doc = JsonDocument.Parse(currentJson);
-            return doc.RootElement.TryGetProperty("screen_id", out var idElem)
-                && idElem.ValueKind == JsonValueKind.String
-                && idElem.GetString() == "form_dialog";
+            return doc.RootElement.TryGetProperty("presentation_kind", out var kind)
+                && kind.ValueKind == JsonValueKind.String
+                && kind.GetString() == "Modal";
         }
         catch (JsonException)
         {
@@ -460,7 +461,7 @@ public sealed partial class MainWindow : Window
 
         string screenId = item.Tag as string ?? "";
         // Core's AppEngine stacks modals — tab switches must pop them.
-        if (IsCurrentScreenFormDialog())
+        if (IsCurrentScreenModal())
         {
             VauchiNative.AppHandleAction(_appHandle, ActionJson.ActionPressed("cancel"));
         }
