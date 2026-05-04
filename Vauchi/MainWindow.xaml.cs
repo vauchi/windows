@@ -543,10 +543,6 @@ public sealed partial class MainWindow : Window
                 NavigateToParamScreen(resultJson, "OpenEntryDetail", "field_id", "entry_detail");
                 break;
 
-            case ActionResultKind.StartBackupImport:
-                HandleBackupImport();
-                break;
-
             case ActionResultKind.StartDeviceLink:
                 StartDeviceLinkFlow();
                 break;

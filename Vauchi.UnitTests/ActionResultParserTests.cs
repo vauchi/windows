@@ -97,13 +97,6 @@ public class ActionResultParserTests
     }
 
     [Fact]
-    public void Classifies_StartBackupImport()
-    {
-        string json = "\"StartBackupImport\"";
-        Assert.Equal(ActionResultKind.StartBackupImport, ActionResultParser.Classify(json));
-    }
-
-    [Fact]
     public void Classifies_OpenEntryDetail()
     {
         string json = """{"OpenEntryDetail":{"field_id":"email_work"}}""";

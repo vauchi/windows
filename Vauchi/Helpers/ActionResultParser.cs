@@ -16,7 +16,6 @@ public enum ActionResultKind
     Complete,
     WipeComplete,
     StartDeviceLink,
-    StartBackupImport,
     OpenContact,
     EditContact,
     OpenUrl,
@@ -35,7 +34,7 @@ public static class ActionResultParser
     private static readonly string[] KnownVariants =
     [
         "UpdateScreen", "NavigateTo", "ValidationError", "Complete",
-        "WipeComplete", "StartDeviceLink", "StartBackupImport",
+        "WipeComplete", "StartDeviceLink",
         "OpenContact", "EditContact", "OpenUrl", "ShowAlert",
         "RequestCamera", "OpenEntryDetail", "ShowToast", "ExchangeCommands",
         "BackupExportComplete",
@@ -79,7 +78,6 @@ public static class ActionResultParser
         "Complete" => ActionResultKind.Complete,
         "WipeComplete" => ActionResultKind.WipeComplete,
         "StartDeviceLink" => ActionResultKind.StartDeviceLink,
-        "StartBackupImport" => ActionResultKind.StartBackupImport,
         "OpenContact" => ActionResultKind.OpenContact,
         "EditContact" => ActionResultKind.EditContact,
         "OpenUrl" => ActionResultKind.OpenUrl,

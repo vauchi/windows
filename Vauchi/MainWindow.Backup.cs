@@ -44,12 +44,4 @@ public sealed partial class MainWindow
         }
     }
 
-    private void HandleBackupImport()
-    {
-        if (_appHandle == IntPtr.Zero) return;
-
-        Interop.VauchiNative.AppNavigateTo(_appHandle, "backup");
-        SyncNavSelection();
-        RefreshScreen();
-    }
 }
