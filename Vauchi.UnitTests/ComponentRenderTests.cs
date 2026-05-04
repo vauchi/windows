@@ -142,26 +142,26 @@ public class ComponentRenderTests
         Assert.False(doc.RootElement.TryGetProperty("detail", out _));
     }
 
-    // ── ContactList ──
+    // ── List ──
 
     [Fact]
-    public void ContactList_ReadsContactItems()
+    public void List_ReadsItems()
     {
-        var json = """{"id":"cl1","contacts":[{"id":"c1","name":"Alice","subtitle":"Work","avatar_initials":"AL","status":"online","searchable_fields":["alice"]}],"searchable":true}""";
+        var json = """{"id":"cl1","items":[{"id":"c1","name":"Alice","subtitle":"Work","avatar_initials":"AL","status":"online"}],"searchable":true}""";
         using var doc = JsonDocument.Parse(json);
-        var contacts = doc.RootElement.GetProperty("contacts");
-        Assert.Equal(1, contacts.GetArrayLength());
-        Assert.Equal("Alice", contacts[0].GetProperty("name").GetString());
-        Assert.Equal("AL", contacts[0].GetProperty("avatar_initials").GetString());
+        var items = doc.RootElement.GetProperty("items");
+        Assert.Equal(1, items.GetArrayLength());
+        Assert.Equal("Alice", items[0].GetProperty("name").GetString());
+        Assert.Equal("AL", items[0].GetProperty("avatar_initials").GetString());
         Assert.True(doc.RootElement.GetProperty("searchable").GetBoolean());
     }
 
     [Fact]
-    public void ContactList_EmptyContacts()
+    public void List_EmptyItems()
     {
-        var json = """{"id":"cl1","contacts":[],"searchable":false}""";
+        var json = """{"id":"cl1","items":[],"searchable":false}""";
         using var doc = JsonDocument.Parse(json);
-        Assert.Equal(0, doc.RootElement.GetProperty("contacts").GetArrayLength());
+        Assert.Equal(0, doc.RootElement.GetProperty("items").GetArrayLength());
     }
 
     // ── SettingsGroup: all 4 SettingsItemKind ──
@@ -200,15 +200,15 @@ public class ComponentRenderTests
         Assert.Equal(mode, doc.RootElement.GetProperty("visibility_mode").GetString());
     }
 
-    // ── CardPreview ──
+    // ── Preview ──
 
     [Fact]
-    public void CardPreview_ReadsGroupViews()
+    public void Preview_ReadsVariants()
     {
-        var json = """{"name":"Alice","fields":[],"group_views":[{"group_name":"family","display_name":"Mom","visible_fields":[]}],"selected_group":"family"}""";
+        var json = """{"name":"Alice","fields":[],"variants":[{"variant_id":"family","display_name":"Mom","visible_fields":[]}],"selected_variant":"family"}""";
         using var doc = JsonDocument.Parse(json);
-        Assert.Equal("family", doc.RootElement.GetProperty("selected_group").GetString());
-        Assert.Equal("Mom", doc.RootElement.GetProperty("group_views")[0].GetProperty("display_name").GetString());
+        Assert.Equal("family", doc.RootElement.GetProperty("selected_variant").GetString());
+        Assert.Equal("Mom", doc.RootElement.GetProperty("variants")[0].GetProperty("display_name").GetString());
     }
 
     // ── ConfirmationDialog: correct field names ──

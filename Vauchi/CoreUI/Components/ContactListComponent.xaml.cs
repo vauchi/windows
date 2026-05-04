@@ -39,22 +39,22 @@ public sealed partial class ContactListComponent : UserControl, IRenderable
 
         ContactContainer.Children.Clear();
 
-        if (!data.TryGetProperty("contacts", out var contacts))
+        if (!data.TryGetProperty("items", out var items))
             return;
 
-        foreach (var contact in contacts.EnumerateArray())
+        foreach (var item in items.EnumerateArray())
         {
-            string contactId = contact.TryGetProperty("id", out var cIdEl) ? cIdEl.GetString() ?? "" : "";
-            string name = contact.TryGetProperty("name", out var nameEl) ? nameEl.GetString() ?? "" : "";
-            string initials = contact.TryGetProperty("avatar_initials", out var initEl) ? initEl.GetString() ?? "" : "";
-            string? subtitle = contact.TryGetProperty("subtitle", out var subEl) ? subEl.GetString() : null;
+            string itemId = item.TryGetProperty("id", out var idEl) ? idEl.GetString() ?? "" : "";
+            string name = item.TryGetProperty("name", out var nameEl) ? nameEl.GetString() ?? "" : "";
+            string initials = item.TryGetProperty("avatar_initials", out var initEl) ? initEl.GetString() ?? "" : "";
+            string? subtitle = item.TryGetProperty("subtitle", out var subEl) ? subEl.GetString() : null;
 
             var row = BuildContactRow(initials, name, subtitle);
             AutomationProperties.SetName(row, name);
 
-            if (onAction != null && contactId.Length > 0)
+            if (onAction != null && itemId.Length > 0)
             {
-                string capturedId = contactId;
+                string capturedId = itemId;
                 row.PointerPressed += (_, _) =>
                     onAction(ActionJson.ListItemSelected(componentId, capturedId));
             }

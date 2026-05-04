@@ -122,7 +122,7 @@ public class ActionResultParsingTests
         {
             "NavigateTo": {
                 "title": "Contacts",
-                "components": [{"ContactList": {"id": "cl", "contacts": []}}],
+                "components": [{"List": {"id": "cl", "items": []}}],
                 "actions": []
             }
         }

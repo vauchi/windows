@@ -49,28 +49,28 @@ public sealed partial class CardPreviewComponent : UserControl, IRenderable
         GroupTabBar.Children.Clear();
         GroupTabBar.Visibility = Visibility.Collapsed;
 
-        string? selectedGroup = data.TryGetProperty("selected_group", out var sgEl)
-            ? sgEl.ValueKind == JsonValueKind.String ? sgEl.GetString() : null
+        string? selectedVariant = data.TryGetProperty("selected_variant", out var svEl)
+            ? svEl.ValueKind == JsonValueKind.String ? svEl.GetString() : null
             : null;
 
-        // Build group tab buttons if present
-        var groupViews = new List<(string GroupName, string DisplayName, JsonElement Element)>();
-        if (data.TryGetProperty("group_views", out var groupViewsEl))
+        // Build preview-variant tab buttons if present
+        var variants = new List<(string VariantId, string DisplayName, JsonElement Element)>();
+        if (data.TryGetProperty("variants", out var variantsEl))
         {
-            foreach (var gv in groupViewsEl.EnumerateArray())
+            foreach (var v in variantsEl.EnumerateArray())
             {
-                string groupName = gv.TryGetProperty("group_name", out var gnEl) ? gnEl.GetString() ?? "" : "";
-                string displayName = gv.TryGetProperty("display_name", out var dnEl) ? dnEl.GetString() ?? groupName : groupName;
-                groupViews.Add((groupName, displayName, gv));
+                string variantId = v.TryGetProperty("variant_id", out var vidEl) ? vidEl.GetString() ?? "" : "";
+                string displayName = v.TryGetProperty("display_name", out var dnEl) ? dnEl.GetString() ?? variantId : variantId;
+                variants.Add((variantId, displayName, v));
             }
         }
 
-        if (groupViews.Count > 0)
+        if (variants.Count > 0)
         {
             GroupTabBar.Visibility = Visibility.Visible;
-            foreach (var (groupName, displayName, _) in groupViews)
+            foreach (var (variantId, displayName, _) in variants)
             {
-                bool isSelected = groupName == selectedGroup;
+                bool isSelected = variantId == selectedVariant;
                 var btn = new Button
                 {
                     Content = displayName,
@@ -82,18 +82,21 @@ public sealed partial class CardPreviewComponent : UserControl, IRenderable
 
                 if (onAction != null)
                 {
-                    string capturedGroup = groupName;
+                    // UserAction::GroupViewSelected payload key remains
+                    // `group_name` — that's a frontend → core wire surface
+                    // (UserAction), separate from Wire Humble Tier 1.
+                    string capturedVariantId = variantId;
                     btn.Click += (_, _) =>
-                        onAction(ActionJson.GroupViewSelected(capturedGroup));
+                        onAction(ActionJson.GroupViewSelected(capturedVariantId));
                 }
 
                 GroupTabBar.Children.Add(btn);
             }
         }
 
-        // Render fields: use selected group's visible_fields if available, otherwise all fields
+        // Render fields: use selected variant's visible_fields if available, otherwise all fields
         FieldsContainer.Children.Clear();
-        var fieldsToShow = ResolveFields(data, groupViews, selectedGroup);
+        var fieldsToShow = ResolveFields(data, variants, selectedVariant);
         foreach (var (label, value) in fieldsToShow)
         {
             var row = new Grid();
@@ -139,20 +142,20 @@ public sealed partial class CardPreviewComponent : UserControl, IRenderable
 
     private static List<(string Label, string Value)> ResolveFields(
         JsonElement data,
-        List<(string GroupName, string DisplayName, JsonElement Element)> groupViews,
-        string? selectedGroup)
+        List<(string VariantId, string DisplayName, JsonElement Element)> variants,
+        string? selectedVariant)
     {
         var result = new List<(string, string)>();
 
-        // Try to find the selected group view and use its visible_fields
-        if (selectedGroup != null)
+        // Try to find the selected preview variant and use its visible_fields
+        if (selectedVariant != null)
         {
-            foreach (var (groupName, _, gv) in groupViews)
+            foreach (var (variantId, _, v) in variants)
             {
-                if (groupName != selectedGroup)
+                if (variantId != selectedVariant)
                     continue;
 
-                if (!gv.TryGetProperty("visible_fields", out var visFields))
+                if (!v.TryGetProperty("visible_fields", out var visFields))
                     break;
 
                 // visible_fields is a list of field ids — match against data["fields"]
