@@ -14,9 +14,9 @@ using Vauchi.Helpers;
 
 namespace Vauchi.CoreUI.Components;
 
-public sealed partial class CardPreviewComponent : UserControl, IRenderable
+public sealed partial class PreviewComponent : UserControl, IRenderable
 {
-    public CardPreviewComponent()
+    public PreviewComponent()
     {
         InitializeComponent();
     }

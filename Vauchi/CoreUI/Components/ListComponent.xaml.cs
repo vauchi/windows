@@ -15,9 +15,9 @@ using Vauchi.UI;
 
 namespace Vauchi.CoreUI.Components;
 
-public sealed partial class ContactListComponent : UserControl, IRenderable
+public sealed partial class ListComponent : UserControl, IRenderable
 {
-    public ContactListComponent()
+    public ListComponent()
     {
         InitializeComponent();
         SearchBox.PlaceholderText = Localizer.T("contacts.search_placeholder");
