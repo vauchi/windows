@@ -44,7 +44,7 @@ public sealed partial class ContactListComponent : UserControl, IRenderable
 
         foreach (var item in items.EnumerateArray())
         {
-            string itemId = item.TryGetProperty("id", out var idEl) ? idEl.GetString() ?? "" : "";
+            string itemId = item.TryGetProperty("id", out var itemIdEl) ? itemIdEl.GetString() ?? "" : "";
             string name = item.TryGetProperty("name", out var nameEl) ? nameEl.GetString() ?? "" : "";
             string initials = item.TryGetProperty("avatar_initials", out var initEl) ? initEl.GetString() ?? "" : "";
             string? subtitle = item.TryGetProperty("subtitle", out var subEl) ? subEl.GetString() : null;
