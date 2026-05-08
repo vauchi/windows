@@ -159,7 +159,7 @@ public class ExchangeCommandParserTests
     [Fact]
     public void ParseFromActionResult_Extracts_Commands()
     {
-        string resultJson = """{"ExchangeCommands":{"commands":[{"QrDisplay":{"data":"x"}},"QrRequestScan"]}}""";
+        string resultJson = """{"Commands":{"commands":[{"QrDisplay":{"data":"x"}},"QrRequestScan"]}}""";
         var cmds = ExchangeCommandParser.ParseFromActionResult(resultJson);
         Assert.Equal(2, cmds.Length);
         Assert.Equal(ExchangeCommandKind.QrDisplay, cmds[0].Kind);

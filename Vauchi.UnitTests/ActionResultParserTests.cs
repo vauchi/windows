@@ -104,10 +104,10 @@ public class ActionResultParserTests
     }
 
     [Fact]
-    public void Classifies_ExchangeCommands()
+    public void Classifies_Commands()
     {
-        string json = """{"ExchangeCommands":{"commands":["QrRequestScan"]}}""";
-        Assert.Equal(ActionResultKind.ExchangeCommands, ActionResultParser.Classify(json));
+        string json = """{"Commands":{"commands":["QrRequestScan"]}}""";
+        Assert.Equal(ActionResultKind.Commands, ActionResultParser.Classify(json));
     }
 
     [Fact]
@@ -139,16 +139,16 @@ public class ActionResultParserTests
     }
 
     [Fact]
-    public void Classifies_ExchangeCommands_WithQrDisplay()
+    public void Classifies_Commands_WithQrDisplay()
     {
-        string json = """{"ExchangeCommands":{"commands":[{"QrDisplay":{"data":"vauchi://..."}},"QrRequestScan"]}}""";
-        Assert.Equal(ActionResultKind.ExchangeCommands, ActionResultParser.Classify(json));
+        string json = """{"Commands":{"commands":[{"QrDisplay":{"data":"vauchi://..."}},"QrRequestScan"]}}""";
+        Assert.Equal(ActionResultKind.Commands, ActionResultParser.Classify(json));
     }
 
     [Fact]
-    public void Classifies_ExchangeCommands_EmptyCommands()
+    public void Classifies_Commands_EmptyCommands()
     {
-        string json = """{"ExchangeCommands":{"commands":[]}}""";
-        Assert.Equal(ActionResultKind.ExchangeCommands, ActionResultParser.Classify(json));
+        string json = """{"Commands":{"commands":[]}}""";
+        Assert.Equal(ActionResultKind.Commands, ActionResultParser.Classify(json));
     }
 }

@@ -23,7 +23,12 @@ public enum ActionResultKind
     RequestCamera,
     OpenEntryDetail,
     ShowToast,
-    ExchangeCommands,
+    /// <summary>
+    /// `ActionResult::Commands` (renamed from `ExchangeCommands` in core
+    /// 0.47.0, Phase 0 of
+    /// 2026-05-04-exchange-command-screen-presentation).
+    /// </summary>
+    Commands,
     BackupExportComplete,
     Error,
     Unknown,
@@ -36,7 +41,7 @@ public static class ActionResultParser
         "UpdateScreen", "NavigateTo", "ValidationError", "Complete",
         "WipeComplete", "StartDeviceLink",
         "OpenContact", "EditContact", "OpenUrl", "ShowAlert",
-        "RequestCamera", "OpenEntryDetail", "ShowToast", "ExchangeCommands",
+        "RequestCamera", "OpenEntryDetail", "ShowToast", "Commands",
         "BackupExportComplete",
     ];
 
@@ -85,7 +90,7 @@ public static class ActionResultParser
         "RequestCamera" => ActionResultKind.RequestCamera,
         "OpenEntryDetail" => ActionResultKind.OpenEntryDetail,
         "ShowToast" => ActionResultKind.ShowToast,
-        "ExchangeCommands" => ActionResultKind.ExchangeCommands,
+        "Commands" => ActionResultKind.Commands,
         "BackupExportComplete" => ActionResultKind.BackupExportComplete,
         _ => ActionResultKind.Unknown,
     };

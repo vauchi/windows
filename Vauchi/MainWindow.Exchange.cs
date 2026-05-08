@@ -69,6 +69,31 @@ public sealed partial class MainWindow
                     SendHardwareUnavailable("PhotoLibrary");
                     break;
 
+                // Phase 2b screen-presentation lifecycle commands. Windows
+                // desktop has no programmatic brightness control (user
+                // owns it via system settings) and the OS owns idle-timer
+                // / sleep behaviour. Answer HardwareUnavailable so core
+                // does not retry; the command/event protocol treats this
+                // as "request honoured at platform default."
+                case ExchangeCommandKind.SetScreenBrightness:
+                    SendHardwareUnavailable("screen_brightness");
+                    break;
+
+                case ExchangeCommandKind.SetIdleTimerDisabled:
+                    SendHardwareUnavailable("idle_timer");
+                    break;
+
+                // Phase 0 additions. ShowShareSheet has no Windows
+                // equivalent (apps copy/paste URLs); SwitchCamera is
+                // mobile-only (front/rear distinction).
+                case ExchangeCommandKind.ShowShareSheet:
+                    SendHardwareUnavailable("share_sheet");
+                    break;
+
+                case ExchangeCommandKind.SwitchCamera:
+                    SendHardwareUnavailable("camera_switch");
+                    break;
+
                 default:
                     System.Diagnostics.Debug.WriteLine(
                         $"[Vauchi] Unknown exchange command: {cmd.Kind}");

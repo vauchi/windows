@@ -548,7 +548,7 @@ public sealed partial class MainWindow : Window
                 StartDeviceLinkFlow();
                 break;
 
-            case ActionResultKind.ExchangeCommands:
+            case ActionResultKind.Commands:
                 var commands = ExchangeCommandParser.ParseFromActionResult(resultJson);
                 HandleExchangeCommands(commands);
                 RefreshScreen();

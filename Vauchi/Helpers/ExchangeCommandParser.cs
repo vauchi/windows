@@ -24,6 +24,15 @@ public enum ExchangeCommandKind
     ImagePickFromFile,
     ImageCaptureFromCamera,
     ImagePickFromLibrary,
+    // Phase 2b screen-presentation commands. Windows desktop has no
+    // programmatic brightness control and the OS owns idle-timer /
+    // sleep behaviour; the dispatcher answers HardwareUnavailable.
+    SetScreenBrightness,
+    SetIdleTimerDisabled,
+    // Phase 0 additions: ShowShareSheet has no Windows equivalent
+    // (apps copy/paste URLs); SwitchCamera is mobile-only (front/rear).
+    ShowShareSheet,
+    SwitchCamera,
     Unknown,
 }
 
@@ -93,6 +102,8 @@ public static class ExchangeCommandParser
         "AudioEmitChallenge", "AudioListenForResponse", "AudioStop",
         "DirectSend",
         "ImagePickFromFile", "ImageCaptureFromCamera", "ImagePickFromLibrary",
+        "SetScreenBrightness", "SetIdleTimerDisabled",
+        "ShowShareSheet", "SwitchCamera",
     ];
 
     /// <summary>
@@ -136,7 +147,10 @@ public static class ExchangeCommandParser
     public static ExchangeCommand[] ParseFromActionResult(string resultJson)
     {
         using var doc = JsonDocument.Parse(resultJson);
-        if (doc.RootElement.TryGetProperty("ExchangeCommands", out var outer)
+        // ActionResult variant key was renamed `ExchangeCommands` → `Commands`
+        // in core 0.47.0 (Phase 0 of
+        // 2026-05-04-exchange-command-screen-presentation).
+        if (doc.RootElement.TryGetProperty("Commands", out var outer)
             && outer.TryGetProperty("commands", out var cmds))
         {
             var result = new ExchangeCommand[cmds.GetArrayLength()];
@@ -167,6 +181,10 @@ public static class ExchangeCommandParser
         "ImagePickFromFile" => ExchangeCommandKind.ImagePickFromFile,
         "ImageCaptureFromCamera" => ExchangeCommandKind.ImageCaptureFromCamera,
         "ImagePickFromLibrary" => ExchangeCommandKind.ImagePickFromLibrary,
+        "SetScreenBrightness" => ExchangeCommandKind.SetScreenBrightness,
+        "SetIdleTimerDisabled" => ExchangeCommandKind.SetIdleTimerDisabled,
+        "ShowShareSheet" => ExchangeCommandKind.ShowShareSheet,
+        "SwitchCamera" => ExchangeCommandKind.SwitchCamera,
         _ => ExchangeCommandKind.Unknown,
     };
 }
