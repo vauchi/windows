@@ -8,6 +8,7 @@ using Microsoft.Windows.AppNotifications.Builder;
 using System;
 using System.Collections.Generic;
 using System.Text.Json;
+using Vauchi.Handlers;
 using Vauchi.Helpers;
 using Vauchi.Interop;
 using Vauchi.Platform;
@@ -21,7 +22,7 @@ public sealed partial class MainWindow : Window
     private bool _navUpdating;
     private SystemTrayManager? _tray;
     private DispatcherTimer? _toastTimer;
-    private BleExchangeService? _ble;
+    private ExchangeCommandHandler? _exchange;
     // Prevent GC collection of the event callback delegate (P/Invoke requirement)
     private VauchiNative.VauchiEventCallback? _eventCallback;
 
@@ -256,8 +257,7 @@ public sealed partial class MainWindow : Window
 
         RefreshScreen();
 
-        _ble = new BleExchangeService(OnBleHardwareEvent);
-        _ = _ble.CheckAvailabilityAsync();
+        _exchange = new ExchangeCommandHandler(SendHardwareEventToCore, DispatcherQueue, this);
 
         // Register event callback for async core notifications (Phase 2E).
         // Background operations (sync, delivery, device link) fire on arbitrary
@@ -466,6 +466,21 @@ public sealed partial class MainWindow : Window
         HandleActionResult(resultJson);
     }
 
+    /// <summary>
+    /// Wires <see cref="ExchangeCommandHandler"/> hardware events back
+    /// into core: forwards to <c>AppHandleHardwareEvent</c> and routes
+    /// the resulting <c>ActionResult</c> JSON through
+    /// <see cref="HandleActionResult"/>. Centralises the
+    /// <c>_appHandle == IntPtr.Zero</c> guard so the handler stays
+    /// CABI-handle-agnostic.
+    /// </summary>
+    private void SendHardwareEventToCore(string eventJson)
+    {
+        if (_appHandle == IntPtr.Zero) return;
+        string? resultJson = VauchiNative.AppHandleHardwareEvent(_appHandle, eventJson);
+        if (resultJson != null) HandleActionResult(resultJson);
+    }
+
     private void HandleActionResult(string resultJson)
     {
         var kind = ActionResultParser.Classify(resultJson);
@@ -522,7 +537,7 @@ public sealed partial class MainWindow : Window
 
             case ActionResultKind.Commands:
                 var commands = ExchangeCommandParser.ParseFromActionResult(resultJson);
-                HandleExchangeCommands(commands);
+                _exchange?.Handle(commands);
                 RefreshScreen();
                 break;
 
@@ -707,7 +722,7 @@ public sealed partial class MainWindow : Window
             VauchiNative.AppSetEventCallback(_appHandle, null, IntPtr.Zero);
             _eventCallback = null;
 
-            _ble?.Dispose();
+            _exchange?.Dispose();
             VauchiNative.AppDestroy(_appHandle);
             _appHandle = IntPtr.Zero;
         }

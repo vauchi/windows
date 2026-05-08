@@ -3,21 +3,80 @@
 
 using System;
 using System.Text.Json;
+using Microsoft.UI.Dispatching;
+using Microsoft.UI.Xaml;
 using Vauchi.Helpers;
 using Vauchi.Interop;
 using Vauchi.Services;
 using Windows.Storage.Pickers;
 
-namespace Vauchi;
+namespace Vauchi.Handlers;
 
 /// <summary>
-/// Exchange hardware command dispatch (ADR-031).
-/// Handles BLE, audio, NFC, and QR commands from core, routes hardware
-/// events back via AppHandleHardwareEvent.
+/// Generic <c>ExchangeCommand</c> dispatcher (ADR-031).
+///
+/// Translates core-emitted <see cref="ExchangeCommand"/>s into native
+/// Windows side-effects (BLE start/scan, audio emit/listen, file
+/// pickers, etc.) and routes the resulting hardware events back to
+/// core via the injected <c>sendHardwareEvent</c> callback.
+///
+/// The handler is the Humble Object on the Windows side of ADR-031:
+/// it owns no business logic, just the platform plumbing. All
+/// transports that don't exist on Windows desktop (NFC, camera
+/// capture / library, share-sheet, screen-brightness, idle-timer,
+/// orientation-lock, switch-camera) answer
+/// <c>HardwareUnavailable</c>; core uses this signal to fall back
+/// to another transport without retrying.
 /// </summary>
-public sealed partial class MainWindow
+public sealed class ExchangeCommandHandler : IDisposable
 {
-    private void HandleExchangeCommands(ExchangeCommand[] commands)
+    private readonly Action<string> _sendHardwareEvent;
+    private readonly DispatcherQueue _dispatcher;
+    private readonly Window _window;
+    private BleExchangeService? _ble;
+
+    /// <summary>
+    /// Creates the handler and starts its BLE adapter availability
+    /// probe. The dispatcher is used to marshal background-thread
+    /// hardware events (BLE / audio listen) onto the UI thread before
+    /// they reach <paramref name="sendHardwareEvent"/>.
+    /// </summary>
+    /// <param name="sendHardwareEvent">
+    /// Callback that takes a serialized
+    /// <see cref="ExchangeHardwareEventJson"/> payload, forwards it
+    /// to <c>VauchiNative.AppHandleHardwareEvent</c>, and routes the
+    /// returned <c>ActionResult</c> JSON. The callback is responsible
+    /// for the <c>_appHandle == IntPtr.Zero</c> guard so this class
+    /// stays free of CABI-handle awareness.
+    /// </param>
+    /// <param name="dispatcher">UI-thread dispatcher.</param>
+    /// <param name="window">
+    /// The hosting <see cref="Window"/> — used by WinUI 3 file
+    /// pickers to attach to the parent HWND.
+    /// </param>
+    public ExchangeCommandHandler(
+        Action<string> sendHardwareEvent,
+        DispatcherQueue dispatcher,
+        Window window)
+    {
+        _sendHardwareEvent = sendHardwareEvent;
+        _dispatcher = dispatcher;
+        _window = window;
+        _ble = new BleExchangeService(OnBleHardwareEvent);
+        _ = _ble.CheckAvailabilityAsync();
+    }
+
+    /// <summary>True iff the underlying BLE adapter is present and
+    /// the user has granted permission. Mirrors
+    /// <see cref="BleExchangeService.IsAvailable"/>.</summary>
+    public bool IsBleAvailable => _ble?.IsAvailable ?? false;
+
+    /// <summary>
+    /// Dispatch a batch of <see cref="ExchangeCommand"/>s. The caller
+    /// is expected to <c>RefreshScreen()</c> after this returns so QR
+    /// display / scan re-renders pick up the latest screen state.
+    /// </summary>
+    public void Handle(ExchangeCommand[] commands)
     {
         foreach (var cmd in commands)
         {
@@ -26,8 +85,7 @@ public sealed partial class MainWindow
                 case ExchangeCommandKind.QrDisplay:
                 case ExchangeCommandKind.QrRequestScan:
                     // QrCodeComponent handles display/scan modes via screen JSON.
-                    // RefreshScreen() is called after this method, which
-                    // re-renders the exchange screen with the updated QR component.
+                    // The caller's RefreshScreen() picks up the updated component.
                     break;
 
                 case ExchangeCommandKind.BleStartAdvertising:
@@ -47,7 +105,6 @@ public sealed partial class MainWindow
 
                 case ExchangeCommandKind.NfcActivate:
                 case ExchangeCommandKind.NfcDeactivate:
-                    // NFC not available on desktop — report unavailable
                     SendHardwareUnavailable("NFC");
                     break;
 
@@ -60,21 +117,20 @@ public sealed partial class MainWindow
                     break;
 
                 case ExchangeCommandKind.ImageCaptureFromCamera:
-                    // Camera capture not available on desktop Windows
                     SendHardwareUnavailable("Camera");
                     break;
 
                 case ExchangeCommandKind.ImagePickFromLibrary:
-                    // Photo library picker not available on desktop — report unavailable
                     SendHardwareUnavailable("PhotoLibrary");
                     break;
 
-                // Phase 2b screen-presentation lifecycle commands. Windows
-                // desktop has no programmatic brightness control (user
-                // owns it via system settings) and the OS owns idle-timer
-                // / sleep behaviour. Answer HardwareUnavailable so core
-                // does not retry; the command/event protocol treats this
-                // as "request honoured at platform default."
+                // Phase 2b screen-presentation lifecycle commands.
+                // Windows desktop has no programmatic brightness
+                // control (user owns it via system settings) and the
+                // OS owns idle-timer / sleep behaviour. Answer
+                // HardwareUnavailable so core does not retry; the
+                // command/event protocol treats this as "request
+                // honoured at platform default."
                 case ExchangeCommandKind.SetScreenBrightness:
                     SendHardwareUnavailable("screen_brightness");
                     break;
@@ -83,9 +139,9 @@ public sealed partial class MainWindow
                     SendHardwareUnavailable("idle_timer");
                     break;
 
-                // Phase 0 additions. ShowShareSheet has no Windows
-                // equivalent (apps copy/paste URLs); SwitchCamera is
-                // mobile-only (front/rear distinction).
+                // ShowShareSheet has no Windows equivalent (apps
+                // copy/paste URLs); SwitchCamera is mobile-only
+                // (front/rear distinction).
                 case ExchangeCommandKind.ShowShareSheet:
                     SendHardwareUnavailable("share_sheet");
                     break;
@@ -94,9 +150,8 @@ public sealed partial class MainWindow
                     SendHardwareUnavailable("camera_switch");
                     break;
 
-                // Phase 2c: orientation lock is a mobile concept —
-                // desktop windows are user-resizable and don't rotate
-                // with the device.
+                // Orientation lock is a mobile concept — desktop
+                // windows are user-resizable and don't rotate.
                 case ExchangeCommandKind.SetOrientationLock:
                     SendHardwareUnavailable("orientation_lock");
                     break;
@@ -117,15 +172,16 @@ public sealed partial class MainWindow
         }
     }
 
+    public void Dispose()
+    {
+        _ble?.Dispose();
+        _ble = null;
+    }
+
     private void OnBleHardwareEvent(string eventJson)
     {
         // BLE events arrive on background threads — dispatch to UI thread
-        DispatcherQueue.TryEnqueue(() =>
-        {
-            if (_appHandle == IntPtr.Zero) return;
-            string? resultJson = VauchiNative.AppHandleHardwareEvent(_appHandle, eventJson);
-            if (resultJson != null) HandleActionResult(resultJson);
-        });
+        _dispatcher.TryEnqueue(() => _sendHardwareEvent(eventJson));
     }
 
     private void HandleBleCommand(ExchangeCommand cmd)
@@ -175,7 +231,7 @@ public sealed partial class MainWindow
                     int ok = VauchiNative.AudioEmit(emitData, (nuint)emitData.Length);
                     if (ok != 1)
                     {
-                        DispatcherQueue.TryEnqueue(() => SendHardwareUnavailable("Audio"));
+                        _dispatcher.TryEnqueue(() => SendHardwareUnavailable("Audio"));
                     }
                 });
                 break;
@@ -186,32 +242,28 @@ public sealed partial class MainWindow
                 System.Threading.Tasks.Task.Run(() =>
                 {
                     string? json = VauchiNative.AudioListen(timeoutMs);
-                    DispatcherQueue.TryEnqueue(() =>
+                    _dispatcher.TryEnqueue(() =>
                     {
-                        if (_appHandle == IntPtr.Zero) return;
-                        if (json != null)
+                        if (json == null) return;
+                        // Parse data array from {"data":[1,2,...]}
+                        try
                         {
-                            // Parse data array from {"data":[1,2,...]}
-                            try
+                            using var doc = JsonDocument.Parse(json);
+                            if (doc.RootElement.TryGetProperty("data", out var arr))
                             {
-                                using var doc = JsonDocument.Parse(json);
-                                if (doc.RootElement.TryGetProperty("data", out var arr))
-                                {
-                                    byte[] bytes = new byte[arr.GetArrayLength()];
-                                    int i = 0;
-                                    foreach (var elem in arr.EnumerateArray())
-                                        bytes[i++] = (byte)elem.GetInt32();
-                                    string eventJson = ExchangeHardwareEventJson.AudioResponseReceived(bytes);
-                                    string? resultJson = VauchiNative.AppHandleHardwareEvent(_appHandle, eventJson);
-                                    if (resultJson != null) HandleActionResult(resultJson);
-                                }
+                                byte[] bytes = new byte[arr.GetArrayLength()];
+                                int i = 0;
+                                foreach (var elem in arr.EnumerateArray())
+                                    bytes[i++] = (byte)elem.GetInt32();
+                                _sendHardwareEvent(
+                                    ExchangeHardwareEventJson.AudioResponseReceived(bytes));
                             }
-                            catch (Exception ex)
-                            {
-                                SendHardwareUnavailable("Audio");
-                                System.Diagnostics.Debug.WriteLine(
-                                    $"[Vauchi] Audio response parse error: {ex.Message}");
-                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            SendHardwareUnavailable("Audio");
+                            System.Diagnostics.Debug.WriteLine(
+                                $"[Vauchi] Audio response parse error: {ex.Message}");
                         }
                     });
                 });
@@ -236,17 +288,13 @@ public sealed partial class MainWindow
             picker.FileTypeFilter.Add(".webp");
 
             // WinUI 3 requires initializing the picker with the window handle
-            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
+            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(_window);
             WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
 
             var file = await picker.PickSingleFileAsync();
             if (file == null)
             {
-                // User cancelled
-                if (_appHandle == IntPtr.Zero) return;
-                string cancelJson = ExchangeHardwareEventJson.ImagePickCancelled();
-                string? resultJson = VauchiNative.AppHandleHardwareEvent(_appHandle, cancelJson);
-                if (resultJson != null) HandleActionResult(resultJson);
+                _sendHardwareEvent(ExchangeHardwareEventJson.ImagePickCancelled());
                 return;
             }
 
@@ -259,10 +307,7 @@ public sealed partial class MainWindow
                 reader.ReadBytes(imageBytes);
             }
 
-            if (_appHandle == IntPtr.Zero) return;
-            string eventJson = ExchangeHardwareEventJson.ImageReceived(imageBytes);
-            string? result = VauchiNative.AppHandleHardwareEvent(_appHandle, eventJson);
-            if (result != null) HandleActionResult(result);
+            _sendHardwareEvent(ExchangeHardwareEventJson.ImageReceived(imageBytes));
         }
         catch (Exception ex)
         {
@@ -270,14 +315,6 @@ public sealed partial class MainWindow
                 $"[Vauchi] Image pick failed: {ex.Message}");
             SendHardwareUnavailable("FilePicker");
         }
-    }
-
-    private void SendHardwareUnavailable(string transport)
-    {
-        if (_appHandle == IntPtr.Zero) return;
-        string eventJson = ExchangeHardwareEventJson.HardwareUnavailable(transport);
-        string? resultJson = VauchiNative.AppHandleHardwareEvent(_appHandle, eventJson);
-        if (resultJson != null) HandleActionResult(resultJson);
     }
 
     private async void HandleFilePickFromUser(ExchangeCommand cmd)
@@ -293,16 +330,13 @@ public sealed partial class MainWindow
             if (picker.FileTypeFilter.Count == 0)
                 picker.FileTypeFilter.Add("*");
 
-            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
+            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(_window);
             WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
 
             var file = await picker.PickSingleFileAsync();
             if (file == null)
             {
-                if (_appHandle == IntPtr.Zero) return;
-                string cancelJson = ExchangeHardwareEventJson.FilePickCancelledByUser();
-                string? cancelResult = VauchiNative.AppHandleHardwareEvent(_appHandle, cancelJson);
-                if (cancelResult != null) HandleActionResult(cancelResult);
+                _sendHardwareEvent(ExchangeHardwareEventJson.FilePickCancelledByUser());
                 return;
             }
 
@@ -315,10 +349,7 @@ public sealed partial class MainWindow
                 reader.ReadBytes(bytes);
             }
 
-            if (_appHandle == IntPtr.Zero) return;
-            string eventJson = ExchangeHardwareEventJson.FilePickedFromUser(bytes, file.Name);
-            string? result = VauchiNative.AppHandleHardwareEvent(_appHandle, eventJson);
-            if (result != null) HandleActionResult(result);
+            _sendHardwareEvent(ExchangeHardwareEventJson.FilePickedFromUser(bytes, file.Name));
         }
         catch (Exception ex)
         {
@@ -336,26 +367,19 @@ public sealed partial class MainWindow
 
         service.OnPayloadReceived += eventJson =>
         {
-            DispatcherQueue.TryEnqueue(() =>
-            {
-                if (_appHandle == IntPtr.Zero) return;
-                string? resultJson = VauchiNative.AppHandleHardwareEvent(_appHandle, eventJson);
-                if (resultJson != null) HandleActionResult(resultJson);
-            });
+            _dispatcher.TryEnqueue(() => _sendHardwareEvent(eventJson));
         };
 
         service.OnError += (transport, error) =>
         {
-            DispatcherQueue.TryEnqueue(() =>
-            {
-                if (_appHandle == IntPtr.Zero) return;
-                string eventJson = ExchangeHardwareEventJson.HardwareError(transport, error);
-                string? resultJson = VauchiNative.AppHandleHardwareEvent(_appHandle, eventJson);
-                if (resultJson != null) HandleActionResult(resultJson);
-            });
+            _dispatcher.TryEnqueue(() =>
+                _sendHardwareEvent(ExchangeHardwareEventJson.HardwareError(transport, error)));
         };
 
         var address = $"127.0.0.1:{DirectSendService.DefaultPort}";
         await service.ExchangeAsync(address, payload, isInitiator);
     }
+
+    private void SendHardwareUnavailable(string transport) =>
+        _sendHardwareEvent(ExchangeHardwareEventJson.HardwareUnavailable(transport));
 }
