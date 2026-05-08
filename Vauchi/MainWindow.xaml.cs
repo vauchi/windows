@@ -25,34 +25,6 @@ public sealed partial class MainWindow : Window
     // Prevent GC collection of the event callback delegate (P/Invoke requirement)
     private VauchiNative.VauchiEventCallback? _eventCallback;
 
-    // Icon map: screen_id → SymbolIcon. Core owns the screen set,
-    // labels, and their locale; Windows only owns its preferred
-    // native icon. Missing entries fall back to Symbol.Home.
-    //
-    // Only Symbol values confirmed to exist in the project's
-    // WindowsAppSDK version (1.7) are used — Shield and Protected
-    // are present in the enum per Microsoft docs but missing in
-    // this SDK build. "privacy" intentionally falls back to Home
-    // until a better Symbol is validated or replaced with a
-    // FontIcon glyph.
-    private static readonly Dictionary<string, Symbol> NavIcons = new()
-    {
-        ["my_info"]           = Symbol.ContactInfo,
-        ["contacts"]          = Symbol.People,
-        ["exchange"]          = Symbol.Send,
-        ["groups"]            = Symbol.People,
-        ["settings"]          = Symbol.Setting,
-        ["recovery"]          = Symbol.Permissions,
-        ["device_management"] = Symbol.PhoneBook,
-        ["backup"]            = Symbol.SaveLocal,
-        ["support"]           = Symbol.Comment,
-        ["help"]              = Symbol.Help,
-        ["activity_log"]      = Symbol.List,
-        ["sync"]              = Symbol.Sync,
-        ["more"]              = Symbol.More,
-        ["onboarding"]        = Symbol.Add,
-    };
-
     private DispatcherTimer _notificationTimer;
 
     public MainWindow()
@@ -359,7 +331,7 @@ public sealed partial class MainWindow : Window
                 {
                     string screenId = tab.GetProperty("id").GetString() ?? "";
                     string label = tab.GetProperty("label").GetString() ?? screenId;
-                    Symbol icon = NavIcons.TryGetValue(screenId, out var sym) ? sym : Symbol.Home;
+                    Symbol icon = NavIconCatalogue.For(screenId);
                     NavView.MenuItems.Add(new NavigationViewItem
                     {
                         Content = label,
