@@ -33,6 +33,10 @@ public enum ExchangeCommandKind
     // (apps copy/paste URLs); SwitchCamera is mobile-only (front/rear).
     ShowShareSheet,
     SwitchCamera,
+    // Phase 2c: orientation lock is a mobile concept — desktop windows
+    // are user-resizable and don't rotate. Dispatcher answers
+    // HardwareUnavailable.
+    SetOrientationLock,
     Unknown,
 }
 
@@ -104,6 +108,7 @@ public static class ExchangeCommandParser
         "ImagePickFromFile", "ImageCaptureFromCamera", "ImagePickFromLibrary",
         "SetScreenBrightness", "SetIdleTimerDisabled",
         "ShowShareSheet", "SwitchCamera",
+        "SetOrientationLock",
     ];
 
     /// <summary>
@@ -185,6 +190,7 @@ public static class ExchangeCommandParser
         "SetIdleTimerDisabled" => ExchangeCommandKind.SetIdleTimerDisabled,
         "ShowShareSheet" => ExchangeCommandKind.ShowShareSheet,
         "SwitchCamera" => ExchangeCommandKind.SwitchCamera,
+        "SetOrientationLock" => ExchangeCommandKind.SetOrientationLock,
         _ => ExchangeCommandKind.Unknown,
     };
 }

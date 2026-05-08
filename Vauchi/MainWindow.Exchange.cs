@@ -94,6 +94,13 @@ public sealed partial class MainWindow
                     SendHardwareUnavailable("camera_switch");
                     break;
 
+                // Phase 2c: orientation lock is a mobile concept —
+                // desktop windows are user-resizable and don't rotate
+                // with the device.
+                case ExchangeCommandKind.SetOrientationLock:
+                    SendHardwareUnavailable("orientation_lock");
+                    break;
+
                 default:
                     System.Diagnostics.Debug.WriteLine(
                         $"[Vauchi] Unknown exchange command: {cmd.Kind}");
