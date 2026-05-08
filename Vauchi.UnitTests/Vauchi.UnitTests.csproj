@@ -31,6 +31,7 @@
     <Compile Include="..\Vauchi\Helpers\ExchangeCommandParser.cs" Link="Linked\ExchangeCommandParser.cs" />
     <Compile Include="..\Vauchi\Helpers\ExchangeHardwareEventJson.cs" Link="Linked\ExchangeHardwareEventJson.cs" />
     <Compile Include="..\Vauchi\Helpers\JsonSanitizer.cs" Link="Linked\JsonSanitizer.cs" />
+    <Compile Include="..\Vauchi\Helpers\MimeTypeMapper.cs" Link="Linked\MimeTypeMapper.cs" />
     <Compile Include="..\Vauchi\Interop\VauchiNative.cs" Link="Linked\VauchiNative.cs" />
     <Compile Include="..\Vauchi\Platform\KeyStorageService.cs" Link="Linked\KeyStorageService.cs" />
     <Compile Include="..\Vauchi\Platform\SystemTrayManager.cs" Link="Linked\SystemTrayManager.cs" />
