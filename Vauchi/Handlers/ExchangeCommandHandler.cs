@@ -7,6 +7,7 @@ using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Vauchi.Helpers;
 using Vauchi.Interop;
+using Vauchi.Platform;
 using Vauchi.Services;
 using Windows.Storage.Pickers;
 
