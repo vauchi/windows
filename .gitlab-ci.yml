@@ -375,6 +375,47 @@ check:removed-symbols:
   variables:
     SEARCH_DIRS: "Vauchi/"
 
+# Humble-UI ratchet: block new domain-named MainWindow.<Domain>.cs
+# partials. Per ADR-021/043, MainWindow's logic should live in
+# Handlers/* (non-partial), Helpers/*, or inlined into MainWindow.xaml.cs
+# — never in domain-shaped partials like MainWindow.Backup.cs /
+# MainWindow.Exchange.cs. Phases 1-4 of
+# `2026-05-02-windows-humble-ui-retirement` retired the four
+# pre-existing partials; this gate prevents regressions.
+check:no-domain-partials:
+  stage: lint
+  image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/alpine:3.21
+  tags: [docker]
+  needs: []
+  before_script:
+    - apk add --no-cache findutils
+  script:
+    - |
+      partials="$(find Vauchi -maxdepth 1 -type f -name 'MainWindow.*.cs' \
+                       -not -name 'MainWindow.xaml.cs' 2>/dev/null || true)"
+      if [ -n "$partials" ]; then
+        echo "FAIL: domain-named MainWindow.<Domain>.cs partials found:"
+        echo "$partials" | awk '{print "  " $0}'
+        echo
+        echo "Per ADR-021/043 (Humble UI), MainWindow logic must live in:"
+        echo "  - Vauchi/Handlers/*Handler.cs (non-partial classes), or"
+        echo "  - Vauchi/Helpers/*.cs (small static utilities), or"
+        echo "  - Vauchi/MainWindow.xaml.cs (when inlining is simpler)."
+        echo
+        echo "Domain-shaped partials force parallel maintenance per domain"
+        echo "and were retired by 2026-05-02-windows-humble-ui-retirement."
+        exit 1
+      fi
+      echo "OK: only Vauchi/MainWindow.xaml.cs present (no domain partials)"
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes:
+        compare_to: refs/heads/main
+        paths:
+          - "Vauchi/**/*.cs"
+          - ".gitlab-ci.yml"
+    - if: $CI_COMMIT_BRANCH == "main"
+
 # Design token drift: block named Colors.* / Color.FromArgb / hex
 # string literals that bypass Tokens.cs and the ThemeColors accessor.
 # Script lives in vauchi/scripts — fetched via API to avoid duplicating
