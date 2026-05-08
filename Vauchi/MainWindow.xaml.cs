@@ -13,6 +13,8 @@ using Vauchi.Helpers;
 using Vauchi.Interop;
 using Vauchi.Platform;
 using Vauchi.Services;
+using Windows.Storage;
+using Windows.Storage.Pickers;
 
 namespace Vauchi;
 
@@ -496,6 +498,46 @@ public sealed partial class MainWindow : Window
         VauchiNative.AppNavigateTo(_appHandle, screenId);
         SyncNavSelection();
         RefreshScreen();
+    }
+
+    /// <summary>
+    /// Handles <c>ActionResult::BackupExportComplete</c> — the legacy
+    /// (non-<c>ExchangeCommand</c>) path core uses to ship encrypted
+    /// backup bytes to the frontend for native file-save. The data
+    /// arrives as a hex-encoded string in the action result; we
+    /// decode, then surface a <c>FileSavePicker</c> with a default
+    /// <c>vauchi-backup-YYYY-MM-DD.vbk</c> filename and write the
+    /// raw bytes on selection.
+    /// </summary>
+    private async void HandleBackupExportComplete(string resultJson)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(resultJson);
+            var root = doc.RootElement;
+            string hexData = root.GetProperty("BackupExportComplete")
+                                 .GetProperty("data")
+                                 .GetString() ?? "";
+
+            byte[] raw = Convert.FromHexString(hexData);
+
+            var picker = new FileSavePicker();
+            picker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
+            picker.SuggestedFileName = $"vauchi-backup-{DateTime.Now:yyyy-MM-dd}";
+            picker.FileTypeChoices.Add("Vauchi Backup", new[] { ".vbk" });
+
+            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
+            WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
+
+            var file = await picker.PickSaveFileAsync();
+            if (file == null) return;
+
+            await FileIO.WriteBytesAsync(file, raw);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[Vauchi] Backup export failed: {ex.Message}");
+        }
     }
 
     private void HandleActionResult(string resultJson)
