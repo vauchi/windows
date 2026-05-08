@@ -119,6 +119,39 @@ public class ExchangeCommandParserTests
         Assert.Equal(ExchangeCommandKind.AudioStop, cmd.Kind);
     }
 
+    // ── File picker (ADR-031) ──
+
+    [Fact]
+    public void Parses_FilePickFromUser_With_Vcf_MimeTypes()
+    {
+        var cmd = ParseSingle(
+            """{"FilePickFromUser":{"accepted_mime_types":["text/vcard","text/x-vcard","text/directory"],"purpose":"ImportContacts"}}"""
+        );
+        Assert.Equal(ExchangeCommandKind.FilePickFromUser, cmd.Kind);
+        Assert.Equal(
+            new[] { "text/vcard", "text/x-vcard", "text/directory" },
+            cmd.GetStringArray("accepted_mime_types")
+        );
+        Assert.Equal("ImportContacts", cmd.GetString("purpose"));
+    }
+
+    [Fact]
+    public void Parses_FilePickFromUser_With_Empty_MimeTypes()
+    {
+        var cmd = ParseSingle(
+            """{"FilePickFromUser":{"accepted_mime_types":[],"purpose":"ImportBackup"}}"""
+        );
+        Assert.Equal(ExchangeCommandKind.FilePickFromUser, cmd.Kind);
+        Assert.Empty(cmd.GetStringArray("accepted_mime_types"));
+    }
+
+    [Fact]
+    public void GetStringArray_Returns_Empty_When_Field_Missing()
+    {
+        var cmd = ParseSingle("""{"QrDisplay":{"data":"x"}}""");
+        Assert.Empty(cmd.GetStringArray("missing_field"));
+    }
+
     // ── Forward compat ──
 
     [Fact]

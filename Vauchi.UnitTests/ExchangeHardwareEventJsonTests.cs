@@ -106,6 +106,49 @@ public class ExchangeHardwareEventJsonTests
     }
 
     [Fact]
+    public void FilePickedFromUser_MatchesSerdeFormat()
+    {
+        string json = ExchangeHardwareEventJson.FilePickedFromUser([10, 20, 30], "contacts.vcf");
+        var doc = JsonDocument.Parse(json);
+        var inner = doc.RootElement.GetProperty("FilePickedFromUser");
+        Assert.Equal("contacts.vcf", inner.GetProperty("filename").GetString());
+        var bytesArr = inner.GetProperty("bytes");
+        Assert.Equal(3, bytesArr.GetArrayLength());
+        Assert.Equal(10, bytesArr[0].GetInt32());
+        Assert.Equal(20, bytesArr[1].GetInt32());
+        Assert.Equal(30, bytesArr[2].GetInt32());
+    }
+
+    [Fact]
+    public void FilePickedFromUser_EmptyBytes_ProducesEmptyArray()
+    {
+        string json = ExchangeHardwareEventJson.FilePickedFromUser([], "empty.vcf");
+        var doc = JsonDocument.Parse(json);
+        var bytesArr = doc.RootElement.GetProperty("FilePickedFromUser").GetProperty("bytes");
+        Assert.Equal(0, bytesArr.GetArrayLength());
+        Assert.Equal("empty.vcf", doc.RootElement.GetProperty("FilePickedFromUser").GetProperty("filename").GetString());
+    }
+
+    [Fact]
+    public void FilePickCancelledByUser_IsUnitVariant()
+    {
+        string json = ExchangeHardwareEventJson.FilePickCancelledByUser();
+        Assert.Equal("\"FilePickCancelledByUser\"", json);
+    }
+
+    [Fact]
+    public void FilePickedFromUser_EscapesSpecialFilenameCharacters()
+    {
+        // CC-14: adversarial filename — quotes / backslashes must roundtrip.
+        string json = ExchangeHardwareEventJson.FilePickedFromUser([0], "weird\"name\\with.vcf");
+        var doc = JsonDocument.Parse(json);
+        Assert.Equal(
+            "weird\"name\\with.vcf",
+            doc.RootElement.GetProperty("FilePickedFromUser").GetProperty("filename").GetString()
+        );
+    }
+
+    [Fact]
     public void BleDeviceDiscovered_ByteBoundaries_WrittenAsIntegers()
     {
         // CC-14: adversarial byte values — must be JSON int array, NOT Base64
@@ -137,6 +180,7 @@ public class ExchangeHardwareEventJsonTests
             ExchangeHardwareEventJson.AudioResponseReceived([]),
             ExchangeHardwareEventJson.HardwareError("t", "e"),
             ExchangeHardwareEventJson.HardwareUnavailable("t"),
+            ExchangeHardwareEventJson.FilePickedFromUser([], "f.vcf"),
         ];
         foreach (string j in jsons)
         {

@@ -37,6 +37,10 @@ public enum ExchangeCommandKind
     // are user-resizable and don't rotate. Dispatcher answers
     // HardwareUnavailable.
     SetOrientationLock,
+    // ADR-031 file-picker — vCard / backup import. Routes to the WinUI
+    // FileOpenPicker, returns FilePickedFromUser{bytes, filename} on
+    // success or FilePickCancelledByUser on dismiss.
+    FilePickFromUser,
     Unknown,
 }
 
@@ -93,6 +97,20 @@ public readonly struct ExchangeCommand
             return false;
         return v.GetBoolean();
     }
+
+    public string[] GetStringArray(string field)
+    {
+        if (!_hasPayload || !_payload.TryGetProperty(field, out var arr)
+            || arr.ValueKind != JsonValueKind.Array)
+        {
+            return [];
+        }
+        var result = new string[arr.GetArrayLength()];
+        int i = 0;
+        foreach (var el in arr.EnumerateArray())
+            result[i++] = el.GetString() ?? "";
+        return result;
+    }
 }
 
 public static class ExchangeCommandParser
@@ -109,6 +127,7 @@ public static class ExchangeCommandParser
         "SetScreenBrightness", "SetIdleTimerDisabled",
         "ShowShareSheet", "SwitchCamera",
         "SetOrientationLock",
+        "FilePickFromUser",
     ];
 
     /// <summary>
@@ -191,6 +210,7 @@ public static class ExchangeCommandParser
         "ShowShareSheet" => ExchangeCommandKind.ShowShareSheet,
         "SwitchCamera" => ExchangeCommandKind.SwitchCamera,
         "SetOrientationLock" => ExchangeCommandKind.SetOrientationLock,
+        "FilePickFromUser" => ExchangeCommandKind.FilePickFromUser,
         _ => ExchangeCommandKind.Unknown,
     };
 }

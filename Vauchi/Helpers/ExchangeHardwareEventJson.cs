@@ -63,6 +63,22 @@ public static class ExchangeHardwareEventJson
 
     public static string ImagePickCancelled() => "\"ImagePickCancelled\"";
 
+    public static string FilePickedFromUser(byte[] bytes, string filename)
+    {
+        using var stream = new MemoryStream();
+        using var w = new Utf8JsonWriter(stream);
+        w.WriteStartObject();
+        w.WriteStartObject("FilePickedFromUser");
+        WriteByteArray(w, "bytes", bytes);
+        w.WriteString("filename", filename);
+        w.WriteEndObject();
+        w.WriteEndObject();
+        w.Flush();
+        return System.Text.Encoding.UTF8.GetString(stream.ToArray());
+    }
+
+    public static string FilePickCancelledByUser() => "\"FilePickCancelledByUser\"";
+
     private static string WriteVariantWithData(string variant, byte[] data)
     {
         using var stream = new MemoryStream();

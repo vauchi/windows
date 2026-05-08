@@ -101,6 +101,14 @@ public sealed partial class MainWindow
                     SendHardwareUnavailable("orientation_lock");
                     break;
 
+                // ADR-031 file-picker (vCard / backup import). Bytes
+                // flow back via FilePickedFromUser; cancellation via
+                // FilePickCancelledByUser. Core takes the bytes from
+                // there (`AppEngine::handle_file_picked`).
+                case ExchangeCommandKind.FilePickFromUser:
+                    HandleFilePickFromUser(cmd);
+                    break;
+
                 default:
                     System.Diagnostics.Debug.WriteLine(
                         $"[Vauchi] Unknown exchange command: {cmd.Kind}");
@@ -270,6 +278,54 @@ public sealed partial class MainWindow
         string eventJson = ExchangeHardwareEventJson.HardwareUnavailable(transport);
         string? resultJson = VauchiNative.AppHandleHardwareEvent(_appHandle, eventJson);
         if (resultJson != null) HandleActionResult(resultJson);
+    }
+
+    private async void HandleFilePickFromUser(ExchangeCommand cmd)
+    {
+        try
+        {
+            var picker = new FileOpenPicker();
+            picker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
+
+            string[] mimeTypes = cmd.GetStringArray("accepted_mime_types");
+            foreach (string ext in MimeTypeMapper.ToFileExtensions(mimeTypes))
+                picker.FileTypeFilter.Add(ext);
+            if (picker.FileTypeFilter.Count == 0)
+                picker.FileTypeFilter.Add("*");
+
+            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
+            WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
+
+            var file = await picker.PickSingleFileAsync();
+            if (file == null)
+            {
+                if (_appHandle == IntPtr.Zero) return;
+                string cancelJson = ExchangeHardwareEventJson.FilePickCancelledByUser();
+                string? cancelResult = VauchiNative.AppHandleHardwareEvent(_appHandle, cancelJson);
+                if (cancelResult != null) HandleActionResult(cancelResult);
+                return;
+            }
+
+            byte[] bytes;
+            using (var stream = await file.OpenReadAsync())
+            {
+                bytes = new byte[stream.Size];
+                using var reader = new Windows.Storage.Streams.DataReader(stream);
+                await reader.LoadAsync((uint)stream.Size);
+                reader.ReadBytes(bytes);
+            }
+
+            if (_appHandle == IntPtr.Zero) return;
+            string eventJson = ExchangeHardwareEventJson.FilePickedFromUser(bytes, file.Name);
+            string? result = VauchiNative.AppHandleHardwareEvent(_appHandle, eventJson);
+            if (result != null) HandleActionResult(result);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine(
+                $"[Vauchi] File pick failed: {ex.Message}");
+            SendHardwareUnavailable("file_picker");
+        }
     }
 
     private async void HandleDirectSend(ExchangeCommand cmd)
