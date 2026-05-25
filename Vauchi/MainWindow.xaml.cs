@@ -25,7 +25,6 @@ public sealed partial class MainWindow : Window
     private SystemTrayManager? _tray;
     private DispatcherTimer? _toastTimer;
     private ExchangeCommandHandler? _exchange;
-    private DeviceLinkHandler? _deviceLink;
     // Prevent GC collection of the event callback delegate (P/Invoke requirement)
     private VauchiNative.VauchiEventCallback? _eventCallback;
 
@@ -261,7 +260,6 @@ public sealed partial class MainWindow : Window
         RefreshScreen();
 
         _exchange = new ExchangeCommandHandler(SendHardwareEventToCore, DispatcherQueue, this);
-        _deviceLink = new DeviceLinkHandler(_appHandle, DispatcherQueue, NavigateToScreen, RefreshScreen);
 
         // Register event callback for async core notifications (Phase 2E).
         // Background operations (sync, delivery, device link) fire on arbitrary
@@ -487,8 +485,7 @@ public sealed partial class MainWindow : Window
 
     /// <summary>
     /// Native navigation helper used by handlers that need to route
-    /// the UI to a specific screen (e.g.
-    /// <see cref="DeviceLinkHandler"/> on session start). Combines
+    /// the UI to a specific screen. Combines
     /// <c>AppNavigateTo</c> + nav-selection sync + screen refresh
     /// into one call.
     /// </summary>
@@ -556,20 +553,10 @@ public sealed partial class MainWindow : Window
                     ExitOnboardingMode();
                 SyncNavSelection();
                 RefreshScreen();
-                // Device link: when UI transitions to Syncing, forward the
-                // user-confirmation tap to the orchestrator session. The
-                // handler's IsActive guard makes stale taps a no-op after
-                // the session has ended.
-                if (_deviceLink != null && _deviceLink.IsActive &&
-                    resultJson.Contains("\"link_syncing\""))
-                {
-                    _ = _deviceLink.ConfirmAsync();
-                }
                 break;
 
             case ActionResultKind.Complete:
             case ActionResultKind.WipeComplete:
-                _deviceLink?.Cleanup();
                 ExitOnboardingMode();
                 string? defaultScreen = VauchiNative.AppDefaultScreen(_appHandle);
                 if (defaultScreen != null)
@@ -591,7 +578,7 @@ public sealed partial class MainWindow : Window
                 break;
 
             case ActionResultKind.StartDeviceLink:
-                _deviceLink?.Start();
+                NavigateToScreen("device_linking");
                 break;
 
             case ActionResultKind.Commands:
@@ -782,7 +769,6 @@ public sealed partial class MainWindow : Window
             _eventCallback = null;
 
             _exchange?.Dispose();
-            _deviceLink?.Dispose();
             VauchiNative.AppDestroy(_appHandle);
             _appHandle = IntPtr.Zero;
         }
