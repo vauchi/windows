@@ -16,12 +16,9 @@ public enum ActionResultKind
     Complete,
     WipeComplete,
     StartDeviceLink,
-    OpenContact,
-    EditContact,
     OpenUrl,
     ShowAlert,
     RequestCamera,
-    OpenEntryDetail,
     ShowToast,
     /// <summary>
     /// `ActionResult::Commands` (renamed from `ExchangeCommands` in core
@@ -40,8 +37,8 @@ public static class ActionResultParser
     [
         "UpdateScreen", "NavigateTo", "ValidationError", "Complete",
         "WipeComplete", "StartDeviceLink",
-        "OpenContact", "EditContact", "OpenUrl", "ShowAlert",
-        "RequestCamera", "OpenEntryDetail", "ShowToast", "Commands",
+        "OpenUrl", "ShowAlert",
+        "RequestCamera", "ShowToast", "Commands",
         "BackupExportComplete",
     ];
 
@@ -83,12 +80,9 @@ public static class ActionResultParser
         "Complete" => ActionResultKind.Complete,
         "WipeComplete" => ActionResultKind.WipeComplete,
         "StartDeviceLink" => ActionResultKind.StartDeviceLink,
-        "OpenContact" => ActionResultKind.OpenContact,
-        "EditContact" => ActionResultKind.EditContact,
         "OpenUrl" => ActionResultKind.OpenUrl,
         "ShowAlert" => ActionResultKind.ShowAlert,
         "RequestCamera" => ActionResultKind.RequestCamera,
-        "OpenEntryDetail" => ActionResultKind.OpenEntryDetail,
         "ShowToast" => ActionResultKind.ShowToast,
         "Commands" => ActionResultKind.Commands,
         "BackupExportComplete" => ActionResultKind.BackupExportComplete,

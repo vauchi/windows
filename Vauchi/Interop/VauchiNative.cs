@@ -211,18 +211,6 @@ public static partial class VauchiNative
         return result;
     }
 
-    [LibraryImport(LibName, EntryPoint = "vauchi_app_navigate_to_param", StringMarshalling = StringMarshalling.Utf8)]
-    private static partial IntPtr AppNavigateToParamRaw(IntPtr handle, string screenName, string param);
-
-    public static string? AppNavigateToParam(IntPtr handle, string screenName, string param)
-    {
-        IntPtr ptr = AppNavigateToParamRaw(handle, screenName, param);
-        if (ptr == IntPtr.Zero) return null;
-        string result = Marshal.PtrToStringUTF8(ptr)!;
-        StringFree(ptr);
-        return result;
-    }
-
     public static string? AppAvailableScreens(IntPtr handle)
     {
         IntPtr ptr = AppAvailableScreensRaw(handle);

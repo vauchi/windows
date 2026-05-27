@@ -68,18 +68,19 @@ public class ActionResultParserTests
         Assert.Equal(ActionResultKind.OpenUrl, ActionResultParser.Classify(json));
     }
 
-    [Fact]
-    public void Classifies_OpenContact()
+    // OpenContact / EditContact / OpenEntryDetail were retired from the wire by
+    // core!968 — route_result resolves every navigation ActionResult to
+    // NavigateTo (routing.rs: "no path returns it raw anymore"). They are no
+    // longer classified: a stale or adversarial core emitting one falls through
+    // to Unknown (HandleActionResult → RefreshScreen), never a domain-nav
+    // fallback (ADR-043/044 Pure Humble UI). Tier-1 of the opaque-nav-api plan.
+    [Theory]
+    [InlineData("""{"OpenContact":{"contact_id":"abc123"}}""")]
+    [InlineData("""{"EditContact":{"contact_id":"abc123"}}""")]
+    [InlineData("""{"OpenEntryDetail":{"field_id":"email_work"}}""")]
+    public void Classifies_RetiredNavVariants_AsUnknown(string json)
     {
-        string json = """{"OpenContact":{"contact_id":"abc123"}}""";
-        Assert.Equal(ActionResultKind.OpenContact, ActionResultParser.Classify(json));
-    }
-
-    [Fact]
-    public void Classifies_EditContact()
-    {
-        string json = """{"EditContact":{"contact_id":"abc123"}}""";
-        Assert.Equal(ActionResultKind.EditContact, ActionResultParser.Classify(json));
+        Assert.Equal(ActionResultKind.Unknown, ActionResultParser.Classify(json));
     }
 
     [Fact]
@@ -94,13 +95,6 @@ public class ActionResultParserTests
     {
         string json = "\"StartDeviceLink\"";
         Assert.Equal(ActionResultKind.StartDeviceLink, ActionResultParser.Classify(json));
-    }
-
-    [Fact]
-    public void Classifies_OpenEntryDetail()
-    {
-        string json = """{"OpenEntryDetail":{"field_id":"email_work"}}""";
-        Assert.Equal(ActionResultKind.OpenEntryDetail, ActionResultParser.Classify(json));
     }
 
     [Fact]

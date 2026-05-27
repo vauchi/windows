@@ -585,18 +585,6 @@ public sealed partial class MainWindow : Window
                 RefreshScreen();
                 break;
 
-            case ActionResultKind.OpenContact:
-                NavigateToParamScreen(resultJson, "OpenContact", "contact_id", "contact_detail");
-                break;
-
-            case ActionResultKind.EditContact:
-                NavigateToParamScreen(resultJson, "EditContact", "contact_id", "contact_edit");
-                break;
-
-            case ActionResultKind.OpenEntryDetail:
-                NavigateToParamScreen(resultJson, "OpenEntryDetail", "field_id", "entry_detail");
-                break;
-
             case ActionResultKind.StartDeviceLink:
                 NavigateToScreen("device_linking");
                 break;
@@ -641,30 +629,6 @@ public sealed partial class MainWindow : Window
                 RefreshScreen();
                 break;
         }
-    }
-
-    /// <summary>
-    /// Extract a parameter from an action result and navigate to a parameterized screen.
-    /// </summary>
-    private void NavigateToParamScreen(string resultJson, string variant, string paramField, string screenName)
-    {
-        try
-        {
-            using var doc = JsonDocument.Parse(resultJson);
-            if (doc.RootElement.TryGetProperty(variant, out var inner) &&
-                inner.TryGetProperty(paramField, out var paramEl))
-            {
-                string? param = paramEl.GetString();
-                if (param != null)
-                {
-                    VauchiNative.AppNavigateToParam(_appHandle, screenName, param);
-                }
-            }
-        }
-        catch (JsonException) { }
-
-        SyncNavSelection();
-        RefreshScreen();
     }
 
     // Exchange command dispatch (BLE, audio, NFC, QR) is in MainWindow.Exchange.cs
