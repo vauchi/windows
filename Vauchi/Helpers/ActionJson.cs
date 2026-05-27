@@ -19,6 +19,20 @@ public static class ActionJson
         });
     }
 
+    /// <summary>
+    /// Top-level / tab navigation (ADR-043 Amendment 4). The frontend forwards
+    /// the opaque <c>action_id</c> core minted on <c>TabInfo.action_id</c>; core
+    /// routes <c>UserAction::NavigateToTab</c> to a <c>NavigateTo</c> result. The
+    /// renderer never constructs a navigation target or parses the token.
+    /// </summary>
+    public static string NavigateToTab(string actionId)
+    {
+        return JsonSerializer.Serialize(new
+        {
+            NavigateToTab = new { action_id = actionId }
+        });
+    }
+
     public static string TextChanged(string componentId, string value)
     {
         return JsonSerializer.Serialize(new

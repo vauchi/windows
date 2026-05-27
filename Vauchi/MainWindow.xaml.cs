@@ -332,13 +332,19 @@ public sealed partial class MainWindow : Window
                 foreach (JsonElement tab in doc.RootElement.EnumerateArray())
                 {
                     string screenId = tab.GetProperty("id").GetString() ?? "";
+                    string actionId = tab.TryGetProperty("action_id", out var aid)
+                        ? aid.GetString() ?? screenId
+                        : screenId;
                     string label = tab.GetProperty("label").GetString() ?? screenId;
                     Symbol icon = NavIconCatalogue.For(screenId);
                     NavView.MenuItems.Add(new NavigationViewItem
                     {
                         Content = label,
                         Icon = new SymbolIcon(icon),
-                        Tag = screenId,
+                        // Tag carries the two roles core keeps distinct (ADR-043
+                        // Am4): Id for selection equality, ActionId as the opaque
+                        // nav token forwarded on tap.
+                        Tag = new NavTab(screenId, actionId),
                     });
                 }
             }
@@ -364,8 +370,8 @@ public sealed partial class MainWindow : Window
         for (int i = 0; i < NavView.MenuItems.Count; i++)
         {
             if (NavView.MenuItems[i] is NavigationViewItem item
-                && item.Tag is string tag
-                && tag == parentId)
+                && item.Tag is NavTab tab
+                && tab.Id == parentId)
             {
                 NavView.SelectedItem = item;
                 break;
@@ -428,18 +434,32 @@ public sealed partial class MainWindow : Window
         }
     }
 
+    /// <summary>
+    /// Sidebar tab identity. <see cref="Id"/> (the canonical screen_id) drives
+    /// selection equality against core's <c>parent_screen_id</c>;
+    /// <see cref="ActionId"/> is the opaque token core minted on
+    /// <c>TabInfo.action_id</c>, forwarded verbatim as a <c>NavigateToTab</c>
+    /// action. Kept distinct per ADR-043 Amendment 4 — the renderer never
+    /// parses or branches on either.
+    /// </summary>
+    private sealed record NavTab(string Id, string ActionId);
+
     private void OnNavSelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
     {
         if (_navUpdating || _appHandle == IntPtr.Zero) return;
         if (args.SelectedItem is not NavigationViewItem item) return;
+        if (item.Tag is not NavTab tab) return;
 
-        string screenId = item.Tag as string ?? "";
         // Core's AppEngine stacks modals — tab switches must pop them.
         if (IsCurrentScreenModal())
         {
             VauchiNative.AppHandleAction(_appHandle, ActionJson.ActionPressed("cancel"));
         }
-        VauchiNative.AppNavigateTo(_appHandle, screenId);
+        // ADR-043 Am4 / Tier-1: forward the opaque action_id core minted on the
+        // tab. Core routes UserAction::NavigateToTab to a NavigateTo result; the
+        // renderer never constructs a navigation target. RefreshScreen() re-reads
+        // the now-current screen.
+        VauchiNative.AppHandleAction(_appHandle, ActionJson.NavigateToTab(tab.ActionId));
         RefreshScreen();
     }
 

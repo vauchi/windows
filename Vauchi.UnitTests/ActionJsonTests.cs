@@ -26,6 +26,18 @@ public class ActionJsonTests
     }
 
     [Fact]
+    public void NavigateToTab_MatchesSerdeFormat()
+    {
+        string json = ActionJson.NavigateToTab("contacts");
+
+        var doc = JsonDocument.Parse(json);
+        var root = doc.RootElement;
+
+        Assert.True(root.TryGetProperty("NavigateToTab", out var inner));
+        Assert.Equal("contacts", inner.GetProperty("action_id").GetString());
+    }
+
+    [Fact]
     public void ActionPressed_EscapesQuotesInId()
     {
         string json = ActionJson.ActionPressed("action\"with\"quotes");
