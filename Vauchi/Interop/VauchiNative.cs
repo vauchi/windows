@@ -265,68 +265,6 @@ public static partial class VauchiNative
     [LibraryImport(LibName, EntryPoint = "vauchi_app_create_identity", StringMarshalling = StringMarshalling.Utf8)]
     public static partial int AppCreateIdentity(IntPtr handle, string? displayName);
 
-    // ── Device link protocol ──────────────────────────────────────────────
-
-    [LibraryImport(LibName, EntryPoint = "vauchi_device_link_start")]
-    public static partial IntPtr DeviceLinkStart(IntPtr appHandle);
-
-    [LibraryImport(LibName, EntryPoint = "vauchi_device_link_initiator_destroy")]
-    public static partial void DeviceLinkInitiatorDestroy(IntPtr initiator);
-
-    [LibraryImport(LibName, EntryPoint = "vauchi_device_link_qr_data")]
-    private static partial IntPtr DeviceLinkQrDataRaw(IntPtr initiator);
-
-    [LibraryImport(LibName, EntryPoint = "vauchi_device_link_expires_at")]
-    public static partial ulong DeviceLinkExpiresAt(IntPtr initiator);
-
-    [LibraryImport(LibName, EntryPoint = "vauchi_device_link_prepare_confirmation", StringMarshalling = StringMarshalling.Utf8)]
-    private static partial IntPtr DeviceLinkPrepareConfirmationRaw(IntPtr initiator, string encryptedRequestB64);
-
-    [LibraryImport(LibName, EntryPoint = "vauchi_device_link_confirm_manual", StringMarshalling = StringMarshalling.Utf8)]
-    private static partial IntPtr DeviceLinkConfirmManualRaw(IntPtr initiator, string confirmationCode, ulong confirmedAt);
-
-    [LibraryImport(LibName, EntryPoint = "vauchi_device_link_listen")]
-    private static partial IntPtr DeviceLinkListenRaw(IntPtr appHandle, ulong timeoutSecs);
-
-    [LibraryImport(LibName, EntryPoint = "vauchi_device_link_send_response", StringMarshalling = StringMarshalling.Utf8)]
-    public static partial int DeviceLinkSendResponse(IntPtr appHandle, string senderToken, string encryptedResponseB64);
-
-    public static string? DeviceLinkQrData(IntPtr initiator)
-    {
-        IntPtr ptr = DeviceLinkQrDataRaw(initiator);
-        if (ptr == IntPtr.Zero) return null;
-        string result = Marshal.PtrToStringUTF8(ptr)!;
-        StringFree(ptr);
-        return result;
-    }
-
-    public static string? DeviceLinkPrepareConfirmation(IntPtr initiator, string encryptedRequestB64)
-    {
-        IntPtr ptr = DeviceLinkPrepareConfirmationRaw(initiator, encryptedRequestB64);
-        if (ptr == IntPtr.Zero) return null;
-        string result = Marshal.PtrToStringUTF8(ptr)!;
-        StringFree(ptr);
-        return result;
-    }
-
-    public static string? DeviceLinkConfirmManual(IntPtr initiator, string confirmationCode, ulong confirmedAt)
-    {
-        IntPtr ptr = DeviceLinkConfirmManualRaw(initiator, confirmationCode, confirmedAt);
-        if (ptr == IntPtr.Zero) return null;
-        string result = Marshal.PtrToStringUTF8(ptr)!;
-        StringFree(ptr);
-        return result;
-    }
-
-    public static string? DeviceLinkListen(IntPtr appHandle, ulong timeoutSecs)
-    {
-        IntPtr ptr = DeviceLinkListenRaw(appHandle, timeoutSecs);
-        if (ptr == IntPtr.Zero) return null;
-        string result = Marshal.PtrToStringUTF8(ptr)!;
-        StringFree(ptr);
-        return result;
-    }
-
     // ── App backgrounded (auto-lock) ──────────────────────────────────
 
     [LibraryImport(LibName, EntryPoint = "vauchi_app_handle_app_backgrounded")]
