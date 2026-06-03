@@ -114,7 +114,7 @@ public static class ComponentRenderer
                 fe.HorizontalAlignment = HorizontalAlignment.Stretch;
             }
 
-            Grid.SetColumn(control, column);
+            control.SetValue(Grid.ColumnProperty, column);
             grid.Children.Add(control);
             column++;
         }
