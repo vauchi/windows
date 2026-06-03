@@ -23,10 +23,15 @@
                        Visibility="Collapsed" />
         </StackPanel>
 
-        <!-- Scrollable component area -->
-        <ScrollViewer Grid.Row="1">
-            <StackPanel x:Name="ComponentContainer" Spacing="16" />
-        </ScrollViewer>
+        <!-- Component area. Default: scrollable (layout = Scroll). When the
+             ScreenModel `layout` is "Fixed" the code-behind reparents
+             ComponentContainer directly into ContentHost (no ScrollViewer)
+             so fixed screens (e.g. the QR exchange) don't reflow. -->
+        <Grid x:Name="ContentHost" Grid.Row="1">
+            <ScrollViewer x:Name="ContentScroller">
+                <StackPanel x:Name="ComponentContainer" Spacing="16" />
+            </ScrollViewer>
+        </Grid>
 
         <!-- Screen-level action buttons (pinned to bottom, outside scroll) -->
         <StackPanel x:Name="ActionButtonPanel" Grid.Row="2"

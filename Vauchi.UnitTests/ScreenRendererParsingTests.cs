@@ -77,4 +77,37 @@ public class ScreenRendererParsingTests
         using var doc = JsonDocument.Parse(json);
         Assert.Equal("onboarding_welcome", doc.RootElement.GetProperty("screen_id").GetString());
     }
+
+    // Layout: core omits the field for the default (Scroll) and emits
+    // "layout":"Fixed" for non-scrolling screens. The renderer must default
+    // to Scroll when the field is absent and honor Fixed when present.
+
+    [Fact]
+    public void LayoutAbsent_DefaultsToScroll()
+    {
+        var json = """{"screen_id":"test","title":"T","components":[],"actions":[]}""";
+        using var doc = JsonDocument.Parse(json);
+        var root = doc.RootElement;
+
+        string layout = root.TryGetProperty("layout", out var lay) && lay.ValueKind == JsonValueKind.String
+            ? lay.GetString() ?? "Scroll"
+            : "Scroll";
+        Assert.Equal("Scroll", layout);
+    }
+
+    [Fact]
+    public void LayoutFixed_Parsed()
+    {
+        var json = """{"screen_id":"exchange","title":"T","layout":"Fixed","components":[],"actions":[]}""";
+        using var doc = JsonDocument.Parse(json);
+        Assert.Equal("Fixed", doc.RootElement.GetProperty("layout").GetString());
+    }
+
+    [Fact]
+    public void LayoutScroll_Explicit_Parsed()
+    {
+        var json = """{"screen_id":"settings","title":"T","layout":"Scroll","components":[],"actions":[]}""";
+        using var doc = JsonDocument.Parse(json);
+        Assert.Equal("Scroll", doc.RootElement.GetProperty("layout").GetString());
+    }
 }

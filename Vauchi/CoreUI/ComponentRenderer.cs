@@ -5,6 +5,7 @@ using System;
 using System.Text.Json;
 #if !UNIT_TEST_BUILD
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
 using Vauchi.CoreUI.Components;
 #endif
 
@@ -57,7 +58,9 @@ public static class ComponentRenderer
             "List" => CreateAndRender<ListComponent>(data!.Value, onAction),
             "SettingsGroup" => CreateAndRender<SettingsGroupComponent>(data!.Value, onAction),
             "ActionList" => CreateAndRender<ActionListComponent>(data!.Value, onAction),
+            "SectionedActionList" => CreateAndRender<SectionedActionListComponent>(data!.Value, onAction),
             "StatusIndicator" => CreateAndRender<StatusIndicatorComponent>(data!.Value, onAction),
+            "Indicator" => CreateAndRender<IndicatorComponent>(data!.Value, onAction),
             "PinInput" => CreateAndRender<PinInputComponent>(data!.Value, onAction),
             "QrCode" => CreateAndRender<QrCodeComponent>(data!.Value, onAction),
             "ConfirmationDialog" => CreateAndRender<ConfirmationDialogComponent>(data!.Value, onAction),
@@ -68,9 +71,55 @@ public static class ComponentRenderer
             "AvatarPreview" => CreateAndRender<AvatarPreviewComponent>(data!.Value, onAction),
             "Slider" => CreateAndRender<SliderComponent>(data!.Value, onAction),
             "Dropdown" => CreateAndRender<DropdownComponent>(data!.Value, onAction),
+            "Row" => CreateRow(data!.Value, onAction),
             "Divider" => new DividerComponent(),
             _ => null,
         };
+    }
+
+    /// <summary>
+    /// Builds a horizontal container from a Row component:
+    /// {"Row": {"id": ..., "items": [&lt;component&gt;, &lt;component&gt;]}}.
+    /// Children render left-to-right. Every child is placed in its own
+    /// equal-star Grid column so a child that internally stretches to its
+    /// max width (e.g. an ActionList) fills only its weighted slice instead
+    /// of overflowing and overlapping its siblings (e.g. a camera preview).
+    /// Mirrors android ScreenRenderer.kt's weighted Row.
+    /// </summary>
+    private static UIElement? CreateRow(JsonElement data, Action<string>? onAction)
+    {
+        var grid = new Grid();
+
+        if (!data.TryGetProperty("items", out var items) ||
+            items.ValueKind != JsonValueKind.Array)
+            return grid;
+
+        int column = 0;
+        foreach (var child in items.EnumerateArray())
+        {
+            var control = CreateComponent(child, onAction);
+            if (control == null)
+                continue; // unknown variant — skip, keep columns contiguous
+
+            // Equal-star column so each child is width-bounded.
+            grid.ColumnDefinitions.Add(new ColumnDefinition
+            {
+                Width = new GridLength(1, GridUnitType.Star),
+            });
+
+            // Constrain the child to its own column; never let a stretched
+            // child bleed across the column boundary.
+            if (control is FrameworkElement fe)
+            {
+                fe.HorizontalAlignment = HorizontalAlignment.Stretch;
+            }
+
+            Grid.SetColumn(control, column);
+            grid.Children.Add(control);
+            column++;
+        }
+
+        return grid;
     }
 
     private static UIElement CreateAndRender<T>(JsonElement data, Action<string>? onAction)

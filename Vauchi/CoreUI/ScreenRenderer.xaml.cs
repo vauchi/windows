@@ -36,6 +36,15 @@ public sealed partial class ScreenRenderer : UserControl
         string screenId = root.TryGetProperty("screen_id", out var sid) ? sid.GetString() ?? "" : "";
         System.Diagnostics.Debug.WriteLine($"[Vauchi] RenderScreen: {screenId}");
 
+        // Layout: "Scroll" (default, often omitted) wraps the components in a
+        // ScrollViewer; "Fixed" renders them directly so the content cannot
+        // reflow or scroll (e.g. the QR exchange screen, where a moving QR
+        // breaks the peer camera's lock). Mirrors android ScreenLayout.
+        string layout = root.TryGetProperty("layout", out var lay) && lay.ValueKind == JsonValueKind.String
+            ? lay.GetString() ?? "Scroll"
+            : "Scroll";
+        ApplyLayout(layout);
+
         // Title
         ScreenTitle.Text = root.TryGetProperty("title", out var title) ? title.GetString() ?? "" : "";
 
@@ -136,6 +145,36 @@ public sealed partial class ScreenRenderer : UserControl
 
                 ActionButtonPanel.Children.Add(btn);
             }
+        }
+    }
+
+    /// <summary>
+    /// Place <see cref="ComponentContainer"/> inside or outside the
+    /// ScrollViewer based on the ScreenModel `layout` value. "Fixed" detaches
+    /// the StackPanel from the ScrollViewer and parents it directly under
+    /// ContentHost (no scroll, no reflow); anything else (incl. "Scroll" and
+    /// unknown values, for forward compatibility) keeps the scroll wrapper.
+    /// Idempotent: re-renders may toggle layout, so it always resets to the
+    /// requested arrangement.
+    /// </summary>
+    private void ApplyLayout(string layout)
+    {
+        bool isFixed = layout == "Fixed";
+
+        // Detach ComponentContainer from whatever currently parents it.
+        ContentScroller.Content = null;
+        ContentHost.Children.Remove(ComponentContainer);
+
+        if (isFixed)
+        {
+            ContentScroller.Visibility = Visibility.Collapsed;
+            if (!ContentHost.Children.Contains(ComponentContainer))
+                ContentHost.Children.Add(ComponentContainer);
+        }
+        else
+        {
+            ContentScroller.Visibility = Visibility.Visible;
+            ContentScroller.Content = ComponentContainer;
         }
     }
 

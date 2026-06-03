@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Mattia Egloff <mattia.egloff@pm.me>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+using System.Linq;
 using System.Text.Json;
 using Vauchi.CoreUI;
 using Xunit;
@@ -27,6 +28,9 @@ public class ComponentRendererDispatchTests
     [InlineData("""{"InlineConfirm": {"id": "ic1", "warning": "Delete?", "confirm_text": "Yes", "cancel_text": "No", "destructive": true}}""", "InlineConfirm")]
     [InlineData("""{"EditableText": {"id": "et1", "label": "Name", "value": "Alice", "editing": false}}""", "EditableText")]
     [InlineData("""{"Dropdown": {"id": "dd1", "label": "Pick", "selected": null, "options": [{"id": "a", "label": "A"}]}}""", "Dropdown")]
+    [InlineData("""{"Row": {"id": "exchange_preview_row", "items": []}}""", "Row")]
+    [InlineData("""{"Indicator": {"id": "ind1", "label": "Offline", "kind": "Error", "action_id": null}}""", "Indicator")]
+    [InlineData("""{"SectionedActionList": {"id": "sal1", "sections": []}}""", "SectionedActionList")]
     public void ExternallyTagged_Object_Dispatches(string json, string expectedVariant)
     {
         using var doc = JsonDocument.Parse(json);
@@ -42,6 +46,36 @@ public class ComponentRendererDispatchTests
         var (variantName, data) = ComponentRenderer.ExtractVariant(doc.RootElement);
         Assert.Equal("Divider", variantName);
         Assert.Null(data);
+    }
+
+    [Fact]
+    public void Row_Variant_ExposesNestedItems()
+    {
+        // The Row variant carries a recursive `items` array of child
+        // components, mirroring ActionList/List. ExtractVariant must surface
+        // the inner object so the renderer can recurse into each child.
+        var json = """
+            {"Row": {"id": "exchange_preview_row", "items": [
+                {"QrCode": {"id": "qr1", "data": "x", "mode": "Display"}},
+                {"ActionList": {"id": "al1", "items": []}}
+            ]}}
+            """;
+        using var doc = JsonDocument.Parse(json);
+        var (variantName, data) = ComponentRenderer.ExtractVariant(doc.RootElement);
+
+        Assert.Equal("Row", variantName);
+        Assert.NotNull(data);
+
+        Assert.True(data!.Value.TryGetProperty("items", out var items));
+        Assert.Equal(JsonValueKind.Array, items.ValueKind);
+        Assert.Equal(2, items.GetArrayLength());
+
+        // First child is the flexing QR preview, second the action list.
+        var children = items.EnumerateArray().ToArray();
+        var (firstVariant, _) = ComponentRenderer.ExtractVariant(children[0]);
+        var (secondVariant, _) = ComponentRenderer.ExtractVariant(children[1]);
+        Assert.Equal("QrCode", firstVariant);
+        Assert.Equal("ActionList", secondVariant);
     }
 
     [Fact]
