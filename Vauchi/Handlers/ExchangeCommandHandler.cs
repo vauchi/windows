@@ -113,6 +113,10 @@ public sealed class ExchangeCommandHandler : IDisposable
                     HandleDirectSend(cmd);
                     break;
 
+                case ExchangeCommandKind.DirectSendCard:
+                    HandleDirectSendCard(cmd);
+                    break;
+
                 case ExchangeCommandKind.ImagePickFromFile:
                     HandleImagePickFromFile();
                     break;
@@ -379,6 +383,30 @@ public sealed class ExchangeCommandHandler : IDisposable
 
         var address = $"127.0.0.1:{DirectSendService.DefaultPort}";
         await service.ExchangeAsync(address, payload, isInitiator);
+    }
+
+    // USB card-exchange second leg: swap the AEAD-encrypted cards over a fresh
+    // TCP connection (the QR-payload leg closes its socket). Core decrypts the
+    // peer's card under the agreed shared key and completes the exchange.
+    private async void HandleDirectSendCard(ExchangeCommand cmd)
+    {
+        var ciphertext = cmd.GetBytes("ciphertext") ?? Array.Empty<byte>();
+        var isInitiator = cmd.GetBool("is_initiator");
+        var service = new DirectSendService();
+
+        service.OnPayloadReceived += eventJson =>
+        {
+            _dispatcher.TryEnqueue(() => _sendHardwareEvent(eventJson));
+        };
+
+        service.OnError += (transport, error) =>
+        {
+            _dispatcher.TryEnqueue(() =>
+                _sendHardwareEvent(ExchangeHardwareEventJson.HardwareError(transport, error)));
+        };
+
+        var address = $"127.0.0.1:{DirectSendService.DefaultPort}";
+        await service.ExchangeAsync(address, ciphertext, isInitiator, cardLeg: true);
     }
 
     private void SendHardwareUnavailable(string transport) =>

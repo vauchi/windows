@@ -23,7 +23,9 @@ internal sealed class DirectSendService
     public event Action<string>? OnPayloadReceived;
     public event Action<string, string>? OnError;
 
-    public async Task ExchangeAsync(string address, byte[] payload, bool isInitiator)
+    // `cardLeg` selects the second (card) leg — report DirectCardReceived
+    // instead of DirectPayloadReceived. The TCP exchange is identical.
+    public async Task ExchangeAsync(string address, byte[] payload, bool isInitiator, bool cardLeg = false)
     {
         try
         {
@@ -50,7 +52,9 @@ internal sealed class DirectSendService
                 await SendVxch(stream, payload);
             }
 
-            string eventJson = ExchangeHardwareEventJson.DirectPayloadReceived(theirPayload);
+            string eventJson = cardLeg
+                ? ExchangeHardwareEventJson.DirectCardReceived(theirPayload)
+                : ExchangeHardwareEventJson.DirectPayloadReceived(theirPayload);
             OnPayloadReceived?.Invoke(eventJson);
         }
         catch (Exception ex)

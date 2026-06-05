@@ -52,6 +52,20 @@ public static class ExchangeHardwareEventJson
     public static string DirectPayloadReceived(byte[] data) =>
         WriteVariantWithData("DirectPayloadReceived", data);
 
+    // USB card-exchange second leg: the inner field is `ciphertext`, not `data`.
+    public static string DirectCardReceived(byte[] ciphertext)
+    {
+        using var stream = new MemoryStream();
+        using var w = new Utf8JsonWriter(stream);
+        w.WriteStartObject();
+        w.WriteStartObject("DirectCardReceived");
+        WriteByteArray(w, "ciphertext", ciphertext);
+        w.WriteEndObject();
+        w.WriteEndObject();
+        w.Flush();
+        return System.Text.Encoding.UTF8.GetString(stream.ToArray());
+    }
+
     public static string HardwareError(string transport, string error) =>
         JsonSerializer.Serialize(new { HardwareError = new { transport, error } });
 
