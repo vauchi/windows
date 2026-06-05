@@ -163,6 +163,9 @@ public static partial class VauchiNative
     [LibraryImport(LibName, EntryPoint = "vauchi_app_navigate_to", StringMarshalling = StringMarshalling.Utf8)]
     private static partial IntPtr AppNavigateToRaw(IntPtr handle, string screenName);
 
+    [LibraryImport(LibName, EntryPoint = "vauchi_app_navigate_back")]
+    private static partial IntPtr AppNavigateBackRaw(IntPtr handle);
+
     [LibraryImport(LibName, EntryPoint = "vauchi_app_available_screens")]
     private static partial IntPtr AppAvailableScreensRaw(IntPtr handle);
 
@@ -205,6 +208,21 @@ public static partial class VauchiNative
     public static string? AppNavigateTo(IntPtr handle, string screenName)
     {
         IntPtr ptr = AppNavigateToRaw(handle, screenName);
+        if (ptr == IntPtr.Zero) return null;
+        string result = Marshal.PtrToStringUTF8(ptr)!;
+        StringFree(ptr);
+        return result;
+    }
+
+    /// <summary>
+    /// Navigate back one step; returns the resulting ScreenModel JSON.
+    /// The engine's nav state is mutated, so callers can also just
+    /// re-read the current screen. Frontends gate this on `can_go_back`,
+    /// replacing the footer "Back" action.
+    /// </summary>
+    public static string? AppNavigateBack(IntPtr handle)
+    {
+        IntPtr ptr = AppNavigateBackRaw(handle);
         if (ptr == IntPtr.Zero) return null;
         string result = Marshal.PtrToStringUTF8(ptr)!;
         StringFree(ptr);

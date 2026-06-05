@@ -40,6 +40,12 @@ public sealed partial class MainWindow : Window
         ScreenCaptureProtection.Enable(this);
 
         Renderer.ActionRequested += OnActionRequested;
+        Renderer.BackRequested += () =>
+        {
+            if (_appHandle == IntPtr.Zero) return;
+            VauchiNative.AppNavigateBack(_appHandle);
+            RefreshScreen();
+        };
 
         // Async init with optional Windows Hello gate
         _ = InitializeAsync();
@@ -181,8 +187,12 @@ public sealed partial class MainWindow : Window
         shortcuts.BackRequested += () =>
         {
             if (_appHandle == IntPtr.Zero) return;
-            string? resultJson = VauchiNative.AppHandleAction(_appHandle, ActionJson.ActionPressed("back"));
-            if (resultJson != null) HandleActionResult(resultJson);
+            // Core-driven back: navigate_back mutates the engine nav state;
+            // re-read + render the current screen. Replaces the former
+            // ActionPressed("back") path now that the footer "Back" action
+            // is going away.
+            VauchiNative.AppNavigateBack(_appHandle);
+            RefreshScreen();
         };
         shortcuts.SearchFocusRequested += () =>
         {

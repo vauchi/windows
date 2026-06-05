@@ -4,6 +4,7 @@
 using System;
 using System.Text.Json;
 using Vauchi.Helpers;
+using Vauchi.Services;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml;
@@ -20,7 +21,17 @@ public sealed partial class ScreenRenderer : UserControl
     public ScreenRenderer()
     {
         InitializeComponent();
+        BackButtonLabel.Text = Localizer.T("action.back");
+        BackButton.SetValue(AutomationProperties.NameProperty, Localizer.T("action.back"));
+        BackButton.Click += (_, _) => BackRequested?.Invoke();
     }
+
+    /// <summary>
+    /// Raised when the user activates the core-driven back chrome. The host
+    /// calls <c>vauchi_app_navigate_back</c> and re-renders. Replaces the
+    /// per-screen footer "Back" action.
+    /// </summary>
+    public event Action? BackRequested;
 
     /// <summary>
     /// Parse ScreenModel JSON and render all parts: header, components, action buttons.
@@ -44,6 +55,12 @@ public sealed partial class ScreenRenderer : UserControl
             ? lay.GetString() ?? "Scroll"
             : "Scroll";
         ApplyLayout(layout);
+
+        // Core-driven back chrome: visible only when the engine reports a
+        // back step. `can_go_back` is omitted from the wire when false.
+        bool canGoBack = root.TryGetProperty("can_go_back", out var cgb)
+            && cgb.ValueKind == JsonValueKind.True;
+        BackButton.Visibility = canGoBack ? Visibility.Visible : Visibility.Collapsed;
 
         // Title
         ScreenTitle.Text = root.TryGetProperty("title", out var title) ? title.GetString() ?? "" : "";

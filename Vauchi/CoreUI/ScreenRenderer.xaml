@@ -13,6 +13,17 @@
 
         <!-- Screen header: title + subtitle + progress -->
         <StackPanel x:Name="HeaderPanel" Grid.Row="0" Spacing="4" Margin="0,0,0,16">
+            <!-- Core-driven back chrome: shown only when the screen reports
+                 `can_go_back`; calls navigate_back. Replaces the footer "Back". -->
+            <Button x:Name="BackButton" Visibility="Collapsed"
+                    Background="Transparent" BorderThickness="0" Padding="0"
+                    HorizontalAlignment="Left"
+                    AutomationProperties.AutomationId="nav_back">
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                    <FontIcon Glyph="&#xE72B;" FontSize="14" />
+                    <TextBlock x:Name="BackButtonLabel" />
+                </StackPanel>
+            </Button>
             <TextBlock x:Name="ScreenTitle" Style="{StaticResource TitleTextBlockStyle}" />
             <TextBlock x:Name="ScreenSubtitle" Style="{StaticResource SubtitleTextBlockStyle}"
                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
