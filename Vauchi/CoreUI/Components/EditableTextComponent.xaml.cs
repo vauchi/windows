@@ -46,7 +46,6 @@ public sealed partial class EditableTextComponent : UserControl, IRenderable
             DisplayValue.Text = value.Length > 0 ? value : Localizer.T("editable.empty_value");
         }
 
-        // Validation error
         if (data.TryGetProperty("validation_error", out var ve) && ve.ValueKind == JsonValueKind.String)
         {
             ValidationError.Text = ve.GetString() ?? "";

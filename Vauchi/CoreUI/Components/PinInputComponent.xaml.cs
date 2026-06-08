@@ -47,7 +47,6 @@ public sealed partial class PinInputComponent : UserControl, IRenderable
             });
         }
 
-        // Validation error
         if (data.TryGetProperty("validation_error", out var ve) && ve.ValueKind == JsonValueKind.String)
         {
             ValidationError.Text = ve.GetString() ?? "";
@@ -58,7 +57,6 @@ public sealed partial class PinInputComponent : UserControl, IRenderable
             ValidationError.Visibility = Visibility.Collapsed;
         }
 
-        // Wire event once
         if (!_eventWired && onAction != null && componentId.Length > 0)
         {
             PinBox.PasswordChanged += (_, _) =>

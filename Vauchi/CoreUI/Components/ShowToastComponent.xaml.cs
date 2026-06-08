@@ -36,7 +36,6 @@ public sealed partial class ShowToastComponent : UserControl, IRenderable
         // Severity is not part of the ShowToast data model — always use Informational
         Toast.Severity = InfoBarSeverity.Informational;
 
-        // Wire undo button if undo_action_id is present
         Toast.ActionButton = null;
         if (data.TryGetProperty("undo_action_id", out var undoEl) && onAction != null)
         {
@@ -53,7 +52,6 @@ public sealed partial class ShowToastComponent : UserControl, IRenderable
 
         Toast.IsOpen = true;
 
-        // Use duration_ms from data (default 4000 ms if absent)
         int durationMs = data.TryGetProperty("duration_ms", out var durEl)
             ? durEl.GetInt32()
             : 4000;

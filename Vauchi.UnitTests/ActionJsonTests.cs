@@ -142,7 +142,6 @@ public class ActionJsonTests
     [Fact]
     public void AllVariants_ProduceValidJson()
     {
-        // Verify all builders produce parseable JSON (no exceptions)
         string[] jsons =
         [
             ActionJson.ActionPressed("test"),

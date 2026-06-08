@@ -204,7 +204,6 @@ public sealed partial class SettingsGroupComponent : UserControl, IRenderable
                 }
             }
 
-            // Only process first property (externally-tagged)
             break;
         }
 

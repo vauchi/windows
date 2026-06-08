@@ -16,6 +16,5 @@ public sealed partial class DividerComponent : UserControl, IRenderable
 
     public void Render(JsonElement data, Action<string>? onAction)
     {
-        // Divider has no dynamic content
     }
 }

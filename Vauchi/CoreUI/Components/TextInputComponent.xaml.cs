@@ -27,20 +27,15 @@ public sealed partial class TextInputComponent : UserControl, IRenderable
         _componentId = data.TryGetProperty("id", out var id) ? id.GetString() ?? "" : "";
         _onAction = onAction;
 
-        // Label
         if (data.TryGetProperty("label", out var label))
             LabelText.Text = label.GetString() ?? "";
 
-        // Value
         string value = data.TryGetProperty("value", out var v) ? v.GetString() ?? "" : "";
 
-        // Placeholder
         string placeholder = data.TryGetProperty("placeholder", out var ph) ? ph.GetString() ?? "" : "";
 
-        // Max length
         int maxLength = data.TryGetProperty("max_length", out var ml) ? ml.GetInt32() : 0;
 
-        // Input type
         string inputType = data.TryGetProperty("input_type", out var it) ? it.GetString() ?? "Text" : "Text";
 
         if (inputType == "Password")
@@ -73,14 +68,12 @@ public sealed partial class TextInputComponent : UserControl, IRenderable
             InputBox.KeyDown += OnKeyDown;
         }
 
-        // Validation error
         if (data.TryGetProperty("validation_error", out var ve) && ve.ValueKind == JsonValueKind.String)
         {
             ValidationError.Text = ve.GetString() ?? "";
             ValidationError.Visibility = Visibility.Visible;
         }
 
-        // Accessibility
         AutomationProperties.SetName(InputBox, LabelText.Text);
         AutomationProperties.SetName(PasswordInput, LabelText.Text);
 

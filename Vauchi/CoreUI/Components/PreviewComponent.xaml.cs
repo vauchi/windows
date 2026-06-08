@@ -27,7 +27,6 @@ public sealed partial class PreviewComponent : UserControl, IRenderable
             ? nameEl.GetString() ?? ""
             : "";
 
-        // Render avatar image if present
         AvatarArea.Visibility = Visibility.Collapsed;
         if (data.TryGetProperty("avatar_data", out var avatarEl)
             && avatarEl.ValueKind == JsonValueKind.Array
@@ -53,7 +52,6 @@ public sealed partial class PreviewComponent : UserControl, IRenderable
             ? svEl.ValueKind == JsonValueKind.String ? svEl.GetString() : null
             : null;
 
-        // Build preview-variant tab buttons if present
         var variants = new List<(string VariantId, string DisplayName, JsonElement Element)>();
         if (data.TryGetProperty("variants", out var variantsEl))
         {
@@ -183,7 +181,6 @@ public sealed partial class PreviewComponent : UserControl, IRenderable
             }
         }
 
-        // Fall back to all fields
         if (data.TryGetProperty("fields", out var fields))
         {
             foreach (var field in fields.EnumerateArray())

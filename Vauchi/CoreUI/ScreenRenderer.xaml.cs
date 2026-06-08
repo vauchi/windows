@@ -62,10 +62,8 @@ public sealed partial class ScreenRenderer : UserControl
             && cgb.ValueKind == JsonValueKind.True;
         BackButton.Visibility = canGoBack ? Visibility.Visible : Visibility.Collapsed;
 
-        // Title
         ScreenTitle.Text = root.TryGetProperty("title", out var title) ? title.GetString() ?? "" : "";
 
-        // Subtitle (hide if null/absent)
         if (root.TryGetProperty("subtitle", out var subtitle) && subtitle.ValueKind == JsonValueKind.String)
         {
             ScreenSubtitle.Text = subtitle.GetString() ?? "";
@@ -76,7 +74,6 @@ public sealed partial class ScreenRenderer : UserControl
             ScreenSubtitle.Visibility = Visibility.Collapsed;
         }
 
-        // Progress bar (hide if null/absent)
         if (root.TryGetProperty("progress", out var progress) && progress.ValueKind == JsonValueKind.Object)
         {
             int current = progress.TryGetProperty("current_step", out var cs) ? cs.GetInt32() : 0;
@@ -103,7 +100,6 @@ public sealed partial class ScreenRenderer : UserControl
             ProgressLabel.Visibility = Visibility.Collapsed;
         }
 
-        // Render components
         if (root.TryGetProperty("components", out var components) &&
             components.ValueKind == JsonValueKind.Array)
         {
@@ -117,7 +113,6 @@ public sealed partial class ScreenRenderer : UserControl
             }
         }
 
-        // Render screen-level action buttons (pinned to bottom)
         if (root.TryGetProperty("actions", out var actions) &&
             actions.ValueKind == JsonValueKind.Array)
         {

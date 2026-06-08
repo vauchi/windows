@@ -20,7 +20,6 @@ public sealed partial class ToggleListComponent : UserControl, IRenderable
 
     public void Render(JsonElement data, Action<string>? onAction)
     {
-        // Keep only the header label, clear dynamic items
         while (ToggleContainer.Children.Count > 1)
             ToggleContainer.Children.RemoveAt(ToggleContainer.Children.Count - 1);
 
