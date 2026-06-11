@@ -226,7 +226,7 @@ while ($hwnd -eq [IntPtr]::Zero -and $retry -lt 10) {
     $retry++
 }
 if ($hwnd -eq [IntPtr]::Zero) {
-    Write-Error "MainWindowHandle still IntPtr.Zero after ${retry} retries (~10s). The visible window is likely owned by a child process — enumerate top-level windows by PID in a future fix."
+    Write-Error "MainWindowHandle still IntPtr.Zero after ${retry} retries (~10s). The visible window is likely owned by a child process - enumerate top-level windows by PID in a future fix."
     $proc.Kill()
     exit 1
 }
