@@ -212,24 +212,61 @@ Write-Host "[snapshots] Window appeared after ${elapsed}s"
 # Extra settle time for rendering
 Start-Sleep -Seconds 3
 
-# WinAppSDK windows can briefly return IntPtr.Zero on MainWindowHandle
-# immediately after appearing, because the visible top-level window is
-# owned by a child/composition process. Retry with exponential backoff
-# up to 10 s (see 2026-04-20-windows-test-jobs-broken). On every retry,
-# refresh the process handle and re-query MainWindowHandle.
-$hwnd = $proc.MainWindowHandle
+# WinAppSDK apps hand the visible window to a child/relaunched process:
+# the bootstrap $proc can exit after the splash, making MainWindowHandle
+# $null (not IntPtr.Zero) on later reads. Locate the window via Win32
+# EnumWindows by process name instead of trusting the launch handle
+# (see 2026-04-20-windows-test-jobs-broken, CI run 2026-06-11).
+Add-Type @'
+using System;
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
+using System.Text;
+
+public static class TopLevelWindows {
+    [DllImport("user32.dll")] static extern bool EnumWindows(EnumProc cb, IntPtr lp);
+    [DllImport("user32.dll")] static extern uint GetWindowThreadProcessId(IntPtr h, out uint pid);
+    [DllImport("user32.dll")] static extern bool IsWindowVisible(IntPtr h);
+    [DllImport("user32.dll")] static extern int GetWindowTextLength(IntPtr h);
+    delegate bool EnumProc(IntPtr h, IntPtr lp);
+
+    public static IntPtr FindVisibleTitledWindowForPids(HashSet<uint> pids) {
+        IntPtr found = IntPtr.Zero;
+        EnumWindows((h, lp) => {
+            uint pid;
+            GetWindowThreadProcessId(h, out pid);
+            if (pids.Contains(pid) && IsWindowVisible(h) && GetWindowTextLength(h) > 0) {
+                found = h;
+                return false;
+            }
+            return true;
+        }, IntPtr.Zero);
+        return found;
+    }
+}
+'@
+
+$appName = [System.IO.Path]::GetFileNameWithoutExtension($AppPath)
+$hwnd = [IntPtr]::Zero
 $retry = 0
 while ($hwnd -eq [IntPtr]::Zero -and $retry -lt 10) {
-    Start-Sleep -Milliseconds (200 * [Math]::Pow(2, $retry))
-    $proc.Refresh()
-    $hwnd = $proc.MainWindowHandle
-    $retry++
+    $pids = New-Object 'System.Collections.Generic.HashSet[uint32]'
+    Get-Process -Name $appName -ErrorAction SilentlyContinue |
+        ForEach-Object { [void]$pids.Add([uint32]$_.Id) }
+    if ($pids.Count -gt 0) {
+        $hwnd = [TopLevelWindows]::FindVisibleTitledWindowForPids($pids)
+    }
+    if ($hwnd -eq [IntPtr]::Zero) {
+        Start-Sleep -Milliseconds (200 * [Math]::Pow(2, $retry))
+        $retry++
+    }
 }
-if ($hwnd -eq [IntPtr]::Zero) {
-    Write-Error "MainWindowHandle still IntPtr.Zero after ${retry} retries (~10s). The visible window is likely owned by a child process - enumerate top-level windows by PID in a future fix."
-    $proc.Kill()
+if ($null -eq $hwnd -or $hwnd -eq [IntPtr]::Zero) {
+    Write-Error "No visible titled top-level window for process '$appName' after ${retry} retries (~10s)."
+    if (-not $proc.HasExited) { $proc.Kill() }
     exit 1
 }
+Write-Host "[snapshots] Found app window via EnumWindows (hwnd=$hwnd) after $retry retries"
 
 # Get automation element for the window
 $windowElement = [System.Windows.Automation.AutomationElement]::FromHandle($hwnd)
@@ -264,13 +301,14 @@ foreach ($screen in $Screens) {
     }
 }
 
-# Clean up
+# Clean up by process name: the launch handle may already have exited
+# (bootstrap handoff), so $proc alone cannot shut the app down.
 Write-Host "[snapshots] Shutting down app..."
-$proc.CloseMainWindow() | Out-Null
-Start-Sleep -Seconds 2
-if (-not $proc.HasExited) {
-    $proc.Kill()
+Get-Process -Name $appName -ErrorAction SilentlyContinue | ForEach-Object {
+    $_.CloseMainWindow() | Out-Null
 }
+Start-Sleep -Seconds 2
+Get-Process -Name $appName -ErrorAction SilentlyContinue | Stop-Process -Force
 
 # Summary
 Write-Host ""
