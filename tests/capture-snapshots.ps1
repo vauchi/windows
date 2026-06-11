@@ -298,13 +298,14 @@ if ($hwnd -eq [IntPtr]::Zero) {
     }
     }
     if ($null -eq $hwnd -or $hwnd -eq [IntPtr]::Zero) {
-        Write-Error "No visible top-level window for process '$appName' after ${retry} retries."
         Write-Host "[snapshots] Diagnostics - processes named ${appName}:"
         Get-Process -Name $appName -ErrorAction SilentlyContinue |
             Format-Table Id, ProcessName, MainWindowTitle, HasExited -AutoSize | Out-String | Write-Host
+        Write-Host "[snapshots] Diagnostics - launched process: exited=$($proc.HasExited) exitcode=$(if ($proc.HasExited) { $proc.ExitCode } else { 'n/a' })"
         Write-Host "[snapshots] Diagnostics - all visible top-level windows:"
         [TopLevelWindows]::DumpVisibleWindows() | Write-Host
         if (-not $proc.HasExited) { $proc.Kill() }
+        Write-Error "No visible top-level window for process '$appName' after ${retry} retries."
         exit 1
     }
     Write-Host "[snapshots] Found app window via EnumWindows (hwnd=$hwnd) after $retry retries"
