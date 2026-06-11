@@ -189,6 +189,17 @@ function Navigate-To {
 
 # -- Main --
 
+# Persistent shell runner: a prior run's app instance may still be
+# alive (earlier cleanup killed only the bootstrap). A leftover
+# instance singleton-redirects the new launch and no window appears.
+$appName = [System.IO.Path]::GetFileNameWithoutExtension($AppPath)
+$leftover = Get-Process -Name $appName -ErrorAction SilentlyContinue
+if ($leftover) {
+    Write-Host "[snapshots] Killing $($leftover.Count) leftover '$appName' process(es) from a prior run"
+    $leftover | Stop-Process -Force
+    Start-Sleep -Seconds 2
+}
+
 Write-Host "[snapshots] Launching Vauchi with --reset-for-testing..."
 $proc = Start-Process -FilePath $AppPath -ArgumentList "--reset-for-testing" -PassThru
 
@@ -209,12 +220,10 @@ while ($hwnd -eq [IntPtr]::Zero -and $elapsed -lt $timeout) {
 }
 
 if ($hwnd -eq [IntPtr]::Zero) {
-    Write-Error "App window did not appear within ${timeout}s"
-    if (-not $proc.HasExited) { $proc.Kill() }
-    exit 1
+    Write-Warning "MainWindowHandle not seen within ${timeout}s - trying EnumWindows fallback"
+} else {
+    Write-Host "[snapshots] Window appeared after ${elapsed}s (hwnd=$hwnd)"
 }
-
-Write-Host "[snapshots] Window appeared after ${elapsed}s (hwnd=$hwnd)"
 
 # Extra settle time for rendering
 Start-Sleep -Seconds 3
@@ -271,7 +280,6 @@ public static class TopLevelWindows {
 }
 '@
 
-$appName = [System.IO.Path]::GetFileNameWithoutExtension($AppPath)
 if ($hwnd -eq [IntPtr]::Zero) {
     # Fallback: enumerate visible top-level windows for any process
     # matching the app exe name. WinUI windows may carry an EMPTY
