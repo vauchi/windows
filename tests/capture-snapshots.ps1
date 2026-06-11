@@ -104,10 +104,10 @@ $Screens = @(
 # -- Helper: capture window screenshot --
 
 function Capture-Window {
-    param([System.Diagnostics.Process]$Process, [string]$FilePath)
+    param([IntPtr]$Hwnd, [string]$FilePath)
 
-    $hwnd = $Process.MainWindowHandle
-    if ($hwnd -eq [IntPtr]::Zero) {
+    $hwnd = $Hwnd
+    if ($null -eq $hwnd -or $hwnd -eq [IntPtr]::Zero) {
         Write-Warning "No window handle - skipping capture"
         return $false
     }
@@ -192,22 +192,29 @@ function Navigate-To {
 Write-Host "[snapshots] Launching Vauchi with --reset-for-testing..."
 $proc = Start-Process -FilePath $AppPath -ArgumentList "--reset-for-testing" -PassThru
 
-# Wait for window to appear
+# Wait for window to appear. Capture the handle THE MOMENT it shows:
+# the bootstrap process can exit shortly after, making later
+# MainWindowHandle reads return $null while the HWND itself stays valid.
 $timeout = 30
 $elapsed = 0
-while ($proc.MainWindowHandle -eq [IntPtr]::Zero -and $elapsed -lt $timeout) {
+$hwnd = [IntPtr]::Zero
+while ($hwnd -eq [IntPtr]::Zero -and $elapsed -lt $timeout) {
     Start-Sleep -Seconds 1
     $elapsed++
-    $proc.Refresh()
+    try {
+        $proc.Refresh()
+        $h = $proc.MainWindowHandle
+        if ($null -ne $h -and $h -ne [IntPtr]::Zero) { $hwnd = $h }
+    } catch {}
 }
 
-if ($proc.MainWindowHandle -eq [IntPtr]::Zero) {
+if ($hwnd -eq [IntPtr]::Zero) {
     Write-Error "App window did not appear within ${timeout}s"
-    $proc.Kill()
+    if (-not $proc.HasExited) { $proc.Kill() }
     exit 1
 }
 
-Write-Host "[snapshots] Window appeared after ${elapsed}s"
+Write-Host "[snapshots] Window appeared after ${elapsed}s (hwnd=$hwnd)"
 
 # Extra settle time for rendering
 Start-Sleep -Seconds 3
@@ -230,12 +237,15 @@ public static class TopLevelWindows {
     [DllImport("user32.dll")] static extern int GetWindowTextLength(IntPtr h);
     delegate bool EnumProc(IntPtr h, IntPtr lp);
 
-    public static IntPtr FindVisibleTitledWindowForPids(HashSet<uint> pids) {
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    static extern int GetWindowText(IntPtr h, StringBuilder sb, int max);
+
+    public static IntPtr FindVisibleWindowForPids(HashSet<uint> pids) {
         IntPtr found = IntPtr.Zero;
         EnumWindows((h, lp) => {
             uint pid;
             GetWindowThreadProcessId(h, out pid);
-            if (pids.Contains(pid) && IsWindowVisible(h) && GetWindowTextLength(h) > 0) {
+            if (pids.Contains(pid) && IsWindowVisible(h)) {
                 found = h;
                 return false;
             }
@@ -243,30 +253,54 @@ public static class TopLevelWindows {
         }, IntPtr.Zero);
         return found;
     }
+
+    public static string DumpVisibleWindows() {
+        var sb = new StringBuilder();
+        EnumWindows((h, lp) => {
+            if (IsWindowVisible(h)) {
+                uint pid;
+                GetWindowThreadProcessId(h, out pid);
+                var title = new StringBuilder(256);
+                GetWindowText(h, title, 256);
+                sb.AppendLine("  hwnd=" + h + " pid=" + pid + " title=\"" + title + "\"");
+            }
+            return true;
+        }, IntPtr.Zero);
+        return sb.ToString();
+    }
 }
 '@
 
 $appName = [System.IO.Path]::GetFileNameWithoutExtension($AppPath)
-$hwnd = [IntPtr]::Zero
-$retry = 0
-while ($hwnd -eq [IntPtr]::Zero -and $retry -lt 10) {
-    $pids = New-Object 'System.Collections.Generic.HashSet[uint32]'
-    Get-Process -Name $appName -ErrorAction SilentlyContinue |
-        ForEach-Object { [void]$pids.Add([uint32]$_.Id) }
-    if ($pids.Count -gt 0) {
-        $hwnd = [TopLevelWindows]::FindVisibleTitledWindowForPids($pids)
+if ($hwnd -eq [IntPtr]::Zero) {
+    # Fallback: enumerate visible top-level windows for any process
+    # matching the app exe name. WinUI windows may carry an EMPTY
+    # title, so do not filter on title length.
+    $retry = 0
+    while ($hwnd -eq [IntPtr]::Zero -and $retry -lt 10) {
+        $pids = New-Object 'System.Collections.Generic.HashSet[uint32]'
+        Get-Process -Name $appName -ErrorAction SilentlyContinue |
+            ForEach-Object { [void]$pids.Add([uint32]$_.Id) }
+        if ($pids.Count -gt 0) {
+            $hwnd = [TopLevelWindows]::FindVisibleWindowForPids($pids)
     }
     if ($hwnd -eq [IntPtr]::Zero) {
         Start-Sleep -Milliseconds (200 * [Math]::Pow(2, $retry))
         $retry++
     }
+    }
+    if ($null -eq $hwnd -or $hwnd -eq [IntPtr]::Zero) {
+        Write-Error "No visible top-level window for process '$appName' after ${retry} retries."
+        Write-Host "[snapshots] Diagnostics - processes named ${appName}:"
+        Get-Process -Name $appName -ErrorAction SilentlyContinue |
+            Format-Table Id, ProcessName, MainWindowTitle, HasExited -AutoSize | Out-String | Write-Host
+        Write-Host "[snapshots] Diagnostics - all visible top-level windows:"
+        [TopLevelWindows]::DumpVisibleWindows() | Write-Host
+        if (-not $proc.HasExited) { $proc.Kill() }
+        exit 1
+    }
+    Write-Host "[snapshots] Found app window via EnumWindows (hwnd=$hwnd) after $retry retries"
 }
-if ($null -eq $hwnd -or $hwnd -eq [IntPtr]::Zero) {
-    Write-Error "No visible titled top-level window for process '$appName' after ${retry} retries (~10s)."
-    if (-not $proc.HasExited) { $proc.Kill() }
-    exit 1
-}
-Write-Host "[snapshots] Found app window via EnumWindows (hwnd=$hwnd) after $retry retries"
 
 # Get automation element for the window
 $windowElement = [System.Windows.Automation.AutomationElement]::FromHandle($hwnd)
@@ -289,7 +323,7 @@ foreach ($screen in $Screens) {
     }
 
     $outPath = Join-Path $OutputDir "${name}.png"
-    $ok = Capture-Window -Process $proc -FilePath $outPath
+    $ok = Capture-Window -Hwnd $hwnd -FilePath $outPath
 
     if ($ok) {
         Write-Host "[snapshots]   Captured: $outPath"
