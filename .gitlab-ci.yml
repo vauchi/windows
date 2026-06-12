@@ -347,7 +347,11 @@ test:a11y:
     # Without these flags, MRT restore fails with MSB4062 on SaaS Windows
     # runners whose SDK layout lacks Microsoft.Build.Packaging.Pri.Tasks.dll.
     # See 2026-04-20-windows-test-jobs-broken.
-    - dotnet test Vauchi.Tests/Vauchi.Tests.csproj --filter "FullyQualifiedName~AccessibilityTests" -p:EnableCoreMrtTooling=false -p:AppxGeneratePriEnabled=false
+    # No name filter: Vauchi.Tests holds only WinUI-app-context tests
+    # (accessibility). Headless unit tests live in Vauchi.UnitTests (test:unit).
+    # A name filter here once hid SmokeTests from every lane — see
+    # 2026-06-11-e2e-tests-invisible-to-ci (windows instance).
+    - dotnet test Vauchi.Tests/Vauchi.Tests.csproj -p:EnableCoreMrtTooling=false -p:AppxGeneratePriEnabled=false
   tags: [saas-windows-medium-amd64]
   when: manual
 

@@ -4,7 +4,7 @@
 using System.Text.Json;
 using Xunit;
 
-namespace Vauchi.Tests;
+namespace Vauchi.UnitTests;
 
 public class SmokeTests
 {
