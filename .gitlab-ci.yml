@@ -351,7 +351,9 @@ test:a11y:
     # (accessibility). Headless unit tests live in Vauchi.UnitTests (test:unit).
     # A name filter here once hid SmokeTests from every lane — see
     # 2026-06-11-e2e-tests-invisible-to-ci (windows instance).
-    - dotnet test Vauchi.Tests/Vauchi.Tests.csproj -p:EnableCoreMrtTooling=false -p:AppxGeneratePriEnabled=false
+    # -r win-x64: WinUI test projects need a RID so the testhost output carries
+    # the test-platform assemblies (see Vauchi.Tests.csproj + 2026-04-20 record).
+    - dotnet test Vauchi.Tests/Vauchi.Tests.csproj -r win-x64 -p:EnableCoreMrtTooling=false -p:AppxGeneratePriEnabled=false
   tags: [saas-windows-medium-amd64]
   when: manual
 
