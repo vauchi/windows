@@ -17,48 +17,14 @@ internal static class PreviewFields
     {
         var result = new List<(string, string)>();
 
-        string? selectedVariant =
-            data.TryGetProperty("selected_variant", out var svEl)
-            && svEl.ValueKind == JsonValueKind.String
-                ? svEl.GetString()
-                : null;
-
-        if (selectedVariant != null && data.TryGetProperty("variants", out var variants))
+        // Core's build_visible_fields already applies the selected variant and
+        // drops Hidden fields, so render `visible_fields` directly. Reading the
+        // raw `fields` list leaks Hidden values
+        // (2026-05-21-component-preview-legacy-fields).
+        if (data.TryGetProperty("visible_fields", out var visible)
+            && visible.ValueKind == JsonValueKind.Array)
         {
-            foreach (var v in variants.EnumerateArray())
-            {
-                string variantId = v.TryGetProperty("variant_id", out var vidEl)
-                    ? vidEl.GetString() ?? "" : "";
-                if (variantId != selectedVariant)
-                    continue;
-
-                if (!v.TryGetProperty("visible_fields", out var visFields))
-                    break;
-
-                var fieldIds = new HashSet<string>();
-                foreach (var fId in visFields.EnumerateArray())
-                {
-                    string? id = fId.GetString();
-                    if (id != null) fieldIds.Add(id);
-                }
-
-                if (data.TryGetProperty("fields", out var allFields))
-                {
-                    foreach (var field in allFields.EnumerateArray())
-                    {
-                        string fId = field.TryGetProperty("id", out var fIdEl)
-                            ? fIdEl.GetString() ?? "" : "";
-                        if (fieldIds.Contains(fId))
-                            result.Add((LabelOf(field), ValueOf(field)));
-                    }
-                }
-                return result;
-            }
-        }
-
-        if (data.TryGetProperty("fields", out var fields))
-        {
-            foreach (var field in fields.EnumerateArray())
+            foreach (var field in visible.EnumerateArray())
                 result.Add((LabelOf(field), ValueOf(field)));
         }
 
