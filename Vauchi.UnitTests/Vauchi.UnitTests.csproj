@@ -37,6 +37,7 @@
     <Compile Include="..\Vauchi\Platform\SystemTrayManager.cs" Link="Linked\SystemTrayManager.cs" />
     <Compile Include="..\Vauchi\Services\Localizer.cs" Link="Linked\Localizer.cs" />
     <Compile Include="..\Vauchi\CoreUI\ComponentRenderer.cs" Link="Linked\ComponentRenderer.cs" />
+    <Compile Include="..\Vauchi\CoreUI\Components\PreviewFields.cs" Link="Linked\PreviewFields.cs" />
     <Compile Include="..\Vauchi\Helpers\ActionRouter.cs" Link="Linked\ActionRouter.cs" />
   </ItemGroup>
 </Project>

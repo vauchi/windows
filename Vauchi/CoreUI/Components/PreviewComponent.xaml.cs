@@ -92,9 +92,8 @@ public sealed partial class PreviewComponent : UserControl, IRenderable
             }
         }
 
-        // Render fields: use selected variant's visible_fields if available, otherwise all fields
         FieldsContainer.Children.Clear();
-        var fieldsToShow = ResolveFields(data, variants, selectedVariant);
+        var fieldsToShow = PreviewFields.Resolve(data);
         foreach (var (label, value) in fieldsToShow)
         {
             var row = new Grid();
@@ -136,62 +135,6 @@ public sealed partial class PreviewComponent : UserControl, IRenderable
                     AutomationProperties.SetHelpText(this, hint);
             }
         }
-    }
-
-    private static List<(string Label, string Value)> ResolveFields(
-        JsonElement data,
-        List<(string VariantId, string DisplayName, JsonElement Element)> variants,
-        string? selectedVariant)
-    {
-        var result = new List<(string, string)>();
-
-        // Try to find the selected preview variant and use its visible_fields
-        if (selectedVariant != null)
-        {
-            foreach (var (variantId, _, v) in variants)
-            {
-                if (variantId != selectedVariant)
-                    continue;
-
-                if (!v.TryGetProperty("visible_fields", out var visFields))
-                    break;
-
-                // visible_fields is a list of field ids — match against data["fields"]
-                var fieldIds = new HashSet<string>();
-                foreach (var fId in visFields.EnumerateArray())
-                {
-                    string? id = fId.GetString();
-                    if (id != null) fieldIds.Add(id);
-                }
-
-                if (data.TryGetProperty("fields", out var allFields))
-                {
-                    foreach (var field in allFields.EnumerateArray())
-                    {
-                        string fId = field.TryGetProperty("id", out var fIdEl) ? fIdEl.GetString() ?? "" : "";
-                        if (fieldIds.Contains(fId))
-                        {
-                            string label = field.TryGetProperty("label", out var lblEl) ? lblEl.GetString() ?? "" : "";
-                            string value = field.TryGetProperty("value", out var valEl) ? valEl.GetString() ?? "" : "";
-                            result.Add((label, value));
-                        }
-                    }
-                }
-                return result;
-            }
-        }
-
-        if (data.TryGetProperty("fields", out var fields))
-        {
-            foreach (var field in fields.EnumerateArray())
-            {
-                string label = field.TryGetProperty("label", out var lblEl) ? lblEl.GetString() ?? "" : "";
-                string value = field.TryGetProperty("value", out var valEl) ? valEl.GetString() ?? "" : "";
-                result.Add((label, value));
-            }
-        }
-
-        return result;
     }
 
     private async void LoadAvatarAsync(byte[] imageBytes)
