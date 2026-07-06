@@ -5,6 +5,7 @@ using System.Text.Json;
 
 namespace Vauchi.Helpers;
 
+// TODO(HUMBLE): W — hand-maintained ExchangeCommandKind enum/string table; use stable numeric IDs or schema-generated parser (see _private/docs/problems/2026-07-06-desktop-tui-web-domain-shell-violations).
 public enum ExchangeCommandKind
 {
     QrDisplay,
@@ -116,6 +117,7 @@ public readonly struct ExchangeCommand
 
 public static class ExchangeCommandParser
 {
+    // TODO(HUMBLE): W — hand-maintained ExchangeCommand variant string table (see _private/docs/problems/2026-07-06-desktop-tui-web-domain-shell-violations).
     private static readonly string[] KnownVariants =
     [
         "QrDisplay", "QrRequestScan",
@@ -187,6 +189,7 @@ public static class ExchangeCommandParser
         return [];
     }
 
+    // TODO(HUMBLE): W — hand-maintained ExchangeCommand name-to-kind mapping (see _private/docs/problems/2026-07-06-desktop-tui-web-domain-shell-violations).
     private static ExchangeCommandKind NameToKind(string? name) => name switch
     {
         "QrDisplay" => ExchangeCommandKind.QrDisplay,

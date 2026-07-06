@@ -144,6 +144,7 @@ public sealed partial class QrCodeComponent : UserControl, IRenderable
             _scanTimer.Tick += async (_, _) => await TryDecodeFrameAsync();
             _scanTimer.Start();
         }
+        // TODO(HUMBLE): D — substring error classification + hardcoded English message; map to typed error codes and let core/localizer supply message (see _private/docs/problems/2026-07-06-desktop-tui-web-domain-shell-violations).
         catch (UnauthorizedAccessException)
         {
             ScanStatus.Text = "Camera access denied. Enable in Windows Settings > Privacy > Camera.";

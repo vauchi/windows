@@ -36,6 +36,7 @@ public sealed partial class TextInputComponent : UserControl, IRenderable
 
         int maxLength = data.TryGetProperty("max_length", out var ml) ? ml.GetInt32() : 0;
 
+        // TODO(HUMBLE): W — parses input_type strings (Password, Phone, Email); consider numeric enum or generic hints from core (see _private/docs/problems/2026-07-06-desktop-tui-web-domain-shell-violations).
         string inputType = data.TryGetProperty("input_type", out var it) ? it.GetString() ?? "Text" : "Text";
 
         if (inputType == "Password")

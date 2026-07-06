@@ -8,6 +8,7 @@ namespace Vauchi.Helpers;
 /// <summary>
 /// Classifies ActionResult JSON from vauchi-cabi into a kind enum.
 /// </summary>
+// TODO(HUMBLE): W — hand-maintained ActionResultKind enum/string table; core should emit generic presentation results (see _private/docs/problems/2026-07-06-desktop-tui-web-domain-shell-violations).
 public enum ActionResultKind
 {
     UpdateScreen,

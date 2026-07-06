@@ -26,6 +26,7 @@ public static class ThemeColors
     public static readonly Color Neutral = ParseHex("#a6adc8");          // text-secondary — status Neutral, pin-empty dot
     public static readonly Color OnColored = ParseHex("#cdd6f4");        // text-primary — light foreground text over saturated fills (avatar initials, button labels)
 
+    // TODO(HUMBLE): W — hardcodes avatar fallback color synced with core; core should provide avatar fallback color in component/theme data (see _private/docs/problems/2026-07-06-desktop-tui-web-domain-shell-violations).
     // Avatar fallback when core doesn't provide a per-contact bg_color.
     // The hex string is what core actually emits via vCard import for
     // unassigned contacts; keep both the hex and the Color in sync.

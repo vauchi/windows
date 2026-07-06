@@ -29,6 +29,7 @@ public class SystemTrayManager : IDisposable
     {
         var menu = new MenuFlyout();
 
+        // TODO(HUMBLE): W — hardcodes domain screen ID "exchange" for system-tray navigation; core should expose dynamic tray items or opaque action registry (see _private/docs/problems/2026-07-06-desktop-tui-web-domain-shell-violations).
         var exchangeItem = new MenuFlyoutItem { Text = Localizer.T("nav.exchange") };
         exchangeItem.Click += (_, _) => { ShowWindow(); _navigateAction?.Invoke("exchange"); };
         menu.Items.Add(exchangeItem);

@@ -29,6 +29,7 @@ public sealed partial class ListComponent : UserControl, IRenderable
         bool searchable = data.TryGetProperty("searchable", out var searchEl) && searchEl.GetBoolean();
 
         SearchBox.Visibility = searchable ? Visibility.Visible : Visibility.Collapsed;
+        // TODO(HUMBLE): W — uses domain-specific a11y.search_contacts key; use generic a11y.search or component-supplied label (see _private/docs/problems/2026-07-06-desktop-tui-web-domain-shell-violations).
         AutomationProperties.SetName(SearchBox, Localizer.T("a11y.search_contacts"));
 
         if (searchable && onAction != null)
@@ -49,6 +50,7 @@ public sealed partial class ListComponent : UserControl, IRenderable
             string initials = item.TryGetProperty("avatar_initials", out var initEl) ? initEl.GetString() ?? "" : "";
             string? subtitle = item.TryGetProperty("subtitle", out var subEl) ? subEl.GetString() : null;
 
+            // TODO(HUMBLE): W — BuildContactRow is domain-specific naming for a generic list row; core should supply row presentation data (see _private/docs/problems/2026-07-06-desktop-tui-web-domain-shell-violations).
             var row = BuildContactRow(initials, name, subtitle);
             AutomationProperties.SetName(row, name);
 

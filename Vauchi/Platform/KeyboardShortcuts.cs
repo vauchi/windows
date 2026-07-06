@@ -32,6 +32,7 @@ public class KeyboardShortcuts
         target.KeyboardAccelerators.Add(accel);
     }
 
+    // TODO(HUMBLE): W — hardcodes domain screen IDs (exchange, my_info, contacts, settings) for keyboard shortcuts; core should expose shortcut/action registry (see _private/docs/problems/2026-07-06-desktop-tui-web-domain-shell-violations).
     public void Register(UIElement root)
     {
         AddAccelerator(root, VirtualKey.E, VirtualKeyModifiers.Control, () => NavigateRequested?.Invoke("exchange"));

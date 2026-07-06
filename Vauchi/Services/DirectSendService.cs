@@ -23,6 +23,7 @@ internal sealed class DirectSendService
     public event Action<string>? OnPayloadReceived;
     public event Action<string, string>? OnError;
 
+    // TODO(HUMBLE): D/T — frontend chooses DirectCardReceived vs DirectPayloadReceived based on cardLeg; core should issue separate opaque transport commands / phase token and frontend should forward bytes (see _private/docs/problems/2026-07-06-desktop-tui-web-domain-shell-violations).
     // `cardLeg` selects the second (card) leg — report DirectCardReceived
     // instead of DirectPayloadReceived. The TCP exchange is identical.
     public async Task ExchangeAsync(string address, byte[] payload, bool isInitiator, bool cardLeg = false)

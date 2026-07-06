@@ -28,6 +28,7 @@ public static class ActionRouter
             if (doc.RootElement.ValueKind != JsonValueKind.Object) return false;
             using var enumerator = doc.RootElement.EnumerateObject();
             if (!enumerator.MoveNext()) return false;
+            // TODO(HUMBLE): W — maintains list of UserAction variant names; core should provide single envelope discriminator (see _private/docs/problems/2026-07-06-desktop-tui-web-domain-shell-violations).
             // Match UserAction variants (stable, rarely changes) — everything else
             // is a hardware event. This way, new ExchangeHardwareEvent variants
             // added in core are automatically routed correctly.

@@ -23,6 +23,7 @@ namespace Vauchi.Helpers;
 /// </summary>
 public static class NavIconCatalogue
 {
+    // TODO(HUMBLE): W — maps domain screen IDs to native symbols; accept as platform-icon carve-out or core should provide icon hint (see _private/docs/problems/2026-07-06-desktop-tui-web-domain-shell-violations).
     private static readonly IReadOnlyDictionary<string, Symbol> Map = new Dictionary<string, Symbol>
     {
         ["my_info"]           = Symbol.ContactInfo,

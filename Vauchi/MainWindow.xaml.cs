@@ -237,6 +237,7 @@ public sealed partial class MainWindow : Window
                 "Failed to initialize Vauchi storage. The database may be corrupted or inaccessible.");
         }
 
+// TODO(HUMBLE): D — test-only identity creation gate in production code; drive test setup via core testing hook (see _private/docs/problems/2026-07-06-desktop-tui-web-domain-shell-violations).
 #if DEBUG
         // --reset-for-testing: create a test identity so the app skips onboarding.
         if (Array.Exists(Environment.GetCommandLineArgs(), a => a == "--reset-for-testing"))
@@ -536,6 +537,7 @@ public sealed partial class MainWindow : Window
     /// <c>vauchi-backup-YYYY-MM-DD.vbk</c> filename and write the
     /// raw bytes on selection.
     /// </summary>
+    // TODO(HUMBLE): T — frontend assembles backup export filename/filter from BackupExportComplete data; core should issue SaveFileToUser Command with metadata (see _private/docs/problems/2026-07-06-desktop-tui-web-domain-shell-violations).
     private async void HandleBackupExportComplete(string resultJson)
     {
         try
@@ -595,6 +597,7 @@ public sealed partial class MainWindow : Window
                 RefreshScreen();
                 break;
 
+            // TODO(HUMBLE): D — frontend routes StartDeviceLink to device_linking screen; core should emit NavigateTo directly (see _private/docs/problems/2026-07-06-desktop-tui-web-domain-shell-violations).
             case ActionResultKind.StartDeviceLink:
                 NavigateToScreen("device_linking");
                 break;
@@ -622,6 +625,7 @@ public sealed partial class MainWindow : Window
                 RefreshScreen();
                 break;
 
+            // TODO(HUMBLE): D — frontend routes RequestCamera to exchange screen; core should emit NavigateTo or an appropriate Command batch (see _private/docs/problems/2026-07-06-desktop-tui-web-domain-shell-violations).
             case ActionResultKind.RequestCamera:
                 // Legacy path: core requested camera without an active ExchangeSession.
                 // Navigate to exchange screen — the screen model will include a QrCode

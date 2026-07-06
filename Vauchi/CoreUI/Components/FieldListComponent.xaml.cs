@@ -59,6 +59,7 @@ public sealed partial class FieldListComponent : UserControl, IRenderable
         }
     }
 
+    // TODO(HUMBLE): D/W — frontend interprets Shown/Groups/PerGroup visibility values and uses nav.groups; core should render visibility state into component data (see _private/docs/problems/2026-07-06-desktop-tui-web-domain-shell-violations).
     private static bool IsFieldVisible(JsonElement field)
     {
         if (!field.TryGetProperty("visibility", out var vis))
@@ -131,6 +132,7 @@ public sealed partial class FieldListComponent : UserControl, IRenderable
             Grid.SetColumn(eyeButton, 2);
             grid.Children.Add(eyeButton);
         }
+        // TODO(HUMBLE): W — PerGroup branch uses nav.groups domain label; core should supply display strings for visibility controls (see _private/docs/problems/2026-07-06-desktop-tui-web-domain-shell-violations).
         else if (visibilityMode == "PerGroup")
         {
             // Show which groups can see this field (read-only text)

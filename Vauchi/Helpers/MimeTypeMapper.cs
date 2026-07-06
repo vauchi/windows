@@ -15,6 +15,7 @@ namespace Vauchi.Helpers;
 /// </summary>
 public static class MimeTypeMapper
 {
+    // TODO(HUMBLE): T — frontend maps MIME types to extensions for import dialogs; core should provide accepted extensions in FilePickFromUser command (see _private/docs/problems/2026-07-06-desktop-tui-web-domain-shell-violations).
     private static readonly Dictionary<string, string[]> Map = new()
     {
         // vCard variants — the three core advertises for ImportContacts.

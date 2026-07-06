@@ -364,6 +364,7 @@ public sealed class ExchangeCommandHandler : IDisposable
         }
     }
 
+    // TODO(HUMBLE): D — HandleDirectSend vs HandleDirectSendCard branches on cardLeg; unify direct-send into one opaque command and let core decide event type (see _private/docs/problems/2026-07-06-desktop-tui-web-domain-shell-violations).
     private async void HandleDirectSend(ExchangeCommand cmd)
     {
         var payload = cmd.GetBytes("payload") ?? Array.Empty<byte>();

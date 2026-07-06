@@ -11,6 +11,7 @@ namespace Vauchi.Helpers;
 /// Format: {"VariantName":{"field":"value"}} — externally-tagged Rust enum.
 /// byte[] fields are written as int arrays [1,2,3], NOT Base64 (Rust Vec&lt;u8&gt; serde).
 /// </summary>
+// TODO(HUMBLE): W — hard-coded ExchangeHardwareEvent variant builders; generate from core schema or typed C ABI structs (see _private/docs/problems/2026-07-06-desktop-tui-web-domain-shell-violations).
 public static class ExchangeHardwareEventJson
 {
     public static string QrScanned(string data) =>
