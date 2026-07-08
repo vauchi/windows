@@ -5,7 +5,7 @@ include:
   - template: Security/SAST.gitlab-ci.yml
   - template: Security/Secret-Detection.gitlab-ci.yml
   - project: 'vauchi/scripts'
-    ref: main
+    ref: ci-templates-v2026.07.1
     file:
       - '/ci-templates/design-drift.yml'
       - '/ci-templates/parser-parity.yml'
@@ -15,6 +15,7 @@ include:
       - '/ci-templates/vrt-upload.yml'
 
 variables:
+  VAUCHI_SCRIPTS_REF: "ci-templates-v2026.07.1"
   SAST_EXCLUDED_PATHS: "bin/, obj/, packages/"
   SECRET_DETECTION_EXCLUDED_PATHS: "bin/, obj/, packages/"
   SAST_ANALYZER_IMAGE_TAG: "5"
@@ -252,6 +253,7 @@ coverage:unit:
 # ============================================================
 
 semgrep-sast:
+  allow_failure: false
   tags: [docker]
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
@@ -265,6 +267,7 @@ semgrep-sast:
     - if: $CI_PIPELINE_SOURCE == "schedule"
 
 secret_detection:
+  allow_failure: false
   tags: [docker]
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
@@ -364,6 +367,18 @@ check:design-drift:
     DESIGN_DRIFT_FILE_EXT: ".xaml.cs"
     DESIGN_DRIFT_FILE_SUFFIX: "Component"
     DESIGN_DRIFT_CASE: "pascal"
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes:
+        compare_to: refs/heads/$CI_DEFAULT_BRANCH
+        paths:
+          - "Vauchi/CoreUI/Components/**"
+          - ".gitlab-ci.yml"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      changes:
+        paths:
+          - "Vauchi/CoreUI/Components/**"
+          - ".gitlab-ci.yml"
 
 # Parser-parity gate: verify the C# switch dispatch in
 # `Vauchi/CoreUI/ComponentRenderer.cs` covers every variant declared
@@ -388,14 +403,36 @@ check:removed-symbols:
 # MainWindow.Exchange.cs. Phases 1-4 of
 # `2026-05-02-windows-humble-ui-retirement` retired the four
 # pre-existing partials; this gate prevents regressions.
-check:no-domain-partials:
+# Cross-cutting lint bundle: combines the previously separate
+# check:no-domain-partials, check:design-tokens, and lint:humble jobs.
+# All three are blocking checks, so they run sequentially in a single
+# docker job to reduce runner cold-starts and queue time.
+lint:cross-cutting-blocking:
   stage: lint
-  image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/alpine:3.21
+  image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/python:3.11-slim
   tags: [docker]
   needs: []
+  allow_failure: false
   before_script:
-    - apk add --no-cache findutils
+    - apt-get update && apt-get install -y --no-install-recommends findutils grep gawk curl ca-certificates bash
+    - mkdir -p .ratchet-scripts
+    - |
+      curl --silent --fail \
+        "${CI_API_V4_URL}/projects/vauchi%2Fscripts/repository/files/scripts%2Fhumble_check.py/raw?ref=${VAUCHI_SCRIPTS_REF}" \
+        -o .ratchet-scripts/humble_check.py
+      curl --silent --fail \
+        "${CI_API_V4_URL}/projects/vauchi%2Fscripts/repository/files/scripts%2Fhumble_check_rules.json/raw?ref=${VAUCHI_SCRIPTS_REF}" \
+        -o .ratchet-scripts/humble_check_rules.json
+      curl --silent --fail \
+        "${CI_API_V4_URL}/projects/vauchi%2Fscripts/repository/files/scripts%2Fhumble_check.baseline.json/raw?ref=${VAUCHI_SCRIPTS_REF}" \
+        -o .ratchet-scripts/humble_check.baseline.json
+    - |
+      curl --silent --fail \
+        "${CI_API_V4_URL}/projects/vauchi%2Fscripts/repository/files/scripts%2Fcheck-design-tokens.sh/raw?ref=${VAUCHI_SCRIPTS_REF}" \
+        -o check-design-tokens.sh
+      chmod +x check-design-tokens.sh
   script:
+    # check:no-domain-partials: block domain-named MainWindow.<Domain>.cs partials.
     - |
       partials="$(find Vauchi -maxdepth 1 -type f -name 'MainWindow.*.cs' \
                        -not -name 'MainWindow.xaml.cs' 2>/dev/null || true)"
@@ -413,75 +450,17 @@ check:no-domain-partials:
         exit 1
       fi
       echo "OK: only Vauchi/MainWindow.xaml.cs present (no domain partials)"
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-      changes:
-        compare_to: refs/heads/main
-        paths:
-          - "Vauchi/**/*.cs"
-          - ".gitlab-ci.yml"
-    - if: $CI_COMMIT_BRANCH == "main"
-
-# Design token drift: block named Colors.* / Color.FromArgb / hex
-# string literals that bypass Tokens.cs and the ThemeColors accessor.
-# Script lives in vauchi/scripts — fetched via API to avoid duplicating
-# it here. Baseline is 0 as of 2026-04-20 (ThemeColors.cs added,
-# destructive Red/Tomato unified, avatar SteelBlue / status dots all
-# routed through semantic accessors).
-check:design-tokens:
-  stage: lint
-  image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/alpine:3.21
-  tags: [docker]
-  needs: []
-  before_script:
-    - apk add --no-cache bash findutils grep curl
-  script:
-    - |
-      curl --silent --fail \
-        "${CI_API_V4_URL}/projects/vauchi%2Fscripts/repository/files/scripts%2Fcheck-design-tokens.sh/raw?ref=main" \
-        -o check-design-tokens.sh
-      chmod +x check-design-tokens.sh
+    # check:design-tokens: block raw Colors.* / Color.FromArgb / hex literals.
     - ./check-design-tokens.sh --strict Vauchi/
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-      changes:
-        compare_to: refs/heads/main
-        paths:
-          - "**/*.cs"
-          - "**/*.xaml"
-          - ".gitlab-ci.yml"
-
-
-# Humble-UI ratchet: block new domain logic / domain vocabulary leaks
-# into the view layer (ADR-043 Amendment 6). Snapshot counts are
-# tracked in vauchi/scripts; the ratchet may only drop.
-lint:humble:
-  stage: lint
-  image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/python:3.11-slim
-  tags: [docker]
-  needs: []
-  before_script:
-    - apt-get update && apt-get install -y --no-install-recommends curl ca-certificates
-    - mkdir -p .ratchet-scripts
-    - |
-      curl --silent --fail \
-        "${CI_API_V4_URL}/projects/vauchi%2Fscripts/repository/files/scripts%2Fhumble_check.py/raw?ref=main" \
-        -o .ratchet-scripts/humble_check.py
-      curl --silent --fail \
-        "${CI_API_V4_URL}/projects/vauchi%2Fscripts/repository/files/scripts%2Fhumble_check_rules.json/raw?ref=main" \
-        -o .ratchet-scripts/humble_check_rules.json
-      curl --silent --fail \
-        "${CI_API_V4_URL}/projects/vauchi%2Fscripts/repository/files/scripts%2Fhumble_check.baseline.json/raw?ref=main" \
-        -o .ratchet-scripts/humble_check.baseline.json
-  script:
+    # lint:humble: block domain logic / vocabulary leaks into the view layer.
     - python3 .ratchet-scripts/humble_check.py --repo "${CI_PROJECT_NAME}" --repo-path "${CI_PROJECT_DIR}" --config .ratchet-scripts/humble_check_rules.json --check .ratchet-scripts/humble_check.baseline.json
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       changes:
-        compare_to: refs/heads/main
+        compare_to: refs/heads/$CI_DEFAULT_BRANCH
         paths:
-          - "Vauchi/**/*.cs"
-          - "Vauchi/**/*.xaml"
+          - "**/*.cs"
+          - "**/*.xaml"
           - ".gitlab-ci.yml"
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
