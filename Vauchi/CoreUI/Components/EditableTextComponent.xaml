@@ -12,15 +12,15 @@
         <StackPanel x:Name="DisplayPanel" Orientation="Horizontal" Spacing="8">
             <TextBlock x:Name="DisplayValue" Style="{StaticResource BodyTextBlockStyle}"
                        VerticalAlignment="Center" />
-            <Button x:Name="EditButton" Content="Edit" Padding="8,4" />
+            <Button x:Name="EditButton" Padding="8,4" />
         </StackPanel>
 
         <!-- Edit mode -->
         <StackPanel x:Name="EditPanel" Visibility="Collapsed" Spacing="4">
             <TextBox x:Name="EditBox" />
             <StackPanel Orientation="Horizontal" Spacing="8">
-                <Button x:Name="SaveButton" Content="Save" Style="{StaticResource AccentButtonStyle}" />
-                <Button x:Name="CancelButton" Content="Cancel" />
+                <Button x:Name="SaveButton" Style="{StaticResource AccentButtonStyle}" />
+                <Button x:Name="CancelButton" />
             </StackPanel>
         </StackPanel>
 

@@ -27,7 +27,7 @@
         <TextBlock x:Name="ScanStatus" Style="{StaticResource CaptionTextBlockStyle}"
                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                    HorizontalAlignment="Center" Visibility="Collapsed" TextWrapping="Wrap" />
-        <Button x:Name="ScanButton" Content="Scan QR Code"
+        <Button x:Name="ScanButton"
                 HorizontalAlignment="Center" Visibility="Collapsed" />
     </StackPanel>
 </UserControl>
