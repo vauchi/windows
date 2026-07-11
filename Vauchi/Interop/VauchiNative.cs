@@ -304,7 +304,7 @@ public static partial class VauchiNative
     /// <summary>
     /// Callback signature matching VauchiEventCallback in vauchi.h.
     /// Called by core on background threads when screen data changes.
-    /// <c>screenIdsJson</c> is a JSON array, e.g. <c>["contacts","sync"]</c>.
+    /// <c>screenIdsJson</c> is a JSON array of opaque screen ids, e.g. <c>["screen_a","screen_b"]</c>.
     /// </summary>
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate void VauchiEventCallback(IntPtr screenIdsJson, IntPtr userData);
