@@ -47,7 +47,7 @@ public sealed partial class ListComponent : UserControl, IRenderable
         {
             string itemId = item.TryGetProperty("id", out var itemIdEl) ? itemIdEl.GetString() ?? "" : "";
             string name = item.TryGetProperty("name", out var nameEl) ? nameEl.GetString() ?? "" : "";
-            string initials = item.TryGetProperty("avatar_initials", out var initEl) ? initEl.GetString() ?? "" : "";
+            string initials = item.TryGetProperty("initials", out var initEl) ? initEl.GetString() ?? "" : "";
             string? subtitle = item.TryGetProperty("subtitle", out var subEl) ? subEl.GetString() : null;
 
             // TODO(HUMBLE): W — BuildContactRow is domain-specific naming for a generic list row; core should supply row presentation data (see _private/docs/problems/2026-07-06-desktop-tui-web-domain-shell-violations).

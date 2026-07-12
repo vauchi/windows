@@ -15,9 +15,9 @@ using Vauchi.Helpers;
 
 namespace Vauchi.CoreUI.Components;
 
-public sealed partial class AvatarPreviewComponent : UserControl, IRenderable
+public sealed partial class ImageCircleComponent : UserControl, IRenderable
 {
-    public AvatarPreviewComponent()
+    public ImageCircleComponent()
     {
         InitializeComponent();
     }
@@ -51,7 +51,7 @@ public sealed partial class AvatarPreviewComponent : UserControl, IRenderable
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine(
-                    $"[Vauchi] AvatarPreview image load failed: {ex.Message}");
+                    $"[Vauchi] ImageCircle image load failed: {ex.Message}");
             }
         }
 

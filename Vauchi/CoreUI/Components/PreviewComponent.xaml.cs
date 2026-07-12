@@ -28,7 +28,7 @@ public sealed partial class PreviewComponent : UserControl, IRenderable
             : "";
 
         AvatarArea.Visibility = Visibility.Collapsed;
-        if (data.TryGetProperty("avatar_data", out var avatarEl)
+        if (data.TryGetProperty("image_data", out var avatarEl)
             && avatarEl.ValueKind == JsonValueKind.Array
             && avatarEl.GetArrayLength() > 0)
         {

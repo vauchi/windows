@@ -147,12 +147,12 @@ public class ComponentRenderTests
     [Fact]
     public void List_ReadsItems()
     {
-        var json = """{"id":"cl1","items":[{"id":"c1","name":"Alice","subtitle":"Work","avatar_initials":"AL","status":"online"}],"searchable":true}""";
+        var json = """{"id":"cl1","items":[{"id":"c1","name":"Alice","subtitle":"Work","initials":"AL","status":"online"}],"searchable":true}""";
         using var doc = JsonDocument.Parse(json);
         var items = doc.RootElement.GetProperty("items");
         Assert.Equal(1, items.GetArrayLength());
         Assert.Equal("Alice", items[0].GetProperty("name").GetString());
-        Assert.Equal("AL", items[0].GetProperty("avatar_initials").GetString());
+        Assert.Equal("AL", items[0].GetProperty("initials").GetString());
         Assert.True(doc.RootElement.GetProperty("searchable").GetBoolean());
     }
 
