@@ -23,6 +23,7 @@ public sealed partial class StatusIndicatorComponent : UserControl, IRenderable
         string title = data.TryGetProperty("title", out var t) ? t.GetString() ?? "" : "";
         string? detail = data.TryGetProperty("detail", out var d) ? d.GetString() : null;
         string status = data.TryGetProperty("status", out var s) ? s.GetString() ?? "Pending" : "Pending";
+        string statusLabel = data.TryGetProperty("status_label", out var sl) ? sl.GetString() ?? "" : "";
 
         StatusText.Text = detail != null ? $"{title} — {detail}" : title;
 
@@ -35,7 +36,7 @@ public sealed partial class StatusIndicatorComponent : UserControl, IRenderable
             _ => ThemeColors.Neutral, // Pending and unknown
         });
 
-        AutomationProperties.SetName(this, $"{title}: {status}");
+        AutomationProperties.SetName(this, StatusIndicatorAutomation.FormatName(title, status, statusLabel));
 
         if (data.TryGetProperty("a11y", out var a11yElem))
         {
