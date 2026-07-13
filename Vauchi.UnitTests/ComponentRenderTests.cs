@@ -142,6 +142,19 @@ public class ComponentRenderTests
         Assert.False(doc.RootElement.TryGetProperty("detail", out _));
     }
 
+    [Fact]
+    public void StatusIndicator_LocalizedStatusLabelAutomationName()
+    {
+        var json = """{"id":"si1","title":"Sync","status":"Success","status_label":"Synchronisiert"}""";
+        using var doc = JsonDocument.Parse(json);
+        var root = doc.RootElement;
+        var title = root.GetProperty("title").GetString() ?? "";
+        var status = root.GetProperty("status").GetString() ?? "";
+        var statusLabel = root.TryGetProperty("status_label", out var sl) ? sl.GetString() ?? "" : "";
+        var name = StatusIndicatorAutomation.FormatName(title, status, statusLabel);
+        Assert.Equal("Sync: Synchronisiert", name);
+    }
+
     // ── List ──
 
     [Fact]
