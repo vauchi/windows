@@ -157,12 +157,12 @@ public class ScreenModelParsingTests
     [Fact]
     public void CanGoBack_Retired_NotRead()
     {
-        // ADR-044 Am2a: frontends must not read can_go_back; nav_actions
-        // owns the back affordance.
+        // ADR-044 Am2a: can_go_back is retired from the wire; nav_actions
+        // owns the back affordance. Frontends must not read the field even
+        // if an older core happens to emit it.
         var json = """
         {
             "title": "Screen",
-            "can_go_back": true,
             "nav_actions": [],
             "components": [],
             "actions": []
@@ -172,9 +172,8 @@ public class ScreenModelParsingTests
         using var doc = JsonDocument.Parse(json);
         var root = doc.RootElement;
 
-        // The field may still be present for older cores, but the renderer
-        // must ignore it and instead look for nav_actions/go_back.
-        Assert.True(root.TryGetProperty("can_go_back", out _));
+        // The retired field must not be part of the current wire shape.
+        Assert.False(root.TryGetProperty("can_go_back", out _));
         Assert.Empty(root.GetProperty("nav_actions").EnumerateArray());
     }
 
