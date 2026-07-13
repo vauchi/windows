@@ -59,7 +59,7 @@ public sealed partial class FieldListComponent : UserControl, IRenderable
         }
     }
 
-    // TODO(HUMBLE): D/W — frontend interprets Shown/Groups/PerGroup visibility values and uses nav.groups; core should render visibility state into component data (see _private/docs/problems/2026-07-06-desktop-tui-web-domain-shell-violations).
+    // TODO(HUMBLE): D/W — frontend interprets Shown/Scopes/PerGroup visibility values and uses nav.groups; core should render visibility state into component data (see _private/docs/problems/2026-07-06-desktop-tui-web-domain-shell-violations).
     private static bool IsFieldVisible(JsonElement field)
     {
         if (!field.TryGetProperty("visibility", out var vis))
@@ -71,7 +71,7 @@ public sealed partial class FieldListComponent : UserControl, IRenderable
             return visStr == "Shown";
         }
 
-        // Object: {"Groups": [...]} — treated as visible
+        // Object: {"Scopes": [...]} — treated as visible
         return true;
     }
 

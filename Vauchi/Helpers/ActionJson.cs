@@ -73,11 +73,11 @@ public static class ActionJson
         });
     }
 
-    public static string GroupViewSelected(string? groupName)
+    public static string VariantSelected(string? variantId)
     {
         return JsonSerializer.Serialize(new
         {
-            GroupViewSelected = new { group_name = groupName }
+            VariantSelected = new { variant_id = variantId }
         });
     }
 

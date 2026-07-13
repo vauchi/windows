@@ -31,21 +31,21 @@ public class ActionJsonExtendedTests
     }
 
     [Fact]
-    public void GroupViewSelected_MatchesSerdeFormat()
+    public void VariantSelected_MatchesSerdeFormat()
     {
-        string json = ActionJson.GroupViewSelected("family");
+        string json = ActionJson.VariantSelected("family");
         var doc = JsonDocument.Parse(json);
-        var inner = doc.RootElement.GetProperty("GroupViewSelected");
-        Assert.Equal("family", inner.GetProperty("group_name").GetString());
+        var inner = doc.RootElement.GetProperty("VariantSelected");
+        Assert.Equal("family", inner.GetProperty("variant_id").GetString());
     }
 
     [Fact]
-    public void GroupViewSelected_NullClearsSelection()
+    public void VariantSelected_NullClearsSelection()
     {
-        string json = ActionJson.GroupViewSelected(null);
+        string json = ActionJson.VariantSelected(null);
         var doc = JsonDocument.Parse(json);
-        var inner = doc.RootElement.GetProperty("GroupViewSelected");
-        Assert.Equal(JsonValueKind.Null, inner.GetProperty("group_name").ValueKind);
+        var inner = doc.RootElement.GetProperty("VariantSelected");
+        Assert.Equal(JsonValueKind.Null, inner.GetProperty("variant_id").ValueKind);
     }
 
     [Fact]

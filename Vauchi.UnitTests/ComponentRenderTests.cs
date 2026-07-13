@@ -195,7 +195,7 @@ public class ComponentRenderTests
     [InlineData("PerGroup")]
     public void FieldList_VisibilityModes(string mode)
     {
-        var json = $$"""{"id":"fl1","fields":[],"visibility_mode":"{{mode}}","available_groups":[]}""";
+        var json = $$"""{"id":"fl1","fields":[],"visibility_mode":"{{mode}}","available_scopes":[]}""";
         using var doc = JsonDocument.Parse(json);
         Assert.Equal(mode, doc.RootElement.GetProperty("visibility_mode").GetString());
     }

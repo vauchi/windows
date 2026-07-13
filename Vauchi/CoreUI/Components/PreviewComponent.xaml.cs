@@ -80,12 +80,9 @@ public sealed partial class PreviewComponent : UserControl, IRenderable
 
                 if (onAction != null)
                 {
-                    // UserAction::GroupViewSelected payload key remains
-                    // `group_name` — that's a frontend → core wire surface
-                    // (UserAction), separate from Wire Humble Tier 1.
                     string capturedVariantId = variantId;
                     btn.Click += (_, _) =>
-                        onAction(ActionJson.GroupViewSelected(capturedVariantId));
+                        onAction(ActionJson.VariantSelected(capturedVariantId));
                 }
 
                 GroupTabBar.Children.Add(btn);

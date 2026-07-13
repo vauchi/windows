@@ -34,7 +34,7 @@ public static class ActionRouter
             // added in core are automatically routed correctly.
             return enumerator.Current.Name is not (
                 "TextChanged" or "ItemToggled" or "ActionPressed"
-                or "FieldVisibilityChanged" or "GroupViewSelected"
+                or "FieldVisibilityChanged" or "VariantSelected"
                 or "SearchChanged" or "ListItemSelected"
                 or "SettingsToggled" or "UndoPressed");
         }
