@@ -28,6 +28,11 @@ public enum ActionResultKind
     /// </summary>
     Commands,
     BackupExportComplete,
+    /// <summary>
+    /// Back reached a back-stopping root. The frontend performs its
+    /// platform default (minimize / suspend / no-op) (ADR-044 Am2a).
+    /// </summary>
+    PerformNativeBack,
     Error,
     Unknown,
 }
@@ -40,7 +45,7 @@ public static class ActionResultParser
         "WipeComplete", "StartDeviceLink",
         "OpenUrl", "ShowAlert",
         "RequestCamera", "ShowToast", "Commands",
-        "BackupExportComplete",
+        "BackupExportComplete", "PerformNativeBack",
     ];
 
     /// <summary>
@@ -87,6 +92,7 @@ public static class ActionResultParser
         "ShowToast" => ActionResultKind.ShowToast,
         "Commands" => ActionResultKind.Commands,
         "BackupExportComplete" => ActionResultKind.BackupExportComplete,
+        "PerformNativeBack" => ActionResultKind.PerformNativeBack,
         _ => ActionResultKind.Unknown,
     };
 }

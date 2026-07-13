@@ -145,4 +145,11 @@ public class ActionResultParserTests
         string json = """{"Commands":{"commands":[]}}""";
         Assert.Equal(ActionResultKind.Commands, ActionResultParser.Classify(json));
     }
+
+    [Fact]
+    public void Classifies_PerformNativeBack()
+    {
+        string json = """{"PerformNativeBack":{}}""";
+        Assert.Equal(ActionResultKind.PerformNativeBack, ActionResultParser.Classify(json));
+    }
 }

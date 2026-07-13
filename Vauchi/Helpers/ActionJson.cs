@@ -20,6 +20,18 @@ public static class ActionJson
     }
 
     /// <summary>
+    /// OS back gesture (ESC, NavigationView back button, etc.). Forwarded
+    /// unconditionally to core; core decides whether to navigate back or
+    /// emit <c>PerformNativeBack</c> (ADR-044 Amendment 2a).
+    /// </summary>
+    public static string NavigateBack()
+    {
+        // Serde unit variant in an externally-tagged enum serializes as
+        // the bare string "NavigateBack".
+        return "\"NavigateBack\"";
+    }
+
+    /// <summary>
     /// Top-level / tab navigation (ADR-043 Amendment 4). The frontend forwards
     /// the opaque <c>action_id</c> core minted on <c>TabInfo.action_id</c>; core
     /// routes <c>UserAction::NavigateToTab</c> to a <c>NavigateTo</c> result. The

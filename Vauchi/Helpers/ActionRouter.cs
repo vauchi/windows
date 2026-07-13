@@ -36,7 +36,8 @@ public static class ActionRouter
                 "TextChanged" or "ItemToggled" or "ActionPressed"
                 or "FieldVisibilityChanged" or "VariantSelected"
                 or "SearchChanged" or "ListItemSelected"
-                or "SettingsToggled" or "UndoPressed");
+                or "SettingsToggled" or "UndoPressed"
+                or "NavigateBack" or "NavigateToTab");
         }
         catch { return false; }
     }

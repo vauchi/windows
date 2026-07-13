@@ -28,7 +28,7 @@ public sealed partial class MainWindow : Window
     // Prevent GC collection of the event callback delegate (P/Invoke requirement)
     private VauchiNative.VauchiEventCallback? _eventCallback;
 
-    private DispatcherTimer _notificationTimer;
+    private DispatcherTimer? _wakeupTimer;
 
     public MainWindow()
     {
@@ -43,21 +43,13 @@ public sealed partial class MainWindow : Window
         Renderer.BackRequested += () =>
         {
             if (_appHandle == IntPtr.Zero) return;
-            VauchiNative.AppNavigateBack(_appHandle);
-            RefreshScreen();
+            string? resultJson = VauchiNative.AppHandleAction(_appHandle, ActionJson.NavigateBack());
+            if (resultJson != null) HandleActionResult(resultJson);
         };
 
         // Async init with optional Windows Hello gate
         _ = InitializeAsync();
         Activated += OnActivated;
-
-        // Setup notification polling timer (E)
-        _notificationTimer = new DispatcherTimer
-        {
-            Interval = TimeSpan.FromSeconds(30)
-        };
-        _notificationTimer.Tick += (s, e) => PollNotifications();
-        _notificationTimer.Start();
     }
 
     private void OnActivated(object sender, WindowActivatedEventArgs args)
@@ -78,36 +70,89 @@ public sealed partial class MainWindow : Window
             // backgrounding, but a missed event would leave the UI
             // stale until the next user action.
             RefreshScreen();
-            // Poll for notifications when app is activated (E)
-            PollNotifications();
+            // Run a core-scheduled wakeup tick when the app is activated
+            // (ADR-044 Am2a replaces the fixed 30 s poll loop).
+            RunWakeupTick();
         }
     }
 
-    private void PollNotifications()
+    /// <summary>
+    /// Runs a core wakeup tick via <see cref="VauchiNative.AppOnWakeup"/>,
+    /// posts any OS notifications returned, and re-arms the next timer from
+    /// the <c>ScheduleWakeup</c> command core emits.
+    /// </summary>
+    private void RunWakeupTick()
     {
         if (_appHandle == IntPtr.Zero) return;
 
         try
         {
-            string? json = VauchiNative.AppPollNotifications(_appHandle);
+            string? json = VauchiNative.AppOnWakeup(_appHandle);
             if (string.IsNullOrEmpty(json)) return;
 
             using JsonDocument doc = JsonDocument.Parse(json);
-            foreach (JsonElement element in doc.RootElement.EnumerateArray())
-            {
-                string title = element.GetProperty("title").GetString() ?? "Vauchi";
-                string body = element.GetProperty("body").GetString() ?? "";
+            var root = doc.RootElement;
 
-                var notification = new AppNotificationBuilder()
-                    .AddText(title)
-                    .AddText(body)
-                    .BuildNotification();
-                AppNotificationManager.Default.Show(notification);
+            if (root.TryGetProperty("notifications", out var notifications)
+                && notifications.ValueKind == JsonValueKind.Array)
+            {
+                foreach (JsonElement element in notifications.EnumerateArray())
+                {
+                    string title = element.GetProperty("title").GetString() ?? "Vauchi";
+                    string body = element.GetProperty("body").GetString() ?? "";
+
+                    var notification = new AppNotificationBuilder()
+                        .AddText(title)
+                        .AddText(body)
+                        .BuildNotification();
+                    AppNotificationManager.Default.Show(notification);
+                }
+            }
+
+            if (root.TryGetProperty("commands", out var commands)
+                && commands.ValueKind == JsonValueKind.Array)
+            {
+                ArmWakeupTimer(commands);
             }
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"PollNotifications error: {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"RunWakeupTick error: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Finds the first <c>Command::ScheduleWakeup</c> in the command batch
+    /// and arms the foreground timer from its <c>earliest_secs</c>.
+    /// </summary>
+    private void ArmWakeupTimer(JsonElement commands)
+    {
+        foreach (JsonElement command in commands.EnumerateArray())
+        {
+            if (command.ValueKind == JsonValueKind.Object
+                && command.TryGetProperty("ScheduleWakeup", out var schedule)
+                && schedule.ValueKind == JsonValueKind.Object
+                && schedule.TryGetProperty("earliest_secs", out var earliest)
+                && earliest.TryGetInt32(out int earliestSecs)
+                && earliestSecs > 0)
+            {
+                int intervalSecs = earliestSecs;
+                if (schedule.TryGetProperty("min_interval_secs", out var minInterval)
+                    && minInterval.TryGetInt32(out int minIntervalSecs)
+                    && intervalSecs < minIntervalSecs)
+                {
+                    intervalSecs = minIntervalSecs;
+                }
+
+                _wakeupTimer?.Stop();
+                _wakeupTimer = new DispatcherTimer
+                {
+                    Interval = TimeSpan.FromSeconds(intervalSecs)
+                };
+                _wakeupTimer.Tick += (s, e) => RunWakeupTick();
+                _wakeupTimer.Start();
+                break;
+            }
         }
     }
 
@@ -187,12 +232,11 @@ public sealed partial class MainWindow : Window
         shortcuts.BackRequested += () =>
         {
             if (_appHandle == IntPtr.Zero) return;
-            // Core-driven back: navigate_back mutates the engine nav state;
-            // re-read + render the current screen. Replaces the former
-            // ActionPressed("back") path now that the footer "Back" action
-            // is going away.
-            VauchiNative.AppNavigateBack(_appHandle);
-            RefreshScreen();
+            // Core-driven back: forward the OS back gesture unconditionally;
+            // core decides whether to pop nav state or emit PerformNativeBack
+            // (ADR-044 Amendment 2a).
+            string? resultJson = VauchiNative.AppHandleAction(_appHandle, ActionJson.NavigateBack());
+            if (resultJson != null) HandleActionResult(resultJson);
         };
         shortcuts.SearchFocusRequested += () =>
         {
@@ -251,24 +295,14 @@ public sealed partial class MainWindow : Window
         }
 #endif
 
-        // §1D pure-renderer remediation: ask core directly via
-        // AppHasIdentity instead of inspecting available_screens for
-        // the literal string "onboarding". The screen-id catalogue is a
-        // presentation concern; identity presence is the real predicate.
-        bool isOnboarding = VauchiNative.AppHasIdentity(_appHandle) != 1;
-
         // Window chrome only — no explicit navigate. Core's startup
         // decision (Onboarding / Lock / MyInfo) is already set by
         // `vauchi_app_create*` and surfaces through
         // `AppCurrentScreen` in `RefreshScreen()`. An explicit
         // `AppDefaultScreen()` + `AppNavigateTo()` here would bypass
         // the Lock state for password-protected installs.
-        if (isOnboarding)
-            EnterOnboardingMode();
-        else
-            ExitOnboardingMode();
-
         RefreshScreen();
+        SyncNavChrome();
 
         _exchange = new ExchangeCommandHandler(SendHardwareEventToCore, DispatcherQueue, this);
 
@@ -311,18 +345,44 @@ public sealed partial class MainWindow : Window
         catch (JsonException) { }
     }
 
-    private void EnterOnboardingMode()
+    /// <summary>
+    /// Show or hide the sidebar chrome based on core-provided
+    /// <c>nav_tab_id</c>. A non-null tab id means the screen belongs to
+    /// the post-auth tab set; null means onboarding/lock/transient.
+    /// Replaces hardcoded <c>is_home</c>/<c>is_bootstrap</c> gates
+    /// (ADR-044 Am2a).
+    /// </summary>
+    private void SyncNavChrome()
     {
-        NavView.IsPaneVisible = false;
-        NavView.IsBackButtonVisible = NavigationViewBackButtonVisible.Collapsed;
-        NavView.MenuItems.Clear();
+        string? navTabId = ReadNavTabId();
+        bool hasTab = !string.IsNullOrEmpty(navTabId);
+
+        NavView.IsPaneVisible = hasTab;
+        NavView.IsBackButtonVisible = hasTab
+            ? NavigationViewBackButtonVisible.Auto
+            : NavigationViewBackButtonVisible.Collapsed;
+
+        if (hasTab && NavView.MenuItems.Count == 0)
+        {
+            BuildNavTabs();
+        }
     }
 
-    private void ExitOnboardingMode()
+    private string? ReadNavTabId()
     {
-        NavView.IsPaneVisible = true;
-        NavView.IsBackButtonVisible = NavigationViewBackButtonVisible.Auto;
-        BuildNavTabs();
+        string? screenJson = VauchiNative.AppCurrentScreen(_appHandle);
+        if (screenJson == null) return null;
+        try
+        {
+            using var doc = JsonDocument.Parse(screenJson);
+            if (doc.RootElement.TryGetProperty("nav_tab_id", out var tabId)
+                && tabId.ValueKind == JsonValueKind.String)
+            {
+                return tabId.GetString();
+            }
+        }
+        catch (JsonException) { }
+        return null;
     }
 
     private void BuildNavTabs()
@@ -394,9 +454,9 @@ public sealed partial class MainWindow : Window
 
     /// <summary>
     /// Returns the sidebar tab id that should be highlighted for the
-    /// current screen. Reads core-provided `parent_screen_id` first;
-    /// when absent (top-level tab or transient screen) returns
-    /// `screen_id` so existing tabs select themselves.
+    /// current screen. Reads core-provided `parent_screen_id` first,
+    /// then <c>nav_tab_id</c>, then <c>screen_id</c> so existing tabs
+    /// select themselves (ADR-044 Am2a).
     /// </summary>
     private string ReadParentTabId()
     {
@@ -410,6 +470,11 @@ public sealed partial class MainWindow : Window
                 && pid.ValueKind == JsonValueKind.String)
             {
                 return pid.GetString() ?? "";
+            }
+            if (root.TryGetProperty("nav_tab_id", out var navTabId)
+                && navTabId.ValueKind == JsonValueKind.String)
+            {
+                return navTabId.GetString() ?? "";
             }
             return root.TryGetProperty("screen_id", out var sid)
                 && sid.ValueKind == JsonValueKind.String
@@ -477,7 +542,7 @@ public sealed partial class MainWindow : Window
     private void OnBackRequested(NavigationView sender, NavigationViewBackRequestedEventArgs args)
     {
         if (_appHandle == IntPtr.Zero) return;
-        string? resultJson = VauchiNative.AppHandleAction(_appHandle, ActionJson.ActionPressed("back"));
+        string? resultJson = VauchiNative.AppHandleAction(_appHandle, ActionJson.NavigateBack());
         if (resultJson != null) HandleActionResult(resultJson);
     }
 
@@ -579,20 +644,17 @@ public sealed partial class MainWindow : Window
             case ActionResultKind.UpdateScreen:
             case ActionResultKind.NavigateTo:
             case ActionResultKind.ValidationError:
-                // After onboarding completes, core returns NavigateTo (not Complete).
-                // Rebuild nav tabs if they're not visible yet (idempotent).
-                if (!NavView.IsPaneVisible && _appHandle != IntPtr.Zero)
-                    ExitOnboardingMode();
+                SyncNavChrome();
                 SyncNavSelection();
                 RefreshScreen();
                 break;
 
             case ActionResultKind.Complete:
             case ActionResultKind.WipeComplete:
-                ExitOnboardingMode();
                 string? defaultScreen = VauchiNative.AppDefaultScreen(_appHandle);
                 if (defaultScreen != null)
                     VauchiNative.AppNavigateTo(_appHandle, defaultScreen);
+                SyncNavChrome();
                 SyncNavSelection();
                 RefreshScreen();
                 break;
@@ -623,6 +685,19 @@ public sealed partial class MainWindow : Window
             case ActionResultKind.BackupExportComplete:
                 HandleBackupExportComplete(resultJson);
                 RefreshScreen();
+                break;
+
+            case ActionResultKind.PerformNativeBack:
+                // Back reached a back-stopping root. Desktop's native default
+                // is to hide the window (minimize / suspend) (ADR-044 Am2a).
+                try
+                {
+                    AppWindow?.Hide();
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[Vauchi] PerformNativeBack failed: {ex.Message}");
+                }
                 break;
 
             // TODO(HUMBLE): D — frontend routes RequestCamera to exchange screen; core should emit NavigateTo or an appropriate Command batch (see _private/docs/problems/2026-07-06-desktop-tui-web-domain-shell-violations).
@@ -759,6 +834,7 @@ public sealed partial class MainWindow : Window
         Renderer.ActionRequested -= OnActionRequested;
         _tray?.Dispose();
         _toastTimer?.Stop();
+        _wakeupTimer?.Stop();
 
         if (_appHandle != IntPtr.Zero)
         {

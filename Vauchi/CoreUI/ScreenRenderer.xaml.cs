@@ -21,15 +21,12 @@ public sealed partial class ScreenRenderer : UserControl
     public ScreenRenderer()
     {
         InitializeComponent();
-        BackButtonLabel.Text = Localizer.T("action.back");
-        BackButton.SetValue(AutomationProperties.NameProperty, Localizer.T("action.back"));
-        BackButton.Click += (_, _) => BackRequested?.Invoke();
     }
 
     /// <summary>
     /// Raised when the user activates the core-driven back chrome. The host
-    /// calls <c>vauchi_app_navigate_back</c> and re-renders. Replaces the
-    /// per-screen footer "Back" action.
+    /// forwards <c>UserAction::NavigateBack</c> to core and routes the result.
+    /// Replaces the per-screen footer "Back" action.
     /// </summary>
     public event Action? BackRequested;
 
@@ -56,11 +53,11 @@ public sealed partial class ScreenRenderer : UserControl
             : "Scroll";
         ApplyLayout(layout);
 
-        // Core-driven back chrome: visible only when the engine reports a
-        // back step. `can_go_back` is omitted from the wire when false.
-        bool canGoBack = root.TryGetProperty("can_go_back", out var cgb)
-            && cgb.ValueKind == JsonValueKind.True;
-        BackButton.Visibility = canGoBack ? Visibility.Visible : Visibility.Collapsed;
+        // Core-driven nav chrome (ADR-044 Am2a). Core owns which chrome
+        // affordances exist; the reserved `go_back` id is the visible back
+        // button. All others (e.g. `open_settings`) are forwarded as
+        // ActionPressed(action_id).
+        RenderNavActions(root);
 
         ScreenTitle.Text = root.TryGetProperty("title", out var title) ? title.GetString() ?? "" : "";
 
@@ -187,6 +184,74 @@ public sealed partial class ScreenRenderer : UserControl
         {
             ContentScroller.Visibility = Visibility.Visible;
             ContentScroller.Content = ComponentContainer;
+        }
+    }
+
+    /// <summary>
+    /// Render the core-driven <c>nav_actions</c> chrome. The reserved
+    /// <c>go_back</c> id maps to the visible back affordance and raises
+    /// <see cref="BackRequested"/>; every other action is forwarded as
+    /// <c>ActionPressed(action_id)</c>.
+    /// </summary>
+    private void RenderNavActions(JsonElement root)
+    {
+        NavActionsPanel.Children.Clear();
+
+        if (!root.TryGetProperty("nav_actions", out var navActions)
+            || navActions.ValueKind != JsonValueKind.Array)
+        {
+            return;
+        }
+
+        foreach (var action in navActions.EnumerateArray())
+        {
+            string actionId = action.TryGetProperty("id", out var id) ? id.GetString() ?? "" : "";
+            string label = action.TryGetProperty("label", out var lbl) ? lbl.GetString() ?? actionId : actionId;
+            bool enabled = !action.TryGetProperty("enabled", out var en) || en.GetBoolean();
+            string style = action.TryGetProperty("style", out var st) ? st.GetString() ?? "" : "";
+
+            if (actionId == "go_back")
+            {
+                var backBtn = new Button
+                {
+                    Content = new StackPanel
+                    {
+                        Orientation = Orientation.Horizontal,
+                        Spacing = 4,
+                        Children =
+                        {
+                            new FontIcon { Glyph = "\uE72B", FontSize = 14 },
+                            new TextBlock { Text = label }
+                        }
+                    },
+                    Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent),
+                    BorderThickness = new Thickness(0),
+                    Padding = new Thickness(0),
+                    IsEnabled = enabled,
+                };
+                backBtn.SetValue(AutomationProperties.AutomationIdProperty, "nav_back");
+                backBtn.SetValue(AutomationProperties.NameProperty, Localizer.T("action.back"));
+                backBtn.Click += (_, _) => BackRequested?.Invoke();
+                NavActionsPanel.Children.Add(backBtn);
+            }
+            else
+            {
+                var btn = new Button
+                {
+                    Content = label,
+                    IsEnabled = enabled,
+                    MinWidth = 80,
+                };
+                if (style == "Primary")
+                    btn.Style = (Style)Application.Current.Resources["AccentButtonStyle"];
+                else if (style == "Destructive")
+                    btn.Foreground = new SolidColorBrush(ThemeColors.Destructive);
+
+                string capturedId = actionId;
+                btn.Click += (_, _) => RaiseAction(ActionJson.ActionPressed(capturedId));
+                AutomationProperties.SetAutomationId(btn, actionId);
+                NavActionsPanel.Children.Add(btn);
+            }
         }
     }
 

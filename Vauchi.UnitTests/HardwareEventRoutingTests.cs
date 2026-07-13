@@ -22,6 +22,8 @@ public class HardwareEventRoutingTests
     [InlineData("{\"ActionPressed\":{\"action_id\":\"back\"}}", false)]
     [InlineData("{\"TextChanged\":{\"component_id\":\"name\",\"value\":\"x\"}}", false)]
     [InlineData("{\"SearchChanged\":{\"component_id\":\"s\",\"query\":\"q\"}}", false)]
+    [InlineData("\"NavigateBack\"", false)]
+    [InlineData("{\"NavigateToTab\":{\"action_id\":\"contacts\"}}", false)]
     [InlineData("not json", false)]
     [InlineData("", false)]
     [InlineData("{}", false)]

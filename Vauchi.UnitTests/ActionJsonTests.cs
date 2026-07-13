@@ -38,6 +38,16 @@ public class ActionJsonTests
     }
 
     [Fact]
+    public void NavigateBack_MatchesSerdeUnitVariant()
+    {
+        string json = ActionJson.NavigateBack();
+
+        var doc = JsonDocument.Parse(json);
+        Assert.Equal(JsonValueKind.String, doc.RootElement.ValueKind);
+        Assert.Equal("NavigateBack", doc.RootElement.GetString());
+    }
+
+    [Fact]
     public void ActionPressed_EscapesQuotesInId()
     {
         string json = ActionJson.ActionPressed("action\"with\"quotes");

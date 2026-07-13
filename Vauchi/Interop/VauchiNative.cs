@@ -145,9 +145,28 @@ public static partial class VauchiNative
     [LibraryImport(LibName, EntryPoint = "vauchi_app_poll_notifications")]
     private static partial IntPtr AppPollNotificationsRaw(IntPtr handle);
 
+    [LibraryImport(LibName, EntryPoint = "vauchi_app_on_wakeup")]
+    private static partial IntPtr AppOnWakeupRaw(IntPtr handle);
+
+    [Obsolete("Use AppOnWakeup instead (ADR-044 Amendment 2a retires poll flags).")]
     public static string? AppPollNotifications(IntPtr handle)
     {
         IntPtr ptr = AppPollNotificationsRaw(handle);
+        if (ptr == IntPtr.Zero) return null;
+        string result = Marshal.PtrToStringUTF8(ptr)!;
+        StringFree(ptr);
+        return result;
+    }
+
+    /// <summary>
+    /// Wake-up tick: run due work and return the next OS notifications plus
+    /// any commands emitted (in practice the next <c>Command::ScheduleWakeup</c>).
+    /// Returns a JSON-encoded <c>{"notifications": [...], "commands": [...]}</c>
+    /// object, or null on error.
+    /// </summary>
+    public static string? AppOnWakeup(IntPtr handle)
+    {
+        IntPtr ptr = AppOnWakeupRaw(handle);
         if (ptr == IntPtr.Zero) return null;
         string result = Marshal.PtrToStringUTF8(ptr)!;
         StringFree(ptr);
@@ -217,8 +236,10 @@ public static partial class VauchiNative
     /// <summary>
     /// Navigate back one step; returns the resulting ScreenModel JSON.
     /// The engine's nav state is mutated, so callers can also just
-    /// re-read the current screen. Frontends gate this on `can_go_back`,
-    /// replacing the footer "Back" action.
+    /// re-read the current screen. Deprecated for the OS back gesture:
+    /// frontends should forward <c>UserAction::NavigateBack</c> via
+    /// <see cref="AppHandleAction"/> and render the <c>go_back</c> chrome
+    /// action from <c>nav_actions</c> (ADR-044 Amendment 2a).
     /// </summary>
     public static string? AppNavigateBack(IntPtr handle)
     {

@@ -92,6 +92,91 @@ public class ScreenModelParsingTests
         Assert.True(root.GetProperty("enabled").GetBoolean());
     }
 
+    [Fact]
+    public void NavTabId_Present()
+    {
+        var json = """
+        {
+            "title": "Home",
+            "nav_tab_id": "my_info",
+            "components": [],
+            "actions": []
+        }
+        """;
+
+        using var doc = JsonDocument.Parse(json);
+        var root = doc.RootElement;
+
+        Assert.Equal("my_info", root.GetProperty("nav_tab_id").GetString());
+    }
+
+    [Fact]
+    public void NavTabId_Null_HidesTabChrome()
+    {
+        var json = """
+        {
+            "title": "Onboarding",
+            "nav_tab_id": null,
+            "components": [],
+            "actions": []
+        }
+        """;
+
+        using var doc = JsonDocument.Parse(json);
+        var root = doc.RootElement;
+
+        Assert.Equal(JsonValueKind.Null, root.GetProperty("nav_tab_id").ValueKind);
+    }
+
+    [Fact]
+    public void NavActions_RendersBackAndSettings()
+    {
+        var json = """
+        {
+            "title": "Home",
+            "nav_tab_id": "my_info",
+            "nav_actions": [
+                {"id": "go_back", "label": "Back", "style": "Secondary", "enabled": true},
+                {"id": "open_settings", "label": "Settings", "style": "Secondary", "enabled": true}
+            ],
+            "components": [],
+            "actions": []
+        }
+        """;
+
+        using var doc = JsonDocument.Parse(json);
+        var root = doc.RootElement;
+
+        var navActions = root.GetProperty("nav_actions").EnumerateArray().ToList();
+        Assert.Equal(2, navActions.Count);
+        Assert.Equal("go_back", navActions[0].GetProperty("id").GetString());
+        Assert.Equal("open_settings", navActions[1].GetProperty("id").GetString());
+    }
+
+    [Fact]
+    public void CanGoBack_Retired_NotRead()
+    {
+        // ADR-044 Am2a: frontends must not read can_go_back; nav_actions
+        // owns the back affordance.
+        var json = """
+        {
+            "title": "Screen",
+            "can_go_back": true,
+            "nav_actions": [],
+            "components": [],
+            "actions": []
+        }
+        """;
+
+        using var doc = JsonDocument.Parse(json);
+        var root = doc.RootElement;
+
+        // The field may still be present for older cores, but the renderer
+        // must ignore it and instead look for nav_actions/go_back.
+        Assert.True(root.TryGetProperty("can_go_back", out _));
+        Assert.Empty(root.GetProperty("nav_actions").EnumerateArray());
+    }
+
     [Theory]
     [InlineData("""{"Text": {"id": "t1", "content": "Hello"}}""", "Text")]
     [InlineData("""{"TextInput": {"id": "ti1", "label": "Name", "value": ""}}""", "TextInput")]
