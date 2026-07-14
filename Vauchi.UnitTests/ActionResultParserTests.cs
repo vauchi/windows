@@ -86,7 +86,7 @@ public class ActionResultParserTests
     [Fact]
     public void Classifies_ShowToast()
     {
-        string json = """{"ShowToast":{"message":"Contact deleted","undo_action_id":"undo_delete"}}""";
+        string json = """{"ShowToast":{"message":"Contact deleted","undo_action_id":"undo_delete","undo_label":"Rückgängig"}}""";
         Assert.Equal(ActionResultKind.ShowToast, ActionResultParser.Classify(json));
     }
 

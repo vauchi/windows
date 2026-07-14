@@ -21,6 +21,11 @@ public sealed partial class FieldListComponent : UserControl, IRenderable
 
     public void Render(JsonElement data, Action<string>? onAction)
     {
+        string title = data.TryGetProperty("title", out var titleEl)
+            ? titleEl.GetString() ?? ""
+            : "";
+        AutomationProperties.SetName(this, title);
+
         string visibilityMode = data.TryGetProperty("visibility_mode", out var modeEl)
             ? modeEl.GetString() ?? "ReadOnly"
             : "ReadOnly";

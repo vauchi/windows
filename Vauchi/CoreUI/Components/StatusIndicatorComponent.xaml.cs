@@ -26,6 +26,7 @@ public sealed partial class StatusIndicatorComponent : UserControl, IRenderable
         string statusLabel = data.TryGetProperty("status_label", out var sl) ? sl.GetString() ?? "" : "";
 
         StatusText.Text = detail != null ? $"{title} — {detail}" : title;
+        StatusLabel.Text = statusLabel;
 
         StatusDot.Fill = new SolidColorBrush(status switch
         {

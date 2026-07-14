@@ -190,11 +190,9 @@ public class ScreenModelParsingTests
     [InlineData("""{"StatusIndicator": {"id": "si1", "status": "connected", "label": "Online"}}""", "StatusIndicator")]
     [InlineData("""{"PinInput": {"id": "pi1", "label": "Enter PIN", "length": 6, "filled": 0}}""", "PinInput")]
     [InlineData("""{"QrCode": {"id": "qr1", "data": "test", "mode": "Display"}}""", "QrCode")]
-    [InlineData("""{"ConfirmationDialog": {"id": "cd1", "title": "Confirm", "message": "Sure?"}}""", "ConfirmationDialog")]
     [InlineData("\"Divider\"", "Divider")]
-    [InlineData("""{"ShowToast": {"id": "st1", "message": "Done"}}""", "ShowToast")]
-    [InlineData("""{"InlineConfirm": {"id": "ic1", "label": "Delete", "confirm_label": "Yes"}}""", "InlineConfirm")]
-    [InlineData("""{"EditableText": {"id": "et1", "value": "text", "editing": false}}""", "EditableText")]
+    [InlineData("""{"InlineConfirm": {"id": "ic1", "warning": "Delete?", "confirm_text": "Yes", "cancel_text": "No", "confirm_action_id": "opaque.confirm", "cancel_action_id": "opaque.cancel", "destructive": true}}""", "InlineConfirm")]
+    [InlineData("""{"EditableText": {"id": "et1", "label": "Name", "value": "text", "edit_text": "Edit name", "save_text": "Save", "cancel_text": "Cancel", "edit_action_id": "opaque.edit", "save_action_id": "opaque.save", "cancel_action_id": "opaque.cancel", "editing": false}}""", "EditableText")]
     public void ComponentVariant_ParsesCorrectly(string componentJson, string expectedVariant)
     {
         using var doc = JsonDocument.Parse(componentJson);

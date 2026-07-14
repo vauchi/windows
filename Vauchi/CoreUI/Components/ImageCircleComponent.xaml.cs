@@ -17,6 +17,10 @@ namespace Vauchi.CoreUI.Components;
 
 public sealed partial class ImageCircleComponent : UserControl, IRenderable
 {
+    private string _editActionId = "";
+    private Action<string>? _onAction;
+    private bool _eventsWired;
+
     public ImageCircleComponent()
     {
         InitializeComponent();
@@ -24,16 +28,20 @@ public sealed partial class ImageCircleComponent : UserControl, IRenderable
 
     public void Render(JsonElement data, Action<string>? onAction)
     {
+        _onAction = onAction;
+        _editActionId = data.TryGetProperty("edit_action_id", out var actionEl)
+            ? actionEl.GetString() ?? ""
+            : "";
         string initials = data.TryGetProperty("initials", out var initEl)
             ? initEl.GetString() ?? ""
             : "";
-        string bgColor = data.TryGetProperty("bg_color", out var bgEl)
-            ? bgEl.GetString() ?? ThemeColors.AvatarFallbackHex
-            : ThemeColors.AvatarFallbackHex;
         bool editable = data.TryGetProperty("editable", out var editEl) && editEl.GetBoolean();
+        bool canEdit = editable && !string.IsNullOrEmpty(_editActionId);
 
         // Parse background color for initials circle
-        InitialsCircle.Fill = ParseBrush(bgColor);
+        InitialsCircle.Fill = data.TryGetProperty("bg_color", out var bgEl)
+            ? ParseBrush(bgEl)
+            : new SolidColorBrush(ThemeColors.AvatarFallback);
         InitialsText.Text = initials;
 
         // Try to load image data
@@ -70,18 +78,16 @@ public sealed partial class ImageCircleComponent : UserControl, IRenderable
         }
 
         // Editable overlay
-        if (editable)
+        EditButton.Visibility = canEdit ? Visibility.Visible : Visibility.Collapsed;
+        if (!_eventsWired)
         {
-            EditOverlay.Visibility = Visibility.Visible;
-            AvatarContainer.PointerPressed += (_, _) =>
-                onAction?.Invoke(ActionJson.ActionPressed("edit_avatar"));
-        }
-        else
-        {
-            EditOverlay.Visibility = Visibility.Collapsed;
+            EditButton.Click += (_, _) =>
+                _onAction?.Invoke(ActionJson.ActionPressed(_editActionId));
+            _eventsWired = true;
         }
 
-        AutomationProperties.SetName(this, editable ? "Edit avatar" : "Avatar");
+        AutomationProperties.SetName(this, initials);
+        AutomationProperties.SetName(EditButton, initials);
 
         if (data.TryGetProperty("a11y", out var a11yElem))
         {
@@ -89,7 +95,16 @@ public sealed partial class ImageCircleComponent : UserControl, IRenderable
             {
                 var a11yLabel = labelElem.GetString();
                 if (!string.IsNullOrEmpty(a11yLabel))
+                {
                     AutomationProperties.SetName(this, a11yLabel);
+                    AutomationProperties.SetName(EditButton, a11yLabel);
+                }
+            }
+            if (a11yElem.TryGetProperty("hint", out var hintElem))
+            {
+                var hint = hintElem.GetString();
+                if (!string.IsNullOrEmpty(hint))
+                    AutomationProperties.SetHelpText(EditButton, hint);
             }
         }
     }
@@ -113,12 +128,29 @@ public sealed partial class ImageCircleComponent : UserControl, IRenderable
         return result;
     }
 
-    private static SolidColorBrush ParseBrush(string hex)
+    private static SolidColorBrush ParseBrush(JsonElement color)
     {
         try
         {
-            if (hex.StartsWith('#') && hex.Length == 7)
+            if (color.ValueKind == JsonValueKind.Array && color.GetArrayLength() >= 3)
             {
+                var channels = color.EnumerateArray();
+                channels.MoveNext();
+                byte r = (byte)channels.Current.GetInt32();
+                channels.MoveNext();
+                byte g = (byte)channels.Current.GetInt32();
+                channels.MoveNext();
+                byte b = (byte)channels.Current.GetInt32();
+                return new SolidColorBrush(Windows.UI.Color.FromArgb(255, r, g, b));
+            }
+
+            // Accept legacy CSS hex fixtures; the canonical wire shape is
+            // the domain-agnostic [r, g, b] tuple.
+            if (color.ValueKind == JsonValueKind.String)
+            {
+                string hex = color.GetString() ?? "";
+                if (!hex.StartsWith('#') || hex.Length != 7)
+                    return new SolidColorBrush(ThemeColors.AvatarFallback);
                 byte r = Convert.ToByte(hex.Substring(1, 2), 16);
                 byte g = Convert.ToByte(hex.Substring(3, 2), 16);
                 byte b = Convert.ToByte(hex.Substring(5, 2), 16);

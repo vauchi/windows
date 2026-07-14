@@ -129,16 +129,17 @@ public class ComponentRenderTests
     [InlineData("Warning")]
     public void StatusIndicator_AllStatusValues(string status)
     {
-        var json = $$"""{"id":"si1","title":"Sync","detail":"Last: 5m ago","status":"{{status}}"}""";
+        var json = $$"""{"id":"si1","title":"Sync","detail":"Last: 5m ago","status":"{{status}}","status_label":"Localized"}""";
         using var doc = JsonDocument.Parse(json);
         Assert.Equal(status, doc.RootElement.GetProperty("status").GetString());
         Assert.Equal("Last: 5m ago", doc.RootElement.GetProperty("detail").GetString());
+        Assert.Equal("Localized", doc.RootElement.GetProperty("status_label").GetString());
     }
 
     [Fact]
     public void StatusIndicator_MissingDetail()
     {
-        var json = """{"id":"si1","title":"Sync","status":"Success"}""";
+        var json = """{"id":"si1","title":"Sync","status":"Success","status_label":"Erfolg"}""";
         using var doc = JsonDocument.Parse(json);
         Assert.False(doc.RootElement.TryGetProperty("detail", out _));
     }
@@ -209,8 +210,9 @@ public class ComponentRenderTests
     [InlineData("PerGroup")]
     public void FieldList_VisibilityModes(string mode)
     {
-        var json = $$"""{"id":"fl1","fields":[],"visibility_mode":"{{mode}}","available_scopes":[]}""";
+        var json = $$"""{"id":"fl1","title":"Kontaktfelder","fields":[],"visibility_mode":"{{mode}}","available_scopes":[]}""";
         using var doc = JsonDocument.Parse(json);
+        Assert.Equal("Kontaktfelder", doc.RootElement.GetProperty("title").GetString());
         Assert.Equal(mode, doc.RootElement.GetProperty("visibility_mode").GetString());
     }
 
@@ -225,26 +227,4 @@ public class ComponentRenderTests
         Assert.Equal("Mom", doc.RootElement.GetProperty("variants")[0].GetProperty("display_name").GetString());
     }
 
-    // ── ConfirmationDialog: correct field names ──
-
-    [Fact]
-    public void ConfirmationDialog_CorrectFields()
-    {
-        var json = """{"id":"cd1","title":"Delete Contact","message":"Cannot be undone","confirm_text":"Delete","destructive":true}""";
-        using var doc = JsonDocument.Parse(json);
-        Assert.Equal("Delete", doc.RootElement.GetProperty("confirm_text").GetString());
-        Assert.True(doc.RootElement.GetProperty("destructive").GetBoolean());
-        Assert.Equal("Delete Contact", doc.RootElement.GetProperty("title").GetString());
-    }
-
-    // ── ShowToast: correct data model ──
-
-    [Fact]
-    public void ShowToast_ReadsDurationAndUndo()
-    {
-        var json = """{"id":"st1","message":"Deleted","undo_action_id":"undo_del","duration_ms":5000}""";
-        using var doc = JsonDocument.Parse(json);
-        Assert.Equal(5000, doc.RootElement.GetProperty("duration_ms").GetInt32());
-        Assert.Equal("undo_del", doc.RootElement.GetProperty("undo_action_id").GetString());
-    }
 }

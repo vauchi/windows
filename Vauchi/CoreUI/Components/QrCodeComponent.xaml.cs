@@ -80,13 +80,18 @@ public sealed partial class QrCodeComponent : UserControl, IRenderable
             }
         }
 
-        if (label != null)
+        if (!string.IsNullOrEmpty(label))
         {
             QrLabel.Text = label;
             QrLabel.Visibility = Visibility.Visible;
         }
+        else
+        {
+            QrLabel.Text = "";
+            QrLabel.Visibility = Visibility.Collapsed;
+        }
 
-        AutomationProperties.SetName(this, label ?? "QR Code");
+        AutomationProperties.SetName(this, label ?? "");
 
         if (data.TryGetProperty("a11y", out var a11yElem))
         {

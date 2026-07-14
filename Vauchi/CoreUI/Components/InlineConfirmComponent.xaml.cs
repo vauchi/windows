@@ -4,51 +4,39 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using System;
 using System.Text.Json;
 using Vauchi.CoreUI;
 using Vauchi.Helpers;
-using Vauchi.Services;
 
 namespace Vauchi.CoreUI.Components;
 
 public sealed partial class InlineConfirmComponent : UserControl, IRenderable
 {
-    private string _componentId = "";
+    private string _confirmActionId = "";
+    private string _cancelActionId = "";
     private Action<string>? _onAction;
     private bool _eventsWired;
-    private DispatcherTimer? _revertTimer;
 
     public InlineConfirmComponent()
     {
         InitializeComponent();
-        ConfirmButton.Content = Localizer.T("action.confirm");
-        CancelButton.Content = Localizer.T("action.cancel");
     }
 
     public void Render(JsonElement data, Action<string>? onAction)
     {
-        _componentId = data.TryGetProperty("id", out var id)
-            ? id.GetString() ?? ""
-            : "";
         _onAction = onAction;
+        _confirmActionId = data.GetProperty("confirm_action_id").GetString() ?? "";
+        _cancelActionId = data.GetProperty("cancel_action_id").GetString() ?? "";
 
         if (data.TryGetProperty("warning", out var warning))
         {
             WarningText.Text = warning.GetString() ?? "";
         }
 
-        if (data.TryGetProperty("confirm_text", out var confirmText))
-        {
-            ConfirmButton.Content = confirmText.GetString() ?? Localizer.T("action.confirm");
-        }
-
-        if (data.TryGetProperty("cancel_text", out var cancelText))
-        {
-            CancelButton.Content = cancelText.GetString() ?? Localizer.T("action.cancel");
-        }
+        ConfirmButton.Content = data.GetProperty("confirm_text").GetString() ?? "";
+        CancelButton.Content = data.GetProperty("cancel_text").GetString() ?? "";
 
         var destructive = data.TryGetProperty("destructive", out var d) && d.GetBoolean();
         if (destructive)
@@ -57,10 +45,8 @@ public sealed partial class InlineConfirmComponent : UserControl, IRenderable
         }
 
         AutomationProperties.SetName(WarningText, WarningText.Text);
-        AutomationProperties.SetName(ConfirmButton,
-            (string?)ConfirmButton.Content ?? Localizer.T("action.confirm"));
-        AutomationProperties.SetName(CancelButton,
-            (string?)CancelButton.Content ?? Localizer.T("action.cancel"));
+        AutomationProperties.SetName(ConfirmButton, (string?)ConfirmButton.Content ?? "");
+        AutomationProperties.SetName(CancelButton, (string?)CancelButton.Content ?? "");
 
         if (data.TryGetProperty("a11y", out var a11yElem))
         {
@@ -78,40 +64,19 @@ public sealed partial class InlineConfirmComponent : UserControl, IRenderable
             }
         }
 
-        // Initially collapsed; tap warning text to expand
-        ButtonPanel.Visibility = Visibility.Collapsed;
-
         if (!_eventsWired)
         {
-            WarningText.Tapped += OnWarningTapped;
-
             ConfirmButton.Click += (_, _) =>
             {
-                _revertTimer?.Stop();
-                _onAction?.Invoke(ActionJson.ActionPressed($"{_componentId}_confirm"));
+                _onAction?.Invoke(ActionJson.ActionPressed(_confirmActionId));
             };
 
             CancelButton.Click += (_, _) =>
             {
-                _revertTimer?.Stop();
-                ButtonPanel.Visibility = Visibility.Collapsed;
-                _onAction?.Invoke(ActionJson.ActionPressed($"{_componentId}_cancel"));
+                _onAction?.Invoke(ActionJson.ActionPressed(_cancelActionId));
             };
 
             _eventsWired = true;
         }
-    }
-
-    private void OnWarningTapped(object sender, TappedRoutedEventArgs e)
-    {
-        ButtonPanel.Visibility = Visibility.Visible;
-        _revertTimer?.Stop();
-        _revertTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(3) };
-        _revertTimer.Tick += (_, _) =>
-        {
-            _revertTimer?.Stop();
-            ButtonPanel.Visibility = Visibility.Collapsed;
-        };
-        _revertTimer.Start();
     }
 }

@@ -5,33 +5,40 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using System;
-using System.Collections.Generic;
 using System.Text.Json;
 using Vauchi.Helpers;
-using Vauchi.Services;
 
 namespace Vauchi.CoreUI.Components;
 
 public sealed partial class EditableTextComponent : UserControl, IRenderable
 {
     private bool _eventsWired;
+    private string _componentId = "";
+    private string _editActionId = "";
+    private string _saveActionId = "";
+    private string _cancelActionId = "";
+    private Action<string>? _onAction;
 
     public EditableTextComponent()
     {
         InitializeComponent();
-        EditButton.Content = Localizer.T("action.edit");
-        SaveButton.Content = Localizer.T("action.save");
-        CancelButton.Content = Localizer.T("action.cancel");
     }
 
     public void Render(JsonElement data, Action<string>? onAction)
     {
-        string componentId = data.TryGetProperty("id", out var id) ? id.GetString() ?? "" : "";
+        _componentId = data.TryGetProperty("id", out var id) ? id.GetString() ?? "" : "";
+        _onAction = onAction;
+        _editActionId = data.GetProperty("edit_action_id").GetString() ?? "";
+        _saveActionId = data.GetProperty("save_action_id").GetString() ?? "";
+        _cancelActionId = data.GetProperty("cancel_action_id").GetString() ?? "";
         string label = data.TryGetProperty("label", out var l) ? l.GetString() ?? "" : "";
         string value = data.TryGetProperty("value", out var v) ? v.GetString() ?? "" : "";
         bool editing = data.TryGetProperty("editing", out var e) && e.GetBoolean();
 
         LabelText.Text = label;
+        EditButton.Content = data.GetProperty("edit_text").GetString() ?? "";
+        SaveButton.Content = data.GetProperty("save_text").GetString() ?? "";
+        CancelButton.Content = data.GetProperty("cancel_text").GetString() ?? "";
 
         if (editing)
         {
@@ -43,7 +50,7 @@ public sealed partial class EditableTextComponent : UserControl, IRenderable
         {
             DisplayPanel.Visibility = Visibility.Visible;
             EditPanel.Visibility = Visibility.Collapsed;
-            DisplayValue.Text = value.Length > 0 ? value : Localizer.T("editable.empty_value");
+            DisplayValue.Text = value;
         }
 
         if (data.TryGetProperty("validation_error", out var ve) && ve.ValueKind == JsonValueKind.String)
@@ -56,27 +63,27 @@ public sealed partial class EditableTextComponent : UserControl, IRenderable
             ValidationError.Visibility = Visibility.Collapsed;
         }
 
-        if (!_eventsWired && onAction != null && componentId.Length > 0)
+        if (!_eventsWired)
         {
-            string capturedId = componentId;
-
             EditButton.Click += (_, _) =>
-                onAction(ActionJson.ActionPressed($"{capturedId}_edit"));
+                _onAction?.Invoke(ActionJson.ActionPressed(_editActionId));
 
             SaveButton.Click += (_, _) =>
-                onAction(ActionJson.TextChanged(capturedId, EditBox.Text));
+            {
+                _onAction?.Invoke(ActionJson.TextChanged(_componentId, EditBox.Text));
+                _onAction?.Invoke(ActionJson.ActionPressed(_saveActionId));
+            };
 
             CancelButton.Click += (_, _) =>
-                onAction(ActionJson.ActionPressed($"{capturedId}_cancel"));
+                _onAction?.Invoke(ActionJson.ActionPressed(_cancelActionId));
 
             _eventsWired = true;
         }
 
         AutomationProperties.SetName(EditBox, label);
-        AutomationProperties.SetName(
-            EditButton,
-            Localizer.T("a11y.edit_field", new Dictionary<string, string> { ["label"] = label })
-        );
+        AutomationProperties.SetName(EditButton, (string?)EditButton.Content ?? "");
+        AutomationProperties.SetName(SaveButton, (string?)SaveButton.Content ?? "");
+        AutomationProperties.SetName(CancelButton, (string?)CancelButton.Content ?? "");
 
         if (data.TryGetProperty("a11y", out var a11yElem))
         {

@@ -24,6 +24,7 @@ public sealed partial class MainWindow : Window
     private bool _navUpdating;
     private SystemTrayManager? _tray;
     private DispatcherTimer? _toastTimer;
+    private string? _toastUndoActionId;
     private ExchangeCommandHandler? _exchange;
     // Prevent GC collection of the event callback delegate (P/Invoke requirement)
     private VauchiNative.VauchiEventCallback? _eventCallback;
@@ -759,7 +760,20 @@ public sealed partial class MainWindow : Window
         if (!doc.RootElement.TryGetProperty("ShowToast", out var toast)) return;
 
         string message = toast.TryGetProperty("message", out var m) ? m.GetString() ?? "" : "";
+        string? undoActionId = toast.TryGetProperty("undo_action_id", out var id)
+            ? id.GetString()
+            : null;
+        string? undoLabel = toast.TryGetProperty("undo_label", out var label)
+            ? label.GetString()
+            : null;
         FloatingToast.Message = message;
+        _toastUndoActionId = !string.IsNullOrEmpty(undoActionId) && !string.IsNullOrEmpty(undoLabel)
+            ? undoActionId
+            : null;
+        FloatingToastAction.Content = undoLabel ?? "";
+        FloatingToastAction.Visibility = _toastUndoActionId != null
+            ? Visibility.Visible
+            : Visibility.Collapsed;
         FloatingToast.IsOpen = true;
 
         _toastTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
@@ -767,8 +781,26 @@ public sealed partial class MainWindow : Window
         {
             _toastTimer?.Stop();
             FloatingToast.IsOpen = false;
+            _toastUndoActionId = null;
+            FloatingToastAction.Visibility = Visibility.Collapsed;
         };
         _toastTimer.Start();
+    }
+
+    private void FloatingToastAction_Click(object sender, RoutedEventArgs e)
+    {
+        if (_appHandle == IntPtr.Zero || _toastUndoActionId == null) return;
+
+        string actionId = _toastUndoActionId;
+        _toastTimer?.Stop();
+        _toastUndoActionId = null;
+        FloatingToast.IsOpen = false;
+        FloatingToastAction.Visibility = Visibility.Collapsed;
+
+        string? resultJson = VauchiNative.AppHandleAction(
+            _appHandle,
+            ActionJson.UndoPressed(actionId));
+        if (resultJson != null) HandleActionResult(resultJson);
     }
 
     private async void ShowFatalErrorAsync(string resultJson)

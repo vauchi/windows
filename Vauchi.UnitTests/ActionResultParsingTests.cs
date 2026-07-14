@@ -80,7 +80,7 @@ public class ActionResultParsingTests
     [Fact]
     public void ShowToast_WithUndo_ParsesCorrectly()
     {
-        var json = """{"ShowToast": {"message": "Contact deleted", "undo_action_id": "undo_delete"}}""";
+        var json = """{"ShowToast": {"message": "Contact deleted", "undo_action_id": "undo_delete", "undo_label": "Rückgängig"}}""";
 
         using var doc = JsonDocument.Parse(json);
         var root = doc.RootElement;
@@ -88,6 +88,7 @@ public class ActionResultParsingTests
         Assert.True(root.TryGetProperty("ShowToast", out var toast));
         Assert.Equal("Contact deleted", toast.GetProperty("message").GetString());
         Assert.Equal("undo_delete", toast.GetProperty("undo_action_id").GetString());
+        Assert.Equal("Rückgängig", toast.GetProperty("undo_label").GetString());
     }
 
     [Fact]

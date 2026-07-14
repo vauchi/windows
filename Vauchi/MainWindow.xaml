@@ -37,7 +37,13 @@
                          IsClosable="True"
                          VerticalAlignment="Top"
                          HorizontalAlignment="Stretch"
-                         Margin="8,52,8,0" />
+                         Margin="8,52,8,0">
+                    <InfoBar.ActionButton>
+                        <Button x:Name="FloatingToastAction"
+                                Visibility="Collapsed"
+                                Click="FloatingToastAction_Click" />
+                    </InfoBar.ActionButton>
+                </InfoBar>
             </Grid>
         </NavigationView>
     </Grid>

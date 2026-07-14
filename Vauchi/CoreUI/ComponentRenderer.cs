@@ -63,8 +63,6 @@ public static class ComponentRenderer
             "Indicator" => CreateAndRender<IndicatorComponent>(data!.Value, onAction),
             "PinInput" => CreateAndRender<PinInputComponent>(data!.Value, onAction),
             "QrCode" => CreateAndRender<QrCodeComponent>(data!.Value, onAction),
-            "ConfirmationDialog" => CreateAndRender<ConfirmationDialogComponent>(data!.Value, onAction),
-            "ShowToast" => CreateAndRender<ShowToastComponent>(data!.Value, onAction),
             "InlineConfirm" => CreateAndRender<InlineConfirmComponent>(data!.Value, onAction),
             "EditableText" => CreateAndRender<EditableTextComponent>(data!.Value, onAction),
             "Banner" => CreateAndRender<BannerComponent>(data!.Value, onAction),

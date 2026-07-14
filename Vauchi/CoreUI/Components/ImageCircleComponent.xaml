@@ -28,16 +28,20 @@
             </Ellipse.Fill>
         </Ellipse>
 
-        <!-- Edit overlay (shown when editable) -->
-        <Grid x:Name="EditOverlay"
-              Visibility="Collapsed"
-              Background="#40000000"
-              CornerRadius="48">
+        <!-- Native keyboard/pointer edit affordance (shown only when core
+             supplies edit_action_id). -->
+        <Button x:Name="EditButton"
+                Visibility="Collapsed"
+                Width="96" Height="96"
+                Padding="0"
+                BorderThickness="0"
+                Background="#40000000"
+                CornerRadius="48">
             <FontIcon Glyph="&#xE722;"
                       FontSize="20"
                       Foreground="White"
                       HorizontalAlignment="Center"
                       VerticalAlignment="Center" />
-        </Grid>
+        </Button>
     </Grid>
 </UserControl>
