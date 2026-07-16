@@ -91,13 +91,6 @@ public class ActionResultParserTests
     }
 
     [Fact]
-    public void Classifies_StartDeviceLink()
-    {
-        string json = "\"StartDeviceLink\"";
-        Assert.Equal(ActionResultKind.StartDeviceLink, ActionResultParser.Classify(json));
-    }
-
-    [Fact]
     public void Classifies_Commands()
     {
         string json = """{"Commands":{"commands":["QrRequestScan"]}}""";

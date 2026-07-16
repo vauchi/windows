@@ -16,7 +16,6 @@ public class ActionResultParsingTests
     [InlineData("\"Complete\"")]
     [InlineData("\"WipeComplete\"")]
     [InlineData("\"RequestCamera\"")]
-    [InlineData("\"StartDeviceLink\"")]
     public void StringVariant_ParsesCorrectly(string json)
     {
         using var doc = JsonDocument.Parse(json);

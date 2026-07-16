@@ -16,7 +16,6 @@ public enum ActionResultKind
     ValidationError,
     Complete,
     WipeComplete,
-    StartDeviceLink,
     OpenUrl,
     ShowAlert,
     RequestCamera,
@@ -42,7 +41,7 @@ public static class ActionResultParser
     private static readonly string[] KnownVariants =
     [
         "UpdateScreen", "NavigateTo", "ValidationError", "Complete",
-        "WipeComplete", "StartDeviceLink",
+        "WipeComplete",
         "OpenUrl", "ShowAlert",
         "RequestCamera", "ShowToast", "Commands",
         "BackupExportComplete", "PerformNativeBack",
@@ -85,7 +84,6 @@ public static class ActionResultParser
         "ValidationError" => ActionResultKind.ValidationError,
         "Complete" => ActionResultKind.Complete,
         "WipeComplete" => ActionResultKind.WipeComplete,
-        "StartDeviceLink" => ActionResultKind.StartDeviceLink,
         "OpenUrl" => ActionResultKind.OpenUrl,
         "ShowAlert" => ActionResultKind.ShowAlert,
         "RequestCamera" => ActionResultKind.RequestCamera,

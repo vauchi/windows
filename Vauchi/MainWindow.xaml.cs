@@ -660,11 +660,6 @@ public sealed partial class MainWindow : Window
                 RefreshScreen();
                 break;
 
-            // TODO(HUMBLE): D — frontend routes StartDeviceLink to device_linking screen; core should emit NavigateTo directly (see _private/docs/problems/2026-07-06-desktop-tui-web-domain-shell-violations).
-            case ActionResultKind.StartDeviceLink:
-                NavigateToScreen("device_linking");
-                break;
-
             case ActionResultKind.Commands:
                 var commands = ExchangeCommandParser.ParseFromActionResult(resultJson);
                 _exchange?.Handle(commands);
