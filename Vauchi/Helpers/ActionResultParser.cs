@@ -18,7 +18,6 @@ public enum ActionResultKind
     WipeComplete,
     OpenUrl,
     ShowAlert,
-    RequestCamera,
     ShowToast,
     /// <summary>
     /// `ActionResult::Commands` (renamed from `ExchangeCommands` in core
@@ -43,7 +42,7 @@ public static class ActionResultParser
         "UpdateScreen", "NavigateTo", "ValidationError", "Complete",
         "WipeComplete",
         "OpenUrl", "ShowAlert",
-        "RequestCamera", "ShowToast", "Commands",
+        "ShowToast", "Commands",
         "BackupExportComplete", "PerformNativeBack",
     ];
 
@@ -86,7 +85,6 @@ public static class ActionResultParser
         "WipeComplete" => ActionResultKind.WipeComplete,
         "OpenUrl" => ActionResultKind.OpenUrl,
         "ShowAlert" => ActionResultKind.ShowAlert,
-        "RequestCamera" => ActionResultKind.RequestCamera,
         "ShowToast" => ActionResultKind.ShowToast,
         "Commands" => ActionResultKind.Commands,
         "BackupExportComplete" => ActionResultKind.BackupExportComplete,

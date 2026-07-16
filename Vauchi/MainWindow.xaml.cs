@@ -696,16 +696,6 @@ public sealed partial class MainWindow : Window
                 }
                 break;
 
-            // TODO(HUMBLE): D — frontend routes RequestCamera to exchange screen; core should emit NavigateTo or an appropriate Command batch (see _private/docs/problems/2026-07-06-desktop-tui-web-domain-shell-violations).
-            case ActionResultKind.RequestCamera:
-                // Legacy path: core requested camera without an active ExchangeSession.
-                // Navigate to exchange screen — the screen model will include a QrCode
-                // component in Scan mode, and QrCodeComponent handles camera internally.
-                VauchiNative.AppNavigateTo(_appHandle, "exchange");
-                SyncNavSelection();
-                RefreshScreen();
-                break;
-
             case ActionResultKind.Error:
                 ShowFatalErrorAsync(resultJson);
                 break;

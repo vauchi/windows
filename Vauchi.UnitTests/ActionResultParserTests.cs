@@ -41,13 +41,6 @@ public class ActionResultParserTests
     }
 
     [Fact]
-    public void Classifies_RequestCamera_UnitVariant()
-    {
-        string json = "\"RequestCamera\"";
-        Assert.Equal(ActionResultKind.RequestCamera, ActionResultParser.Classify(json));
-    }
-
-    [Fact]
     public void Classifies_ValidationError()
     {
         string json = """{"ValidationError":{"component_id":"name_input","message":"Name is required"}}""";
