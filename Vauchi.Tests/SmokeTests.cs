@@ -1,35 +1,44 @@
 // SPDX-FileCopyrightText: 2026 Mattia Egloff <mattia.egloff@pm.me>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-using System.Text.Json;
 using Xunit;
 
 namespace Vauchi.Tests;
 
-// ComponentRenderer.CreateComponent is compiled only outside UNIT_TEST_BUILD
-// (it returns a WinUI UIElement), so these smoke tests must live in the
-// WinUI-context project. They run via test:a11y, which has no name filter.
+// These smoke tests live in the WinUI-context project and exercise the
+// reducer boundary used by PresentationHost.
 public class SmokeTests
 {
+    // @scenario: generic_presentation_protocol.feature :: Invalid boundary input fails safely
     [Fact]
-    public void ComponentRenderer_ReturnsNull_ForUnknownType()
+    public void PresentationState_PreservesUnknownCommand_AsEffect()
     {
-        string json = """{"type": "unknown_component"}""";
-        using var doc = JsonDocument.Parse(json);
+        var state = new CoreUI.PresentationState();
 
-        var result = CoreUI.ComponentRenderer.CreateComponent(doc.RootElement, null);
+        bool applied = state.TryApplyEnvelope(
+            """{"commands":[{"FutureEffect":{"value":1}}]}""",
+            out var effects,
+            out var error);
 
-        Assert.Null(result);
+        Assert.True(applied);
+        Assert.Null(error);
+        Assert.Single(effects);
+        Assert.Equal("FutureEffect", CoreUI.PresentationState.CommandName(effects[0]));
     }
 
+    // @scenario: generic_presentation_protocol.feature :: Invalid boundary input fails safely
     [Fact]
-    public void ComponentRenderer_ReturnsNull_ForMissingType()
+    public void PresentationState_RejectsEnvelope_WithoutCommands()
     {
-        string json = """{"content": "hello"}""";
-        using var doc = JsonDocument.Parse(json);
+        var state = new CoreUI.PresentationState();
 
-        var result = CoreUI.ComponentRenderer.CreateComponent(doc.RootElement, null);
+        bool applied = state.TryApplyEnvelope(
+            """{"schema_version":1}""",
+            out var effects,
+            out var error);
 
-        Assert.Null(result);
+        Assert.False(applied);
+        Assert.Empty(effects);
+        Assert.Equal("command envelope is missing commands", error);
     }
 }
