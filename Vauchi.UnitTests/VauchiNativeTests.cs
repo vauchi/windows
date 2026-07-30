@@ -17,6 +17,36 @@ public class VauchiNativeTests
         Assert.Equal("vauchi_cabi", GetLibName());
     }
 
+    [Theory]
+    [InlineData("AppInitialCommands")]
+    [InlineData("AppDispatch")]
+    public void GenericPresentationBoundary_IsExposed(string methodName)
+    {
+        var method = typeof(Interop.VauchiNative).GetMethod(
+            methodName,
+            System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+        Assert.NotNull(method);
+        Assert.Equal(typeof(string), method!.ReturnType);
+    }
+
+    [Theory]
+    [InlineData("AppCurrentScreen")]
+    [InlineData("AppHandleAction")]
+    [InlineData("AppHandleHardwareEvent")]
+    [InlineData("AppNavigateTo")]
+    [InlineData("AppNavigateBack")]
+    [InlineData("AppAvailableScreens")]
+    [InlineData("AppDefaultScreen")]
+    [InlineData("AppTabInfo")]
+    [InlineData("AppSidebarItems")]
+    public void LegacyScreenAndActionBoundary_IsNotExposed(string methodName)
+    {
+        var method = typeof(Interop.VauchiNative).GetMethod(
+            methodName,
+            System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+        Assert.Null(method);
+    }
+
     private static string GetLibName()
     {
         // Reflection to verify the constant without calling into native code

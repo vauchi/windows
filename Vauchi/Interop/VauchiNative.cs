@@ -3,7 +3,6 @@
 
 using System;
 using System.Runtime.InteropServices;
-using System.Text.Json;
 
 namespace Vauchi.Interop;
 
@@ -14,23 +13,11 @@ public static partial class VauchiNative
 {
     private const string LibName = "vauchi_cabi";
 
-    [LibraryImport(LibName, EntryPoint = "vauchi_workflow_create", StringMarshalling = StringMarshalling.Utf8)]
-    public static partial IntPtr WorkflowCreate(string workflowType);
-
     [LibraryImport(LibName, EntryPoint = "vauchi_app_create_with_relay", StringMarshalling = StringMarshalling.Utf8)]
     public static partial IntPtr AppCreateWithRelay(string? relayUrl);
 
     /// <summary>Default relay URL — matches all other Vauchi frontends.</summary>
     public const string DefaultRelayUrl = "wss://relay.vauchi.app";
-
-    [LibraryImport(LibName, EntryPoint = "vauchi_workflow_destroy")]
-    public static partial void WorkflowDestroy(IntPtr handle);
-
-    [LibraryImport(LibName, EntryPoint = "vauchi_workflow_current_screen")]
-    private static partial IntPtr WorkflowCurrentScreenRaw(IntPtr handle);
-
-    [LibraryImport(LibName, EntryPoint = "vauchi_workflow_handle_action", StringMarshalling = StringMarshalling.Utf8)]
-    private static partial IntPtr WorkflowHandleActionRaw(IntPtr handle, string actionJson);
 
     [LibraryImport(LibName, EntryPoint = "vauchi_string_free")]
     private static partial void StringFree(IntPtr ptr);
@@ -76,30 +63,6 @@ public static partial class VauchiNative
         return result;
     }
 
-    public static string? WorkflowCurrentScreen(IntPtr handle)
-    {
-        IntPtr ptr = WorkflowCurrentScreenRaw(handle);
-        if (ptr == IntPtr.Zero) return null;
-        string result = Marshal.PtrToStringUTF8(ptr)!;
-        StringFree(ptr);
-        return result;
-    }
-
-    public static string? WorkflowHandleAction(IntPtr handle, string actionJson)
-    {
-        IntPtr ptr = WorkflowHandleActionRaw(handle, actionJson);
-        if (ptr == IntPtr.Zero) return null;
-        string result = Marshal.PtrToStringUTF8(ptr)!;
-        StringFree(ptr);
-        return result;
-    }
-
-    public static JsonDocument? GetCurrentScreen(IntPtr handle)
-    {
-        string? json = WorkflowCurrentScreen(handle);
-        return json != null ? JsonDocument.Parse(json) : null;
-    }
-
     // ── App API (ADR-030/031) ───────────────────────────────────────
 
     [LibraryImport(LibName, EntryPoint = "vauchi_app_create_with_config", StringMarshalling = StringMarshalling.Utf8)]
@@ -139,24 +102,14 @@ public static partial class VauchiNative
     [LibraryImport(LibName, EntryPoint = "vauchi_app_destroy")]
     public static partial void AppDestroy(IntPtr handle);
 
-    [LibraryImport(LibName, EntryPoint = "vauchi_app_current_screen")]
-    private static partial IntPtr AppCurrentScreenRaw(IntPtr handle);
+    [LibraryImport(LibName, EntryPoint = "vauchi_app_initial_commands")]
+    private static partial IntPtr AppInitialCommandsRaw(IntPtr handle);
 
-    [LibraryImport(LibName, EntryPoint = "vauchi_app_poll_notifications")]
-    private static partial IntPtr AppPollNotificationsRaw(IntPtr handle);
+    [LibraryImport(LibName, EntryPoint = "vauchi_app_dispatch", StringMarshalling = StringMarshalling.Utf8)]
+    private static partial IntPtr AppDispatchRaw(IntPtr handle, string eventJson);
 
     [LibraryImport(LibName, EntryPoint = "vauchi_app_on_wakeup")]
     private static partial IntPtr AppOnWakeupRaw(IntPtr handle);
-
-    [Obsolete("Use AppOnWakeup instead (ADR-044 Amendment 2a retires poll flags).")]
-    public static string? AppPollNotifications(IntPtr handle)
-    {
-        IntPtr ptr = AppPollNotificationsRaw(handle);
-        if (ptr == IntPtr.Zero) return null;
-        string result = Marshal.PtrToStringUTF8(ptr)!;
-        StringFree(ptr);
-        return result;
-    }
 
     /// <summary>
     /// Wake-up tick: run due work and return the next OS notifications plus
@@ -173,123 +126,18 @@ public static partial class VauchiNative
         return result;
     }
 
-    [LibraryImport(LibName, EntryPoint = "vauchi_app_handle_action", StringMarshalling = StringMarshalling.Utf8)]
-    private static partial IntPtr AppHandleActionRaw(IntPtr handle, string actionJson);
-
-    [LibraryImport(LibName, EntryPoint = "vauchi_app_handle_hardware_event", StringMarshalling = StringMarshalling.Utf8)]
-    private static partial IntPtr AppHandleHardwareEventRaw(IntPtr handle, string eventJson);
-
-    [LibraryImport(LibName, EntryPoint = "vauchi_app_navigate_to", StringMarshalling = StringMarshalling.Utf8)]
-    private static partial IntPtr AppNavigateToRaw(IntPtr handle, string screenName);
-
-    [LibraryImport(LibName, EntryPoint = "vauchi_app_navigate_back")]
-    private static partial IntPtr AppNavigateBackRaw(IntPtr handle);
-
-    [LibraryImport(LibName, EntryPoint = "vauchi_app_available_screens")]
-    private static partial IntPtr AppAvailableScreensRaw(IntPtr handle);
-
-    [LibraryImport(LibName, EntryPoint = "vauchi_app_default_screen")]
-    private static partial IntPtr AppDefaultScreenRaw(IntPtr handle);
-
-    [LibraryImport(LibName, EntryPoint = "vauchi_app_tab_info", StringMarshalling = StringMarshalling.Utf8)]
-    private static partial IntPtr AppTabInfoRaw(IntPtr handle, string? localeCode);
-
-    [LibraryImport(LibName, EntryPoint = "vauchi_app_sidebar_items", StringMarshalling = StringMarshalling.Utf8)]
-    private static partial IntPtr AppSidebarItemsRaw(IntPtr handle, string? localeCode);
-
-    public static string? AppCurrentScreen(IntPtr handle)
+    public static string? AppInitialCommands(IntPtr handle)
     {
-        IntPtr ptr = AppCurrentScreenRaw(handle);
+        IntPtr ptr = AppInitialCommandsRaw(handle);
         if (ptr == IntPtr.Zero) return null;
         string result = Marshal.PtrToStringUTF8(ptr)!;
         StringFree(ptr);
         return result;
     }
 
-    public static string? AppHandleAction(IntPtr handle, string actionJson)
+    public static string? AppDispatch(IntPtr handle, string eventJson)
     {
-        IntPtr ptr = AppHandleActionRaw(handle, actionJson);
-        if (ptr == IntPtr.Zero) return null;
-        string result = Marshal.PtrToStringUTF8(ptr)!;
-        StringFree(ptr);
-        return result;
-    }
-
-    public static string? AppHandleHardwareEvent(IntPtr handle, string eventJson)
-    {
-        IntPtr ptr = AppHandleHardwareEventRaw(handle, eventJson);
-        if (ptr == IntPtr.Zero) return null;
-        string result = Marshal.PtrToStringUTF8(ptr)!;
-        StringFree(ptr);
-        return result;
-    }
-
-    public static string? AppNavigateTo(IntPtr handle, string screenName)
-    {
-        IntPtr ptr = AppNavigateToRaw(handle, screenName);
-        if (ptr == IntPtr.Zero) return null;
-        string result = Marshal.PtrToStringUTF8(ptr)!;
-        StringFree(ptr);
-        return result;
-    }
-
-    /// <summary>
-    /// Navigate back one step; returns the resulting ScreenModel JSON.
-    /// The engine's nav state is mutated, so callers can also just
-    /// re-read the current screen. Deprecated for the OS back gesture:
-    /// frontends should forward <c>UserAction::NavigateBack</c> via
-    /// <see cref="AppHandleAction"/> and render the <c>go_back</c> chrome
-    /// action from <c>nav_actions</c> (ADR-044 Amendment 2a).
-    /// </summary>
-    public static string? AppNavigateBack(IntPtr handle)
-    {
-        IntPtr ptr = AppNavigateBackRaw(handle);
-        if (ptr == IntPtr.Zero) return null;
-        string result = Marshal.PtrToStringUTF8(ptr)!;
-        StringFree(ptr);
-        return result;
-    }
-
-    public static string? AppAvailableScreens(IntPtr handle)
-    {
-        IntPtr ptr = AppAvailableScreensRaw(handle);
-        if (ptr == IntPtr.Zero) return null;
-        string result = Marshal.PtrToStringUTF8(ptr)!;
-        StringFree(ptr);
-        return result;
-    }
-
-    public static string? AppDefaultScreen(IntPtr handle)
-    {
-        IntPtr ptr = AppDefaultScreenRaw(handle);
-        if (ptr == IntPtr.Zero) return null;
-        string result = Marshal.PtrToStringUTF8(ptr)!;
-        StringFree(ptr);
-        return result;
-    }
-
-    /// <summary>
-    /// Returns the mobile tab-bar JSON:
-    /// <c>[{"id","label","icon","badge_count"}, ...]</c>. Labels are
-    /// pre-localized via core i18n; `localeCode` accepts <c>"en"</c>,
-    /// <c>"de"</c>, ...; null falls back to the default locale.
-    /// </summary>
-    public static string? AppTabInfo(IntPtr handle, string? localeCode)
-    {
-        IntPtr ptr = AppTabInfoRaw(handle, localeCode);
-        if (ptr == IntPtr.Zero) return null;
-        string result = Marshal.PtrToStringUTF8(ptr)!;
-        StringFree(ptr);
-        return result;
-    }
-
-    /// <summary>
-    /// Returns the desktop sidebar JSON (broader 14-entry top-level
-    /// set; same element shape as <see cref="AppTabInfo"/>).
-    /// </summary>
-    public static string? AppSidebarItems(IntPtr handle, string? localeCode)
-    {
-        IntPtr ptr = AppSidebarItemsRaw(handle, localeCode);
+        IntPtr ptr = AppDispatchRaw(handle, eventJson);
         if (ptr == IntPtr.Zero) return null;
         string result = Marshal.PtrToStringUTF8(ptr)!;
         StringFree(ptr);
@@ -303,20 +151,6 @@ public static partial class VauchiNative
 
     [LibraryImport(LibName, EntryPoint = "vauchi_app_create_identity", StringMarshalling = StringMarshalling.Utf8)]
     public static partial int AppCreateIdentity(IntPtr handle, string? displayName);
-
-    // ── App backgrounded (auto-lock) ──────────────────────────────────
-
-    [LibraryImport(LibName, EntryPoint = "vauchi_app_handle_app_backgrounded")]
-    private static partial IntPtr AppHandleAppBackgroundedRaw(IntPtr handle);
-
-    public static string? AppHandleAppBackgrounded(IntPtr handle)
-    {
-        IntPtr ptr = AppHandleAppBackgroundedRaw(handle);
-        if (ptr == IntPtr.Zero) return null;
-        string result = Marshal.PtrToStringUTF8(ptr)!;
-        StringFree(ptr);
-        return result;
-    }
 
     // ── Audio (ultrasonic proximity, behind 'audio' feature) ────────────
 

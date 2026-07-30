@@ -171,24 +171,6 @@ public static class ExchangeCommandParser
         return result;
     }
 
-    public static ExchangeCommand[] ParseFromActionResult(string resultJson)
-    {
-        using var doc = JsonDocument.Parse(resultJson);
-        // ActionResult variant key was renamed `ExchangeCommands` → `Commands`
-        // in core 0.47.0 (Phase 0 of
-        // 2026-05-04-exchange-command-screen-presentation).
-        if (doc.RootElement.TryGetProperty("Commands", out var outer)
-            && outer.TryGetProperty("commands", out var cmds))
-        {
-            var result = new ExchangeCommand[cmds.GetArrayLength()];
-            int i = 0;
-            foreach (var el in cmds.EnumerateArray())
-                result[i++] = Parse(el);
-            return result;
-        }
-        return [];
-    }
-
     // TODO(HUMBLE): W — hand-maintained ExchangeCommand name-to-kind mapping (see _private/docs/problems/2026-07-06-desktop-tui-web-domain-shell-violations).
     private static ExchangeCommandKind NameToKind(string? name) => name switch
     {

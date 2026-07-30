@@ -44,11 +44,8 @@ public sealed class ExchangeCommandHandler : IDisposable
     /// </summary>
     /// <param name="sendHardwareEvent">
     /// Callback that takes a serialized
-    /// <see cref="ExchangeHardwareEventJson"/> payload, forwards it
-    /// to <c>VauchiNative.AppHandleHardwareEvent</c>, and routes the
-    /// returned <c>ActionResult</c> JSON. The callback is responsible
-    /// for the <c>_appHandle == IntPtr.Zero</c> guard so this class
-    /// stays free of CABI-handle awareness.
+    /// <see cref="ExchangeHardwareEventJson"/> payload and forwards it
+    /// through the generic Core event boundary.
     /// </param>
     /// <param name="dispatcher">UI-thread dispatcher.</param>
     /// <param name="window">
@@ -73,9 +70,7 @@ public sealed class ExchangeCommandHandler : IDisposable
     public bool IsBleAvailable => _ble?.IsAvailable ?? false;
 
     /// <summary>
-    /// Dispatch a batch of <see cref="ExchangeCommand"/>s. The caller
-    /// is expected to <c>RefreshScreen()</c> after this returns so QR
-    /// display / scan re-renders pick up the latest screen state.
+    /// Dispatch a batch of <see cref="ExchangeCommand"/>s.
     /// </summary>
     public void Handle(ExchangeCommand[] commands)
     {
@@ -85,8 +80,6 @@ public sealed class ExchangeCommandHandler : IDisposable
             {
                 case ExchangeCommandKind.QrDisplay:
                 case ExchangeCommandKind.QrRequestScan:
-                    // QrCodeComponent handles display/scan modes via screen JSON.
-                    // The caller's RefreshScreen() picks up the updated component.
                     break;
 
                 case ExchangeCommandKind.BleStartAdvertising:

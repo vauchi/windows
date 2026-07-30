@@ -168,7 +168,7 @@ public class ExchangeCommandParserTests
         Assert.Equal(ExchangeCommandKind.Unknown, cmd.Kind);
     }
 
-    // ── Array parsing (from ActionResult) ──
+    // ── Array parsing ──
 
     [Fact]
     public void ParseAll_Handles_Mixed_Array()
@@ -187,17 +187,6 @@ public class ExchangeCommandParserTests
     {
         var cmds = ExchangeCommandParser.ParseAll("[]");
         Assert.Empty(cmds);
-    }
-
-    [Fact]
-    public void ParseFromActionResult_Extracts_Commands()
-    {
-        string resultJson = """{"Commands":{"commands":[{"QrDisplay":{"data":"x"}},"QrRequestScan"]}}""";
-        var cmds = ExchangeCommandParser.ParseFromActionResult(resultJson);
-        Assert.Equal(2, cmds.Length);
-        Assert.Equal(ExchangeCommandKind.QrDisplay, cmds[0].Kind);
-        Assert.Equal("x", cmds[0].GetString("data"));
-        Assert.Equal(ExchangeCommandKind.QrRequestScan, cmds[1].Kind);
     }
 
     // ── Adversarial (CC-14) ──

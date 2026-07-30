@@ -17,23 +17,15 @@ public class SystemTrayManager : IDisposable
 {
     private TaskbarIcon? _trayIcon;
     private readonly Window? _window;
-    private readonly Action<string>? _navigateAction;
 
-    public SystemTrayManager(Window window, Action<string>? navigateAction = null)
+    public SystemTrayManager(Window window)
     {
         _window = window;
-        _navigateAction = navigateAction;
     }
 
     public void Initialize()
     {
         var menu = new MenuFlyout();
-
-        // TODO(HUMBLE): W — hardcodes domain screen ID "exchange" for system-tray navigation; core should expose dynamic tray items or opaque action registry (see _private/docs/problems/2026-07-06-desktop-tui-web-domain-shell-violations).
-        var exchangeItem = new MenuFlyoutItem { Text = Localizer.T("nav.exchange") };
-        exchangeItem.Click += (_, _) => { ShowWindow(); _navigateAction?.Invoke("exchange"); };
-        menu.Items.Add(exchangeItem);
-        menu.Items.Add(new MenuFlyoutSeparator());
 
         var showItem = new MenuFlyoutItem { Text = Localizer.T("tray.show_app") };
         showItem.Click += (_, _) => ShowWindow();

@@ -28,7 +28,7 @@ public sealed class BleExchangeService : IDisposable
 
     /// <param name="onHardwareEvent">
     /// Callback that receives ExchangeHardwareEvent JSON strings.
-    /// Caller routes these to VauchiNative.AppHandleHardwareEvent.
+    /// Caller routes these through the generic Core event boundary.
     /// </param>
     public BleExchangeService(Action<string> onHardwareEvent)
     {

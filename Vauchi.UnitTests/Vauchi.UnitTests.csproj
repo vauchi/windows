@@ -23,22 +23,35 @@
     <PackageReference Include="xunit.runner.visualstudio" Version="2.*" />
     <PackageReference Include="JunitXml.TestLogger" Version="4.*" />
     <PackageReference Include="coverlet.collector" Version="6.*" />
+    <PackageReference Include="ZXing.Net" Version="0.16.9" />
+    <PackageReference Include="ZXing.Net.Bindings.Windows.Compatibility" Version="0.16.9" />
   </ItemGroup>
   <!-- Link helper files from main project -->
   <ItemGroup>
-    <Compile Include="..\Vauchi\Helpers\ActionJson.cs" Link="Linked\ActionJson.cs" />
-    <Compile Include="..\Vauchi\Helpers\ActionResultParser.cs" Link="Linked\ActionResultParser.cs" />
     <Compile Include="..\Vauchi\Helpers\ExchangeCommandParser.cs" Link="Linked\ExchangeCommandParser.cs" />
     <Compile Include="..\Vauchi\Helpers\ExchangeHardwareEventJson.cs" Link="Linked\ExchangeHardwareEventJson.cs" />
-    <Compile Include="..\Vauchi\Helpers\JsonSanitizer.cs" Link="Linked\JsonSanitizer.cs" />
     <Compile Include="..\Vauchi\Helpers\MimeTypeMapper.cs" Link="Linked\MimeTypeMapper.cs" />
+    <Compile Include="..\Vauchi\Handlers\ExchangeCommandHandler.cs" Link="Linked\ExchangeCommandHandler.cs" />
     <Compile Include="..\Vauchi\Interop\VauchiNative.cs" Link="Linked\VauchiNative.cs" />
+    <Compile Include="..\Vauchi\MainWindow.xaml.cs" Link="Linked\MainWindow.xaml.cs" />
+    <Compile Include="..\Vauchi\MainWindowEffects.cs" Link="Linked\MainWindowEffects.cs" />
+    <Compile Include="..\Vauchi\MainWindowState.cs" Link="Linked\MainWindowState.cs" />
+    <Compile Include="..\Vauchi\Platform\BleExchangeService.cs" Link="Linked\BleExchangeService.cs" />
     <Compile Include="..\Vauchi\Platform\KeyStorageService.cs" Link="Linked\KeyStorageService.cs" />
+    <Compile Include="..\Vauchi\Platform\SecureStorageService.cs" Link="Linked\SecureStorageService.cs" />
     <Compile Include="..\Vauchi\Platform\SystemTrayManager.cs" Link="Linked\SystemTrayManager.cs" />
+    <Compile Include="..\Vauchi\Services\DirectSendService.cs" Link="Linked\DirectSendService.cs" />
     <Compile Include="..\Vauchi\Services\Localizer.cs" Link="Linked\Localizer.cs" />
-    <Compile Include="..\Vauchi\CoreUI\ComponentRenderer.cs" Link="Linked\ComponentRenderer.cs" />
-    <Compile Include="..\Vauchi\CoreUI\Components\PreviewFields.cs" Link="Linked\PreviewFields.cs" />
-    <Compile Include="..\Vauchi\CoreUI\Components\StatusIndicatorAutomation.cs" Link="Linked\StatusIndicatorAutomation.cs" />
-    <Compile Include="..\Vauchi\Helpers\ActionRouter.cs" Link="Linked\ActionRouter.cs" />
+    <Compile Include="..\Vauchi\Services\ScreenCaptureProtection.cs" Link="Linked\ScreenCaptureProtection.cs" />
+    <Compile Include="..\Vauchi\CoreUI\PresentationEvents.cs" Link="Linked\PresentationEvents.cs" />
+    <Compile Include="..\Vauchi\CoreUI\PresentationHost.xaml.cs" Link="Linked\PresentationHost.xaml.cs" />
+    <Compile Include="..\Vauchi\CoreUI\PresentationHostEffects.cs" Link="Linked\PresentationHostEffects.cs" />
+    <Compile Include="..\Vauchi\CoreUI\PresentationJson.cs" Link="Linked\PresentationJson.cs" />
+    <Compile Include="..\Vauchi\CoreUI\PresentationState.cs" Link="Linked\PresentationState.cs" />
+    <Compile Include="..\Vauchi\CoreUI\PresentationSurface.cs" Link="Linked\PresentationSurface.cs" />
+    <Compile Include="..\Vauchi\CoreUI\PresentationSurfaceCollections.cs" Link="Linked\PresentationSurfaceCollections.cs" />
+    <Compile Include="..\Vauchi\CoreUI\PresentationSurfaceFields.cs" Link="Linked\PresentationSurfaceFields.cs" />
+    <Compile Include="..\Vauchi\CoreUI\PresentationSurfaceMedia.cs" Link="Linked\PresentationSurfaceMedia.cs" />
+    <Compile Include="..\Vauchi\CoreUI\ThemeColors.cs" Link="Linked\ThemeColors.cs" />
   </ItemGroup>
 </Project>
