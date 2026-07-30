@@ -387,7 +387,7 @@ check:parser-parity:
     FRONTEND_NAME: "windows"
     PARSER_FILE: "Vauchi/CoreUI/PresentationSurface.cs"
     PARSER_PROTOCOL: "presentation"
-    PARSER_SCRIPT_REF: "feature/contextual-command-surface"
+    PARSER_SCRIPT_REF: "4e2c91d387aed482b80bd24e1b8d94477152aeef"
     CORE_REF: "v0.59.0"
 
 # Removed symbols: detect stale references to removed features
