@@ -5,7 +5,7 @@ include:
   - template: Security/SAST.gitlab-ci.yml
   - template: Security/Secret-Detection.gitlab-ci.yml
   - project: 'vauchi/scripts'
-    ref: feature/contextual-command-surface
+    ref: 4e2c91d387aed482b80bd24e1b8d94477152aeef
     file:
       - '/ci-templates/design-drift.yml'
       - '/ci-templates/parser-parity.yml'
@@ -15,7 +15,7 @@ include:
       - '/ci-templates/vrt-upload.yml'
 
 variables:
-  VAUCHI_SCRIPTS_REF: "5f6614ba3de5f462978d5222b682c27d2dfe8d3a"
+  VAUCHI_SCRIPTS_REF: "4e2c91d387aed482b80bd24e1b8d94477152aeef"
   SAST_EXCLUDED_PATHS: "bin/, obj/, packages/"
   SECRET_DETECTION_EXCLUDED_PATHS: "bin/, obj/, packages/"
   SAST_ANALYZER_IMAGE_TAG: "5"
@@ -366,7 +366,7 @@ check:design-drift:
     DESIGN_DRIFT_PROTOCOL: "presentation"
     DESIGN_DRIFT_MATCH_MODE: "grep"
     DESIGN_DRIFT_GREP_FILE: "Vauchi/CoreUI"
-    CORE_REF: "feature/contextual-command-surface"
+    CORE_REF: "v0.59.0"
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       changes:
@@ -388,7 +388,7 @@ check:parser-parity:
     PARSER_FILE: "Vauchi/CoreUI/PresentationSurface.cs"
     PARSER_PROTOCOL: "presentation"
     PARSER_SCRIPT_REF: "feature/contextual-command-surface"
-    CORE_REF: "feature/contextual-command-surface"
+    CORE_REF: "v0.59.0"
 
 # Removed symbols: detect stale references to removed features
 check:removed-symbols:
