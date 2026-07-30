@@ -131,8 +131,7 @@ public sealed partial class PresentationHost : UserControl
                 BorderThickness = surfaceId == _state.ActiveSurfaceId
                     ? new Thickness(2)
                     : new Thickness(0),
-                BorderBrush = new SolidColorBrush(
-                    Windows.UI.Color.FromArgb(160, 0, 120, 212)),
+                BorderBrush = new SolidColorBrush(ThemeColors.ActiveSurfaceBorder),
             };
             Grid.SetColumn(border, index);
             SurfaceGrid.Children.Add(border);

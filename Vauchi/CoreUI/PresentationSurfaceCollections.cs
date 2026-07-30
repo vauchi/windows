@@ -123,7 +123,7 @@ public sealed partial class PresentationSurface
             Padding = new Thickness(8),
             CornerRadius = new CornerRadius(8),
             Background = Boolean(row, "selected")
-                ? new SolidColorBrush(Windows.UI.Color.FromArgb(32, 0, 120, 212))
+                ? new SolidColorBrush(ThemeColors.SelectedBackground)
                 : null,
         });
         if (row.TryGetProperty("controls", out JsonElement controls)

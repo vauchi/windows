@@ -152,7 +152,7 @@ public sealed partial class PresentationSurface : UserControl
     private static Border RenderDivider() => new()
     {
         Height = 1,
-        Background = new SolidColorBrush(Windows.UI.Color.FromArgb(64, 128, 128, 128)),
+        Background = new SolidColorBrush(ThemeColors.Divider),
         Margin = new Thickness(0, 8, 0, 8),
     };
 
