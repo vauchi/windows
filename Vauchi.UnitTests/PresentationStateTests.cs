@@ -4,12 +4,45 @@
 using System.Linq;
 using System.Text.Json;
 using Vauchi.CoreUI;
+using Vauchi.Interop;
 using Xunit;
 
 namespace Vauchi.UnitTests;
 
 public class PresentationStateTests
 {
+    // @scenario: generic_presentation_protocol.feature :: Every shell renders the same prepared presentation
+    [Fact]
+    public void SharedPresentationContract_ReachesExpectedState()
+    {
+        string fixtureJson = Assert.IsType<string>(VauchiNative.PresentationContractFixture());
+        using JsonDocument fixture = JsonDocument.Parse(fixtureJson);
+        JsonElement root = fixture.RootElement;
+        Assert.Equal(1, root.GetProperty("schema_version").GetInt32());
+
+        var state = new PresentationState();
+        Apply(state, root.GetProperty("initial_commands"));
+        foreach (JsonElement step in root.GetProperty("steps").EnumerateArray())
+            Apply(state, step.GetProperty("commands"));
+
+        JsonElement expected = root.GetProperty("expected_state");
+        string surfaceId = expected.GetProperty("active_surface_id").GetString()!;
+        Assert.Equal(surfaceId, state.ActiveSurfaceId);
+        Assert.Equal(
+            expected.GetProperty("surface").GetRawText(),
+            state.Surface(surfaceId)?.GetRawText());
+        Assert.Equal(
+            expected.GetProperty("context_bar").GetRawText(),
+            state.ContextBar(surfaceId)?.GetRawText());
+    }
+
+    private static void Apply(PresentationState state, JsonElement commands)
+    {
+        string envelope = $"{{\"commands\":{commands.GetRawText()}}}";
+        Assert.True(state.TryApplyEnvelope(envelope, out var effects, out var error), error);
+        Assert.Empty(effects);
+    }
+
     [Fact]
     public void OrderedBatch_DerivesVisibleSurfacesAndActiveContext()
     {

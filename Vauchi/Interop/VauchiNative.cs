@@ -22,6 +22,19 @@ public static partial class VauchiNative
     [LibraryImport(LibName, EntryPoint = "vauchi_string_free")]
     private static partial void StringFree(IntPtr ptr);
 
+    [LibraryImport(LibName, EntryPoint = "vauchi_presentation_contract_fixture")]
+    private static partial IntPtr PresentationContractFixtureRaw();
+
+    /// <summary>Shared JSON contract replayed by every native shell.</summary>
+    public static string? PresentationContractFixture()
+    {
+        IntPtr ptr = PresentationContractFixtureRaw();
+        if (ptr == IntPtr.Zero) return null;
+        string result = Marshal.PtrToStringUTF8(ptr)!;
+        StringFree(ptr);
+        return result;
+    }
+
     // i18n (internationalization) — see core/vauchi-cabi/src/i18n.rs
 
     [LibraryImport(LibName, EntryPoint = "vauchi_i18n_init", StringMarshalling = StringMarshalling.Utf8)]

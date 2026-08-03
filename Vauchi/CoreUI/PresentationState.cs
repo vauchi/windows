@@ -17,7 +17,7 @@ public sealed class PresentationState
     private JsonElement? _profile;
 
     public string? ActiveSurfaceId =>
-        ProfileString("active_surface");
+        ProfileString("active_surface") ?? _surfaces.Keys.OrderBy(id => id).FirstOrDefault();
 
     public JsonElement? ActiveContextBar =>
         ActiveSurfaceId is { } id && _contextBars.TryGetValue(id, out var entry)
@@ -32,8 +32,11 @@ public sealed class PresentationState
         {
             string? active = ActiveSurfaceId;
             string? primary = ProfileString("primary_surface");
-            if (active is null || primary is null)
+            if (active is null)
                 return Array.Empty<string>();
+
+            if (primary is null)
+                return new[] { active };
 
             if (ProfileString("pane_layout") == "split"
                 && ProfileString("detail_surface") is { } detail)
