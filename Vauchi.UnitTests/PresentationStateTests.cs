@@ -34,6 +34,37 @@ public class PresentationStateTests
             state.ActiveContextBar?.GetProperty("primary").GetProperty("interaction_id").GetString());
     }
 
+    /// <summary>
+    /// Core's revision advances only on user actions, so racing full rebuilds
+    /// (wakeup re-load, invalidation dispatch) legitimately re-emit the same
+    /// surface at the same revision. Only a strictly older revision is stale.
+    ///
+    /// This shell is already correct, accepting <c>revision &gt;= current</c>.
+    /// Nothing pinned that, so tightening to <c>&gt;</c> would reintroduce the
+    /// bug silently. Android and macOS both had it wrong
+    /// (vauchi/android!610, vauchi/macos!346); on Android it failed every cold
+    /// launch, and because envelopes apply atomically each rejection discarded
+    /// every command batched with it.
+    /// </summary>
+    [Fact]
+    public void ReEmittedSameRevision_ReAppliesInsteadOfFailing()
+    {
+        var state = new PresentationState();
+        Assert.True(state.TryApplyEnvelope("""
+            {"commands":[
+              {"ReplaceSurface":{"surface":{"surface_id":"main","revision":2,"title":"First","nodes":[]}}}
+            ]}
+            """, out _, out var firstError), firstError);
+
+        Assert.True(state.TryApplyEnvelope("""
+            {"commands":[
+              {"ReplaceSurface":{"surface":{"surface_id":"main","revision":2,"title":"Rebuilt","nodes":[]}}}
+            ]}
+            """, out _, out var rebuildError), rebuildError);
+
+        Assert.Equal("Rebuilt", state.Surface("main")?.GetProperty("title").GetString());
+    }
+
     [Fact]
     public void StaleSurfaceAndContextRevisions_DoNotReplaceCurrentState()
     {
