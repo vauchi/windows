@@ -28,12 +28,14 @@ public class PresentationStateTests
         JsonElement expected = root.GetProperty("expected_state");
         string surfaceId = expected.GetProperty("active_surface_id").GetString()!;
         Assert.Equal(surfaceId, state.ActiveSurfaceId);
-        Assert.Equal(
-            expected.GetProperty("surface").GetRawText(),
-            state.Surface(surfaceId)?.GetRawText());
-        Assert.Equal(
-            expected.GetProperty("context_bar").GetRawText(),
-            state.ContextBar(surfaceId)?.GetRawText());
+        AssertJsonEqual(expected.GetProperty("surface"), state.Surface(surfaceId));
+        AssertJsonEqual(expected.GetProperty("context_bar"), state.ContextBar(surfaceId));
+    }
+
+    private static void AssertJsonEqual(JsonElement expected, JsonElement? actual)
+    {
+        Assert.True(actual.HasValue, "expected presentation state to contain JSON");
+        Assert.True(JsonElement.DeepEquals(expected, actual.Value), "JSON values differ");
     }
 
     private static void Apply(PresentationState state, JsonElement commands)
