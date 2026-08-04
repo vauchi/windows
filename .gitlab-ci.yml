@@ -196,6 +196,7 @@ coverage:unit:
     - job: build:app
       artifacts: true
   script:
+    - $env:PATH = "$(Resolve-Path cabi);$env:PATH"
     - |
       dotnet test Vauchi.UnitTests/Vauchi.UnitTests.csproj `
         --collect:"XPlat Code Coverage" `
