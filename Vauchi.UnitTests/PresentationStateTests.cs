@@ -35,7 +35,30 @@ public class PresentationStateTests
     private static void AssertJsonEqual(JsonElement expected, JsonElement? actual)
     {
         Assert.True(actual.HasValue, "expected presentation state to contain JSON");
-        Assert.True(JsonElement.DeepEquals(expected, actual.Value), "JSON values differ");
+        Assert.True(JsonEquals(expected, actual.Value), "JSON values differ");
+    }
+
+    private static bool JsonEquals(JsonElement expected, JsonElement actual)
+    {
+        if (expected.ValueKind != actual.ValueKind)
+            return false;
+
+        return expected.ValueKind switch
+        {
+            JsonValueKind.Object => expected.EnumerateObject().All(property =>
+                actual.TryGetProperty(property.Name, out JsonElement value)
+                && JsonEquals(property.Value, value))
+                && expected.EnumerateObject().Count() == actual.EnumerateObject().Count(),
+            JsonValueKind.Array => expected.EnumerateArray().SequenceEqual(
+                actual.EnumerateArray(),
+                EqualityComparer<JsonElement>.Create(JsonEquals)),
+            JsonValueKind.String => expected.GetString() == actual.GetString(),
+            JsonValueKind.Number => expected.GetRawText() == actual.GetRawText(),
+            JsonValueKind.True or JsonValueKind.False =>
+                expected.GetBoolean() == actual.GetBoolean(),
+            JsonValueKind.Null or JsonValueKind.Undefined => true,
+            _ => false,
+        };
     }
 
     private static void Apply(PresentationState state, JsonElement commands)
