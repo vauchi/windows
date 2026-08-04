@@ -49,9 +49,10 @@ public class PresentationStateTests
                 actual.TryGetProperty(property.Name, out JsonElement value)
                 && JsonEquals(property.Value, value))
                 && expected.EnumerateObject().Count() == actual.EnumerateObject().Count(),
-            JsonValueKind.Array => expected.EnumerateArray().SequenceEqual(
-                actual.EnumerateArray(),
-                EqualityComparer<JsonElement>.Create(JsonEquals)),
+            JsonValueKind.Array => expected.GetArrayLength() == actual.GetArrayLength()
+                && expected.EnumerateArray()
+                    .Select((value, index) => JsonEquals(value, actual[index]))
+                    .All(equal => equal),
             JsonValueKind.String => expected.GetString() == actual.GetString(),
             JsonValueKind.Number => expected.GetRawText() == actual.GetRawText(),
             JsonValueKind.True or JsonValueKind.False =>
