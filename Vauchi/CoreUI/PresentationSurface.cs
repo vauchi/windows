@@ -129,6 +129,16 @@ public sealed partial class PresentationSurface : UserControl
             PresentationEvents.ActionActivated(_surfaceId, interactionId));
     }
 
+    private void EmitInputSubmitted(string bindingId) =>
+        EventReady?.Invoke(
+            _surfaceId,
+            PresentationEvents.InputSubmitted(_surfaceId, bindingId));
+
+    private void EmitInputFocusEnded(string bindingId) =>
+        EventReady?.Invoke(
+            _surfaceId,
+            PresentationEvents.InputFocusEnded(_surfaceId, bindingId));
+
     private void EmitText(string bindingId, string value) =>
         EventReady?.Invoke(
             _surfaceId,

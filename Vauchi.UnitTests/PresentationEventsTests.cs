@@ -27,6 +27,21 @@ public class PresentationEventsTests
     }
 
     [Fact]
+    public void BindingGestureEvents_NameTheBindingWithoutCarryingItsValue()
+    {
+        // Both report *that* something happened, not what the field now
+        // holds — the value already reached Core through TextChanged.
+        AssertEvent(
+            PresentationEvents.InputSubmitted("groups", "custom_group"),
+            "InputSubmitted",
+            """{"surface_id":"groups","binding_id":"custom_group"}""");
+        AssertEvent(
+            PresentationEvents.InputFocusEnded("groups", "custom_group"),
+            "InputFocusEnded",
+            """{"surface_id":"groups","binding_id":"custom_group"}""");
+    }
+
+    [Fact]
     public void ValueEvents_PreserveTheCanonicalTaggedInputValue()
     {
         AssertEvent(

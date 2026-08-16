@@ -22,6 +22,21 @@ public static class PresentationEvents
     public static string OverlayDismissed(string surfaceId, string kind) =>
         Serialize("OverlayDismissed", new { surface_id = surfaceId, kind });
 
+    /// <summary>Enter pressed in a field — the platform's submit gesture.</summary>
+    public static string InputSubmitted(string surfaceId, string bindingId) =>
+        Serialize(
+            "InputSubmitted",
+            new { surface_id = surfaceId, binding_id = bindingId });
+
+    /// <summary>
+    /// A field lost focus without the user having submitted, so Core can offer
+    /// a way to commit text left behind rather than committing it for them.
+    /// </summary>
+    public static string InputFocusEnded(string surfaceId, string bindingId) =>
+        Serialize(
+            "InputFocusEnded",
+            new { surface_id = surfaceId, binding_id = bindingId });
+
     public static string TextChanged(string surfaceId, string bindingId, string value) =>
         ValueChanged(surfaceId, bindingId, "Text", value);
 

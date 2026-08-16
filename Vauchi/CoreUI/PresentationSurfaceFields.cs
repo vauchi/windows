@@ -6,6 +6,7 @@ using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using System;
 using System.Text.Json;
+using Windows.System;
 
 namespace Vauchi.CoreUI;
 
@@ -67,6 +68,16 @@ public sealed partial class PresentationSurface
                 text.MaxLength = maxLength;
             }
             text.TextChanged += (_, _) => EmitText(bindingId, text.Text);
+            // Enter is the submit gesture; LostFocus fires whatever took the
+            // focus, so no click-outside handling is needed here.
+            text.KeyDown += (_, args) =>
+            {
+                if (args.Key == VirtualKey.Enter)
+                {
+                    EmitInputSubmitted(bindingId);
+                }
+            };
+            text.LostFocus += (_, _) => EmitInputFocusEnded(bindingId);
             input = text;
         }
         AutomationProperties.SetAutomationId(input, bindingId);
