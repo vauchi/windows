@@ -3,7 +3,7 @@
 
 > **Mirror:** This repo is a read-only mirror of [gitlab.com/vauchi/windows](https://gitlab.com/vauchi/windows). Please open issues and merge requests there.
 
-[![Pipeline](https://img.shields.io/endpoint?url=https://vauchi.gitlab.io/windows/badges/pipeline.json&label=pipeline)](https://gitlab.com/vauchi/windows/-/pipelines)
+[![Pipeline](https://img.shields.io/endpoint?url=https://vauchi.gitlab.io/windows/badges/pipeline.json&label=pipeline)](https://gitlab.com/vauchi/windows)
 [![REUSE](https://api.reuse.software/badge/gitlab.com/vauchi/windows)](https://api.reuse.software/info/gitlab.com/vauchi/windows)
 
 > [!NOTE]
