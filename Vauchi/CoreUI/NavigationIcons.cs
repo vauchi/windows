@@ -22,9 +22,12 @@ public static class NavigationIcons
 {
     /// <summary>
     /// Shown when Core names a token this build has not learned, so a new
-    /// destination arrives with a neutral marker rather than a hole in the row.
+    /// destination arrives with a marker rather than a hole in the row. An
+    /// apps-grid glyph reads as "some section of this app" and stays
+    /// truthful; reusing a concrete icon such as the house would put a
+    /// confident lie next to a label that says something else.
     /// </summary>
-    public const string FallbackGlyph = "\uE91F"; // CircleFill
+    public const string FallbackGlyph = "\uE71D"; // AllApps
 
     private static readonly IReadOnlyDictionary<string, string> GlyphsByToken =
         new Dictionary<string, string>
