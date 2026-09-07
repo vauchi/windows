@@ -60,6 +60,28 @@ public class NavigationIconsTests
     }
 
     /// <summary>
+    /// Each token maps to the glyph it is supposed to, not merely to some
+    /// glyph.
+    ///
+    /// The shape checks above pass for any private-use codepoint, and
+    /// distinctness passes for any sixteen different ones, so between them
+    /// they would still accept Contacts and Settings being swapped. These are
+    /// opaque codepoints rather than names — nobody reviewing a diff can see
+    /// that \uE716 is People — so the intended value is pinned here or it is
+    /// pinned nowhere.
+    /// </summary>
+    [Theory]
+    [InlineData("person.2", "\uE716")]
+    [InlineData("qrcode", "\uED14")]
+    [InlineData("gearshape", "\uE713")]
+    [InlineData("externaldrive", "\uEDA2")]
+    [InlineData("house", "\uE80F")]
+    public void KnownTokensMapToTheirIntendedGlyph(string token, string expected)
+    {
+        Assert.Equal(expected, NavigationIcons.Glyph(token));
+    }
+
+    /// <summary>
     /// A token Core names but this build has not learned about must not leave
     /// the row without an icon.
     /// </summary>
