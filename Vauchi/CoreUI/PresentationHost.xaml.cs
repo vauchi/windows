@@ -230,11 +230,20 @@ public sealed partial class PresentationHost : UserControl
     /// </summary>
     private Button OverlayItem(JsonElement action)
     {
+        string? iconToken =
+            action.TryGetProperty("icon_token", out JsonElement icon)
+            && icon.ValueKind == JsonValueKind.String
+                ? icon.GetString()
+                : null;
         var content = new StackPanel
         {
             Orientation = Orientation.Horizontal,
             Spacing = 12,
         };
+        content.Children.Add(new FontIcon
+        {
+            Glyph = NavigationIcons.Glyph(iconToken),
+        });
         content.Children.Add(new TextBlock
         {
             Text = action.TryGetProperty("label", out JsonElement label)

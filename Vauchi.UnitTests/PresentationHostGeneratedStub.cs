@@ -16,6 +16,11 @@ public sealed partial class PresentationHost
     private readonly InfoBar ProtocolErrorBar = new();
     private readonly InfoBar AlertBar = new();
     private readonly InfoBar FeedbackBar = new();
+    private readonly Grid OverlayScrim = new();
+    private readonly Border OverlayPanel = new();
+    private readonly TextBlock OverlayTitle = new();
+    private readonly Button OverlayCloseButton = new();
+    private readonly StackPanel OverlayItems = new();
 
     private void InitializeComponent()
     {
