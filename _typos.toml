@@ -5,3 +5,8 @@
 # WinUI spells this public API type "WriteableBitmap".
 [default.extend-identifiers]
 WriteableBitmap = "WriteableBitmap"
+
+# Core's navigation icon tokens are named after the SF Symbols core set,
+# where the map-pin symbol is spelled "mappin.and.ellipse".
+[default.extend-words]
+mappin = "mappin"
