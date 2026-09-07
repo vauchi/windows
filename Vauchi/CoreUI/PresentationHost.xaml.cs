@@ -10,6 +10,7 @@ using System;
 using System.Collections.Generic;
 using System.Text.Json;
 using Vauchi.Interop;
+using Vauchi.Services;
 using Windows.System;
 
 namespace Vauchi.CoreUI;
@@ -21,6 +22,8 @@ public sealed partial class PresentationHost : UserControl
     private bool _reducedMotion;
     private int _reportedWidth = -1;
     private int _reportedHeight = -1;
+    private string _overlaySurfaceId = "";
+    private string _overlayKind = "";
 
     public event Action<JsonElement>? NativeEffectReady;
     public event Action? NativeBackRequested;
@@ -137,6 +140,7 @@ public sealed partial class PresentationHost : UserControl
             SurfaceGrid.Children.Add(border);
         }
         RenderContextBar();
+        RenderOverlay();
     }
 
     private void RenderContextBar()
@@ -177,6 +181,108 @@ public sealed partial class PresentationHost : UserControl
             ? accessibility.GetString() ?? ""
             : "";
         AutomationProperties.SetName(button, accessible);
+    }
+
+    /// <summary>
+    /// Core presents the navigation palette as an overlay; until now this
+    /// shell tracked it in state and drew nothing, so the Navigate button
+    /// opened a panel nobody could see.
+    /// </summary>
+    private void RenderOverlay()
+    {
+        OverlayItems.Children.Clear();
+        if (_state.PresentedOverlay is not { } presented
+            || !presented.TryGetProperty("surface_id", out JsonElement surfaceIdValue)
+            || surfaceIdValue.GetString() is not { Length: > 0 } surfaceId
+            || !presented.TryGetProperty("overlay", out JsonElement overlay)
+            || overlay.ValueKind != JsonValueKind.Object)
+        {
+            OverlayScrim.Visibility = Visibility.Collapsed;
+            _overlaySurfaceId = "";
+            _overlayKind = "";
+            return;
+        }
+
+        _overlaySurfaceId = surfaceId;
+        _overlayKind = overlay.TryGetProperty("kind", out JsonElement kind)
+            ? kind.GetString() ?? ""
+            : "";
+        OverlayTitle.Text = overlay.TryGetProperty("title", out JsonElement title)
+            ? title.GetString() ?? ""
+            : "";
+        AutomationProperties.SetName(OverlayPanel, OverlayTitle.Text);
+        OverlayCloseButton.Content = new FontIcon { Glyph = "\uE8BB" };
+        AutomationProperties.SetName(OverlayCloseButton, Localizer.T("action.close"));
+
+        if (overlay.TryGetProperty("items", out JsonElement items)
+            && items.ValueKind == JsonValueKind.Array)
+        {
+            foreach (JsonElement item in items.EnumerateArray())
+                OverlayItems.Children.Add(OverlayItem(item));
+        }
+        OverlayScrim.Visibility = Visibility.Visible;
+    }
+
+    /// <summary>
+    /// Icon <em>and</em> label, never icon alone: the glyph is a recognition
+    /// aid for a reader who skims, and dropping the word would trade one
+    /// barrier for another.
+    /// </summary>
+    private Button OverlayItem(JsonElement action)
+    {
+        var content = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Spacing = 12,
+        };
+        content.Children.Add(new TextBlock
+        {
+            Text = action.TryGetProperty("label", out JsonElement label)
+                ? label.GetString() ?? ""
+                : "",
+            TextWrapping = TextWrapping.Wrap,
+            VerticalAlignment = VerticalAlignment.Center,
+        });
+
+        var button = new Button
+        {
+            Content = content,
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+            HorizontalContentAlignment = HorizontalAlignment.Left,
+            IsEnabled = !action.TryGetProperty("enabled", out JsonElement enabled)
+                        || enabled.GetBoolean(),
+            Tag = action.TryGetProperty("interaction_id", out JsonElement interaction)
+                ? interaction.GetString() ?? ""
+                : "",
+        };
+        AutomationProperties.SetName(
+            button,
+            action.TryGetProperty("accessibility_label", out JsonElement accessible)
+                ? accessible.GetString() ?? ""
+                : "");
+        button.Click += (sender, _) => ActivateOverlayItem(sender as Button);
+        return button;
+    }
+
+    private void ActivateOverlayItem(Button? button)
+    {
+        if (_overlaySurfaceId.Length == 0
+            || button?.Tag is not string { Length: > 0 } interactionId)
+        {
+            return;
+        }
+        DispatchSurfaceEvent(
+            _overlaySurfaceId,
+            PresentationEvents.ActionActivated(_overlaySurfaceId, interactionId));
+    }
+
+    private void OverlayCloseButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_overlaySurfaceId.Length == 0)
+            return;
+        DispatchSurfaceEvent(
+            _overlaySurfaceId,
+            PresentationEvents.OverlayDismissed(_overlaySurfaceId, _overlayKind));
     }
 
     private void ActivateRole(Button button)

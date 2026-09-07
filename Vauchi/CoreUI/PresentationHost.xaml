@@ -47,6 +47,47 @@
             </Grid>
         </Border>
 
+        <Grid x:Name="OverlayScrim"
+              Grid.RowSpan="2"
+              Visibility="Collapsed"
+              Background="{ThemeResource SmokeFillColorDefaultBrush}">
+            <Border x:Name="OverlayPanel"
+                    MaxWidth="620"
+                    Margin="24,72,24,24"
+                    Padding="16"
+                    VerticalAlignment="Top"
+                    CornerRadius="12"
+                    BorderThickness="1"
+                    BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
+                    Background="{ThemeResource SolidBackgroundFillColorBaseBrush}">
+                <Grid RowSpacing="12">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <Grid Grid.Row="0" ColumnSpacing="8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock x:Name="OverlayTitle"
+                                   Grid.Column="0"
+                                   FontSize="20"
+                                   FontWeight="SemiBold"
+                                   TextWrapping="Wrap"
+                                   VerticalAlignment="Center" />
+                        <Button x:Name="OverlayCloseButton"
+                                Grid.Column="1"
+                                Click="OverlayCloseButton_Click"
+                                AutomationProperties.AutomationId="overlay-close" />
+                    </Grid>
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                        <StackPanel x:Name="OverlayItems" Spacing="4" />
+                    </ScrollViewer>
+                </Grid>
+            </Border>
+        </Grid>
+
         <InfoBar x:Name="ProtocolErrorBar"
                  Grid.RowSpan="2"
                  IsOpen="False"
