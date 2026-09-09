@@ -45,42 +45,24 @@ public sealed partial class PresentationSurface
 
     private FrameworkElement RenderImage(JsonElement payload)
     {
-        var image = new Image
-        {
-            MaxWidth = 240,
-            MaxHeight = 240,
-            Stretch = Microsoft.UI.Xaml.Media.Stretch.Uniform,
-        };
-        if (payload.TryGetProperty("data", out JsonElement data)
-            && PresentationJson.Bytes(data) is { Length: > 0 } bytes)
-        {
-            LoadImage(image, bytes);
-        }
-        else
-        {
-            image.Visibility = Visibility.Collapsed;
-        }
+        byte[]? bytes = payload.TryGetProperty("data", out JsonElement data)
+            ? PresentationJson.Bytes(data)
+            : null;
+        string shape = String(payload, "shape");
+        string fallbackText = String(payload, "fallback_text");
 
-        FrameworkElement visual;
-        if (image.Visibility == Visibility.Visible)
+        FrameworkElement? visual = PresentationImageShape.Visual(bytes, fallbackText) switch
         {
-            visual = String(payload, "shape") == "circle"
-                ? new Border
-                {
-                    Child = image,
-                    Width = 160,
-                    Height = 160,
-                    CornerRadius = new CornerRadius(80),
-                }
-                : image;
-        }
-        else
+            PresentationImageVisual.Picture => Picture(bytes!, shape),
+            PresentationImageVisual.Initials => Initials(fallbackText, shape),
+            // Nothing to show shows nothing. An empty element still carrying
+            // the node's accessibility name announced a picture that was not
+            // there.
+            _ => null,
+        };
+        if (visual is null)
         {
-            visual = new TextBlock
-            {
-                Text = String(payload, "fallback_text"),
-                TextWrapping = TextWrapping.Wrap,
-            };
+            return new TextBlock { Visibility = Visibility.Collapsed };
         }
 
         if (payload.TryGetProperty("activation", out JsonElement action)
@@ -92,6 +74,56 @@ public sealed partial class PresentationSurface
         }
         ApplyAccessibility(visual, payload);
         return visual;
+    }
+
+    private static FrameworkElement Picture(byte[] bytes, string shape)
+    {
+        var image = new Image
+        {
+            MaxWidth = 240,
+            MaxHeight = 240,
+            Stretch = Microsoft.UI.Xaml.Media.Stretch.Uniform,
+        };
+        LoadImage(image, bytes);
+        if (!PresentationImageShape.IsCircular(shape))
+        {
+            return image;
+        }
+
+        return new Border
+        {
+            Child = image,
+            Width = PresentationImageShape.AvatarSide,
+            Height = PresentationImageShape.AvatarSide,
+            CornerRadius = new CornerRadius(PresentationImageShape.CornerRadiusFor(shape)),
+        };
+    }
+
+    /// <summary>
+    /// The initials used to go into a bare <c>TextBlock</c>, which paints no
+    /// body — so they read as a stray letter on the page rather than as an
+    /// avatar. They now get the same square, filled, rounded ground the
+    /// picture branch has always had.
+    /// </summary>
+    private static FrameworkElement Initials(string fallbackText, string shape)
+    {
+        double side = PresentationImageShape.AvatarSide;
+        return new Border
+        {
+            Width = side,
+            Height = side,
+            CornerRadius = new CornerRadius(PresentationImageShape.CornerRadiusFor(shape)),
+            Background = (Microsoft.UI.Xaml.Media.Brush)Microsoft.UI.Xaml.Application
+                .Current.Resources["SystemControlBackgroundListLowBrush"],
+            Child = new TextBlock
+            {
+                Text = fallbackText,
+                FontSize = 44,
+                FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+            },
+        };
     }
 
     private FrameworkElement RenderQr(JsonElement payload)
