@@ -35,10 +35,13 @@ public static class ThemeColors
     private static Color WithAlpha(Color color, byte alpha) =>
         Color.FromArgb(alpha, color.R, color.G, color.B);
 
-    // TODO(HUMBLE): W — hardcodes avatar fallback color synced with core; core should provide avatar fallback color in component/theme data (see _private/docs/problems/2026-07-06-desktop-tui-web-domain-shell-violations).
+    // TODO(HUMBLE): W — hardcodes avatar fallback color synced with core; core should provide avatar fallback color in component/theme data (see _private/docs/problems/done/2026-07-06-desktop-tui-web-domain-shell-violations).
     // Avatar fallback when core doesn't provide a per-contact bg_color.
-    // The hex string is what core actually emits via vCard import for
-    // unassigned contacts; keep both the hex and the Color in sync.
+    // Verified 2026-09: neither themes/tokens.json nor the C ABI
+    // (core/vauchi-cabi/src/design_tokens.rs) carries a color token today,
+    // and core has no fixed avatar-fallback constant of its own — this hex
+    // is a Windows-only placeholder, not a value core emits. Keep the hex
+    // and the Color in sync until core adds an avatar-fallback color token.
     public const string AvatarFallbackHex = "#4682B4";
     public static readonly Color AvatarFallback = ParseHex(AvatarFallbackHex);
 
