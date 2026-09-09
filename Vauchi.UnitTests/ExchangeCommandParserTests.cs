@@ -146,6 +146,28 @@ public class ExchangeCommandParserTests
     }
 
     [Fact]
+    public void Parses_FilePickFromUser_With_Accepted_Extensions()
+    {
+        var cmd = ParseSingle(
+            """{"FilePickFromUser":{"accepted_mime_types":["text/vcard"],"accepted_extensions":["vcf","vcard"],"purpose":"ImportContacts"}}"""
+        );
+        Assert.Equal(ExchangeCommandKind.FilePickFromUser, cmd.Kind);
+        Assert.Equal(new[] { "vcf", "vcard" }, cmd.GetStringArray("accepted_extensions"));
+    }
+
+    [Fact]
+    public void GetStringArray_Returns_Empty_When_AcceptedExtensions_Absent()
+    {
+        // Older cores predate RG-11 (core !1582) and omit the field entirely;
+        // `#[serde(default)]` on the Rust side means it's simply missing from
+        // the JSON, not present-and-empty.
+        var cmd = ParseSingle(
+            """{"FilePickFromUser":{"accepted_mime_types":["text/vcard"],"purpose":"ImportContacts"}}"""
+        );
+        Assert.Empty(cmd.GetStringArray("accepted_extensions"));
+    }
+
+    [Fact]
     public void GetStringArray_Returns_Empty_When_Field_Missing()
     {
         var cmd = ParseSingle("""{"QrDisplay":{"data":"x"}}""");
