@@ -30,7 +30,6 @@
   <ItemGroup>
     <Compile Include="..\Vauchi\Helpers\ExchangeCommandParser.cs" Link="Linked\ExchangeCommandParser.cs" />
     <Compile Include="..\Vauchi\Helpers\ExchangeHardwareEventJson.cs" Link="Linked\ExchangeHardwareEventJson.cs" />
-    <Compile Include="..\Vauchi\Helpers\MimeTypeMapper.cs" Link="Linked\MimeTypeMapper.cs" />
     <Compile Include="..\Vauchi\Handlers\ExchangeCommandHandler.cs" Link="Linked\ExchangeCommandHandler.cs" />
     <Compile Include="..\Vauchi\Interop\VauchiNative.cs" Link="Linked\VauchiNative.cs" />
     <Compile Include="..\Vauchi\MainWindow.xaml.cs" Link="Linked\MainWindow.xaml.cs" />

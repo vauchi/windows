@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 using System;
+using System.Linq;
 using System.Text.Json;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
@@ -322,11 +323,9 @@ public sealed class ExchangeCommandHandler : IDisposable
             var picker = new FileOpenPicker();
             picker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
 
-            string[] mimeTypes = cmd.GetStringArray("accepted_mime_types");
-            foreach (string ext in MimeTypeMapper.ToFileExtensions(mimeTypes))
-                picker.FileTypeFilter.Add(ext);
-            if (picker.FileTypeFilter.Count == 0)
-                picker.FileTypeFilter.Add("*");
+            string[] extensions = cmd.GetStringArray("accepted_extensions");
+            foreach (string filter in BuildFileTypeFilter(extensions))
+                picker.FileTypeFilter.Add(filter);
 
             var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(_window);
             WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
@@ -356,6 +355,17 @@ public sealed class ExchangeCommandHandler : IDisposable
             SendHardwareUnavailable("file_picker");
         }
     }
+
+    /// <summary>
+    /// Translates <c>Command::FilePickFromUser.accepted_extensions</c>
+    /// (lowercase, dot-less, per <c>FilePickPurpose::accepted_extensions</c>
+    /// in core) into WinUI <c>FileOpenPicker.FileTypeFilter</c> entries.
+    /// An empty list means "any file".
+    /// </summary>
+    internal static string[] BuildFileTypeFilter(string[] extensions) =>
+        extensions.Length == 0
+            ? ["*"]
+            : extensions.Select(ext => "." + ext).ToArray();
 
     // TODO(HUMBLE): D — HandleDirectSend vs HandleDirectSendCard branches on cardLeg; unify direct-send into one opaque command and let core decide event type (see _private/docs/problems/2026-07-06-desktop-tui-web-domain-shell-violations).
     private async void HandleDirectSend(ExchangeCommand cmd)
