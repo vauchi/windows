@@ -13,7 +13,7 @@ namespace Vauchi.CoreUI;
 public sealed partial class PresentationSurface : UserControl
 {
     private string _surfaceId = "";
-    private double _minimumTargetSize = 40;
+    private double _minimumTargetSize = TargetSize.Default;
 
     public event Action<string, string>? EventReady;
 
@@ -27,12 +27,7 @@ public sealed partial class PresentationSurface : UserControl
     private void Render(JsonElement surface)
     {
         _surfaceId = String(surface, "surface_id");
-        if (surface.TryGetProperty("tokens", out JsonElement tokens)
-            && tokens.TryGetProperty("minimum_target_size", out JsonElement minimum)
-            && minimum.TryGetDouble(out double minimumSize))
-        {
-            _minimumTargetSize = Math.Max(24, minimumSize);
-        }
+        _minimumTargetSize = TargetSize.From(surface);
 
         var content = new StackPanel
         {

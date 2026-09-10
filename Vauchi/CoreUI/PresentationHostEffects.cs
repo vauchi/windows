@@ -67,7 +67,7 @@ public sealed partial class PresentationHost
                 Tag = interactionId,
                 IsEnabled = !action.TryGetProperty("enabled", out JsonElement enabled)
                             || enabled.GetBoolean(),
-                MinHeight = 44,
+                MinHeight = TargetSize.Default,
             };
             AutomationProperties.SetAutomationId(item, interactionId);
             AutomationProperties.SetName(
