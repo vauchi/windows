@@ -7,6 +7,7 @@ namespace Vauchi.CoreUI;
 
 public sealed partial class PresentationHost
 {
+    private readonly NavigationView Sidebar = new();
     private readonly Grid SurfaceGrid = new();
     private readonly Border CommandStrip = new();
     private readonly Button BackButton = new();
