@@ -43,6 +43,34 @@ public class ThemeColorsTests
         Assert.Equal(ThemeColors.Info.B, ThemeColors.SelectedBackground.B);
     }
 
+    /// <summary>
+    /// The avatar-initials fill must stay a muted overlay of
+    /// <c>Neutral</c>, never a literal color — the invariant this class's
+    /// doc-comment promises for every alpha variant.
+    /// </summary>
+    [Fact]
+    public void SecondaryContainerKeepsNeutralsChannelsWithReducedAlpha()
+    {
+        Assert.Equal((byte)40, ThemeColors.SecondaryContainer.A);
+        Assert.Equal(ThemeColors.Neutral.R, ThemeColors.SecondaryContainer.R);
+        Assert.Equal(ThemeColors.Neutral.G, ThemeColors.SecondaryContainer.G);
+        Assert.Equal(ThemeColors.Neutral.B, ThemeColors.SecondaryContainer.B);
+    }
+
+    /// <summary>
+    /// Core has no dedicated focus-ring token yet, so this reuses
+    /// <c>Info</c> rather than a second hand-copied blue. If the two ever
+    /// diverge, a future edit changed one without the other.
+    /// </summary>
+    [Fact]
+    public void FocusRingReusesInfoUntilCoreExposesItsOwnToken()
+    {
+        Assert.Equal(ThemeColors.Info.A, ThemeColors.FocusRing.A);
+        Assert.Equal(ThemeColors.Info.R, ThemeColors.FocusRing.R);
+        Assert.Equal(ThemeColors.Info.G, ThemeColors.FocusRing.G);
+        Assert.Equal(ThemeColors.Info.B, ThemeColors.FocusRing.B);
+    }
+
     public static TheoryData<Color, byte, byte, byte> PaletteColorsWithExpectedChannels() =>
         new()
         {
