@@ -12,8 +12,11 @@ public sealed class PresentationState
 {
     private sealed record Revisioned(ulong Revision, JsonElement Value);
 
+    private sealed record NavigationRevisioned(ulong Revision, IReadOnlyList<NavigationSpec> Items);
+
     private Dictionary<string, Revisioned> _surfaces = new();
     private Dictionary<string, Revisioned> _contextBars = new();
+    private Dictionary<string, NavigationRevisioned> _navigations = new();
     private JsonElement? _profile;
 
     public string? ActiveSurfaceId =>
@@ -25,6 +28,8 @@ public sealed class PresentationState
             : null;
 
     public JsonElement? PresentedOverlay { get; private set; }
+
+    public string? WindowClass => ProfileString("window_class");
 
     public IReadOnlyList<string> VisibleSurfaceIds
     {
@@ -53,6 +58,12 @@ public sealed class PresentationState
 
     public JsonElement? ContextBar(string surfaceId) =>
         _contextBars.TryGetValue(surfaceId, out var entry) ? entry.Value : null;
+
+    public IReadOnlyList<NavigationSpec>? Navigation(string surfaceId) =>
+        _navigations.TryGetValue(surfaceId, out var entry) ? entry.Items : null;
+
+    public IReadOnlyList<NavigationSpec>? ActiveNavigation =>
+        ActiveSurfaceId is { } id ? Navigation(id) : null;
 
     public bool TryApplyEnvelope(
         string json,
@@ -103,6 +114,7 @@ public sealed class PresentationState
 
             _surfaces = next._surfaces;
             _contextBars = next._contextBars;
+            _navigations = next._navigations;
             _profile = next._profile;
             PresentedOverlay = next.PresentedOverlay;
             effects = nextEffects;
@@ -124,6 +136,7 @@ public sealed class PresentationState
     {
         _surfaces = new Dictionary<string, Revisioned>(_surfaces),
         _contextBars = new Dictionary<string, Revisioned>(_contextBars),
+        _navigations = new Dictionary<string, NavigationRevisioned>(_navigations),
         _profile = _profile?.Clone(),
         PresentedOverlay = PresentedOverlay?.Clone(),
     };
@@ -157,6 +170,8 @@ public sealed class PresentationState
                 return TryReplaceSurface(payload, out error);
             case "SetContextBar":
                 return TrySetContextBar(payload, out error);
+            case "SetNavigation":
+                return TrySetNavigation(payload, out error);
             case "SetPresentationProfile":
                 return TrySetProfile(payload, out error);
             case "PresentOverlay":
@@ -185,6 +200,7 @@ public sealed class PresentationState
         {
             _surfaces[id] = new Revisioned(revision, surface.Clone());
             _contextBars.Remove(id);
+            _navigations.Remove(id);
             if (PresentedOverlay is { } presented
                 && presented.TryGetProperty("surface_id", out var overlaySurface)
                 && overlaySurface.GetString() == id)
@@ -216,6 +232,55 @@ public sealed class PresentationState
             _contextBars[id] = new Revisioned(revision, bar.Clone());
         return true;
     }
+
+    private bool TrySetNavigation(JsonElement payload, out string? error)
+    {
+        error = null;
+        if (!TryIdentity(payload, out string id, out ulong revision, out error))
+            return false;
+        if (!_surfaces.TryGetValue(id, out var surface)
+            || surface.Revision != revision)
+        {
+            error = "SetNavigation does not match the current surface revision";
+            return false;
+        }
+        if (!payload.TryGetProperty("navigation", out var navigation)
+            || navigation.ValueKind != JsonValueKind.Object
+            || !navigation.TryGetProperty("items", out var items)
+            || items.ValueKind != JsonValueKind.Array)
+        {
+            error = "SetNavigation is missing navigation";
+            return false;
+        }
+        var parsed = items.EnumerateArray().Select(ParseNavigationItem).ToList();
+        if (!_navigations.TryGetValue(id, out var current) || revision >= current.Revision)
+            _navigations[id] = new NavigationRevisioned(revision, parsed);
+        return true;
+    }
+
+    private static NavigationSpec ParseNavigationItem(JsonElement item) => new(
+        InteractionId: StringProperty(item, "interaction_id"),
+        Label: StringProperty(item, "label"),
+        AccessibilityLabel: StringProperty(item, "accessibility_label"),
+        IconToken: OptionalStringProperty(item, "icon_token"),
+        Selected: item.TryGetProperty("selected", out var selected)
+            && selected.ValueKind == JsonValueKind.True,
+        BadgeCount: item.TryGetProperty("badge_count", out var badge)
+            && badge.TryGetInt32(out int count)
+                ? count
+                : 0);
+
+    private static string StringProperty(JsonElement value, string property) =>
+        value.TryGetProperty(property, out JsonElement element)
+        && element.ValueKind == JsonValueKind.String
+            ? element.GetString() ?? ""
+            : "";
+
+    private static string? OptionalStringProperty(JsonElement value, string property) =>
+        value.TryGetProperty(property, out JsonElement element)
+        && element.ValueKind == JsonValueKind.String
+            ? element.GetString()
+            : null;
 
     private bool TrySetProfile(JsonElement payload, out string? error)
     {
