@@ -94,6 +94,7 @@ public sealed partial class PresentationSurface
                 MinWidth = _minimumTargetSize,
                 MinHeight = _minimumTargetSize,
             };
+            FocusVisualStyle.Apply(more);
             var flyout = new MenuFlyout();
             foreach (JsonElement action in secondary.EnumerateArray())
             {

@@ -4,7 +4,9 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
+using Microsoft.UI.Xaml.Shapes;
 using System;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text.Json;
@@ -54,7 +56,7 @@ public sealed partial class PresentationSurface
         FrameworkElement? visual = PresentationImageShape.Visual(bytes, fallbackText) switch
         {
             PresentationImageVisual.Picture => Picture(bytes!, shape),
-            PresentationImageVisual.Initials => Initials(fallbackText, shape),
+            PresentationImageVisual.Initials => Initials(fallbackText),
             // Nothing to show shows nothing. An empty element still carrying
             // the node's accessibility name announced a picture that was not
             // there.
@@ -100,30 +102,30 @@ public sealed partial class PresentationSurface
     }
 
     /// <summary>
-    /// The initials used to go into a bare <c>TextBlock</c>, which paints no
-    /// body — so they read as a stray letter on the page rather than as an
-    /// avatar. They now get the same square, filled, rounded ground the
-    /// picture branch has always had.
+    /// Initials always render as a circle, unlike <see cref="Picture"/>'s
+    /// image data, which only clips to one when <c>shape == "circle"</c> —
+    /// a person's initials have no natural rectangle to keep. Sized to the
+    /// row's touch target, the treatment <c>PresentationRowView</c> on
+    /// macOS and <c>RowAvatar</c> on Android already use for the same
+    /// fallback.
     /// </summary>
-    private static FrameworkElement Initials(string fallbackText, string shape)
+    private FrameworkElement Initials(string fallbackText)
     {
-        double side = PresentationImageShape.AvatarSide;
-        return new Border
+        double diameter = _minimumTargetSize;
+        var avatar = new Grid { Width = diameter, Height = diameter };
+        avatar.Children.Add(new Ellipse
         {
-            Width = side,
-            Height = side,
-            CornerRadius = new CornerRadius(PresentationImageShape.CornerRadiusFor(shape)),
-            Background = (Microsoft.UI.Xaml.Media.Brush)Microsoft.UI.Xaml.Application
-                .Current.Resources["SystemControlBackgroundListLowBrush"],
-            Child = new TextBlock
-            {
-                Text = fallbackText,
-                FontSize = 44,
-                FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
-                HorizontalAlignment = HorizontalAlignment.Center,
-                VerticalAlignment = VerticalAlignment.Center,
-            },
-        };
+            Fill = new SolidColorBrush(ThemeColors.SecondaryContainer),
+        });
+        avatar.Children.Add(new TextBlock
+        {
+            Text = fallbackText,
+            FontSize = Math.Max(12, diameter * 0.4),
+            FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+        });
+        return avatar;
     }
 
     private FrameworkElement RenderQr(JsonElement payload)

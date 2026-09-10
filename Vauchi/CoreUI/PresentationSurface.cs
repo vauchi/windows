@@ -106,6 +106,7 @@ public sealed partial class PresentationSurface : UserControl
             HorizontalAlignment = HorizontalAlignment.Stretch,
         };
         ApplyToneStyle(button, ActionToneStyle.From(String(action, "tone")));
+        FocusVisualStyle.Apply(button);
         AutomationProperties.SetAutomationId(button, interactionId);
         AutomationProperties.SetName(
             button,

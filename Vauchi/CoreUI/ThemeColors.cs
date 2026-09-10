@@ -31,6 +31,13 @@ public static class ThemeColors
     public static readonly Color SelectedBackground = WithAlpha(Info, 32);      // selected-row highlight overlay
     public static readonly Color ActiveSurfaceBorder = WithAlpha(Info, 160);    // border of the active presentation surface
     public static readonly Color Divider = WithAlpha(Neutral, 64);              // separators between presentation blocks
+    public static readonly Color SecondaryContainer = WithAlpha(Neutral, 40);   // avatar-initials fill — mirrors Android's secondaryContainer / macOS's Color.secondary.opacity(0.15)
+
+    // No dedicated focus-ring token crosses the C ABI yet (tokens.json's
+    // "focus-ring" maps to the same blue as "accent", which is Info in
+    // this palette) — reuse it rather than inventing a second blue to
+    // keep in sync.
+    public static readonly Color FocusRing = Info;
 
     private static Color WithAlpha(Color color, byte alpha) =>
         Color.FromArgb(alpha, color.R, color.G, color.B);

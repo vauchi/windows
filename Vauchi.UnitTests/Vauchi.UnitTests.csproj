@@ -56,5 +56,6 @@
     <Compile Include="..\Vauchi\CoreUI\ThemeColors.cs" Link="Linked\ThemeColors.cs" />
     <Compile Include="..\Vauchi\CoreUI\ActionToneStyle.cs" Link="Linked\ActionToneStyle.cs" />
     <Compile Include="..\Vauchi\CoreUI\TargetSize.cs" Link="Linked\TargetSize.cs" />
+    <Compile Include="..\Vauchi\CoreUI\FocusVisualStyle.cs" Link="Linked\FocusVisualStyle.cs" />
   </ItemGroup>
 </Project>
