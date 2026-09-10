@@ -140,7 +140,52 @@ public sealed partial class PresentationHost : UserControl
             SurfaceGrid.Children.Add(border);
         }
         RenderContextBar();
+        RenderNavigation();
         RenderOverlay();
+    }
+
+    /// <summary>
+    /// Core now publishes navigation persistently via
+    /// <c>SetNavigation</c> rather than only inside a dismissable
+    /// overlay (see D4 in the cross-frontend design review), so the
+    /// pane renders every time state changes instead of on demand.
+    /// </summary>
+    private void RenderNavigation()
+    {
+        SidebarModel model = SidebarModel.From(_state.ActiveNavigation);
+        Sidebar.MenuItems.Clear();
+        foreach (SidebarItemModel item in model.Items)
+        {
+            var navigationItem = new NavigationViewItem
+            {
+                Content = item.Label,
+                Icon = new FontIcon { Glyph = item.Glyph },
+                IsSelected = item.Selected,
+                Tag = item.InteractionId,
+            };
+            if (item.BadgeCount > 0)
+                navigationItem.InfoBadge = new InfoBadge { Value = item.BadgeCount };
+            FocusVisualStyle.Apply(navigationItem);
+            AutomationProperties.SetAutomationId(navigationItem, item.InteractionId);
+            AutomationProperties.SetName(navigationItem, item.AccessibilityLabel);
+            Sidebar.MenuItems.Add(navigationItem);
+        }
+        Sidebar.IsPaneVisible = !model.Hidden;
+        Sidebar.PaneDisplayMode = _state.WindowClass == "compact"
+            ? NavigationViewPaneDisplayMode.LeftCompact
+            : NavigationViewPaneDisplayMode.Left;
+    }
+
+    private void Sidebar_ItemInvoked(NavigationView sender, NavigationViewItemInvokedEventArgs args)
+    {
+        if (_state.ActiveSurfaceId is not { Length: > 0 } surfaceId
+            || args.InvokedItemContainer?.Tag is not string { Length: > 0 } interactionId)
+        {
+            return;
+        }
+        DispatchSurfaceEvent(
+            surfaceId,
+            PresentationEvents.ActionActivated(surfaceId, interactionId));
     }
 
     private void RenderContextBar()
@@ -184,9 +229,9 @@ public sealed partial class PresentationHost : UserControl
     }
 
     /// <summary>
-    /// Core presents the navigation palette as an overlay; until now this
-    /// shell tracked it in state and drew nothing, so the Navigate button
-    /// opened a panel nobody could see.
+    /// Navigation now renders persistently in <see cref="Sidebar"/>
+    /// (see D4 in the cross-frontend design review), so the scrim only
+    /// ever needs to carry the action menu.
     /// </summary>
     private void RenderOverlay()
     {
@@ -195,7 +240,9 @@ public sealed partial class PresentationHost : UserControl
             || !presented.TryGetProperty("surface_id", out JsonElement surfaceIdValue)
             || surfaceIdValue.GetString() is not { Length: > 0 } surfaceId
             || !presented.TryGetProperty("overlay", out JsonElement overlay)
-            || overlay.ValueKind != JsonValueKind.Object)
+            || overlay.ValueKind != JsonValueKind.Object
+            || !overlay.TryGetProperty("kind", out JsonElement overlayKind)
+            || overlayKind.GetString() != "action_menu")
         {
             OverlayScrim.Visibility = Visibility.Collapsed;
             _overlaySurfaceId = "";
