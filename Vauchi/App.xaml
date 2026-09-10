@@ -10,6 +10,14 @@
                 <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
             </ResourceDictionary.MergedDictionaries>
 
+            <!-- Brand fonts (OFL-1.1) — vendored to Assets/Fonts, see REUSE.toml.
+                 Vauchi.CoreUI.BrandFonts carries the matching source strings for
+                 the code-built TextBlocks in PresentationSurfaceFields, which
+                 cannot bind to a StaticResource. -->
+            <FontFamily x:Key="BrandDisplayFont">ms-appx:///Assets/Fonts/BricolageGrotesque[opsz,wdth,wght].ttf#Bricolage Grotesque</FontFamily>
+            <FontFamily x:Key="BrandBodyFont">ms-appx:///Assets/Fonts/HankenGrotesk[wght].ttf#Hanken Grotesk</FontFamily>
+            <FontFamily x:Key="BrandMonoFont">ms-appx:///Assets/Fonts/JetBrainsMono[wght].ttf#JetBrains Mono</FontFamily>
+
             <Style x:Key="DestructiveButtonStyle" TargetType="Button">
                 <Setter Property="Foreground" Value="#F44336" />
             </Style>

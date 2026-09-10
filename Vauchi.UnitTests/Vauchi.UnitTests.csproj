@@ -42,6 +42,7 @@
     <Compile Include="..\Vauchi\Services\DirectSendService.cs" Link="Linked\DirectSendService.cs" />
     <Compile Include="..\Vauchi\Services\Localizer.cs" Link="Linked\Localizer.cs" />
     <Compile Include="..\Vauchi\Services\ScreenCaptureProtection.cs" Link="Linked\ScreenCaptureProtection.cs" />
+    <Compile Include="..\Vauchi\CoreUI\BrandFonts.cs" Link="Linked\BrandFonts.cs" />
     <Compile Include="..\Vauchi\CoreUI\PresentationEvents.cs" Link="Linked\PresentationEvents.cs" />
     <Compile Include="..\Vauchi\CoreUI\PresentationHost.xaml.cs" Link="Linked\PresentationHost.xaml.cs" />
     <Compile Include="..\Vauchi\CoreUI\PresentationHostEffects.cs" Link="Linked\PresentationHostEffects.cs" />

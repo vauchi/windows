@@ -26,9 +26,10 @@ public sealed partial class PresentationSurface
                 "caption" => 12,
                 _ => 14,
             },
-            FontFamily = style == "monospace"
-                ? new Microsoft.UI.Xaml.Media.FontFamily("Consolas")
-                : null,
+            FontFamily = new Microsoft.UI.Xaml.Media.FontFamily(BrandFonts.SourceForStyle(style)),
+            FontWeight = style == "heading"
+                ? Microsoft.UI.Text.FontWeights.Bold
+                : Microsoft.UI.Text.FontWeights.Normal,
         };
         ApplyAccessibility(text, payload);
         return text;
