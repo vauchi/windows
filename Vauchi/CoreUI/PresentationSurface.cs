@@ -110,14 +110,35 @@ public sealed partial class PresentationSurface : UserControl
             MinHeight = _minimumTargetSize,
             HorizontalAlignment = HorizontalAlignment.Stretch,
         };
-        if (String(action, "tone") == "destructive")
-            button.Foreground = new SolidColorBrush(ThemeColors.Destructive);
+        ApplyToneStyle(button, ActionToneStyle.From(String(action, "tone")));
         AutomationProperties.SetAutomationId(button, interactionId);
         AutomationProperties.SetName(
             button,
             String(action, "accessibility_label", String(action, "label")));
         button.Click += (_, _) => EmitAction(interactionId);
         return button;
+    }
+
+    private static void ApplyToneStyle(Button button, ActionTone tone)
+    {
+        switch (tone)
+        {
+            case ActionTone.Destructive:
+                button.Foreground = new SolidColorBrush(ThemeColors.Destructive);
+                break;
+            case ActionTone.Serious:
+                // Serious (e.g. Recovery) is consequential but not
+                // destructive: an outline in the warning colour reads as
+                // "pay attention" without borrowing destructive's alarm
+                // red or a filled treatment neither tone earns.
+                button.Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent);
+                button.BorderBrush = new SolidColorBrush(ThemeColors.Warning);
+                button.BorderThickness = new Thickness(2);
+                button.Foreground = new SolidColorBrush(ThemeColors.Warning);
+                break;
+            case ActionTone.Standard:
+                break;
+        }
     }
 
     private void EmitAction(string interactionId)
