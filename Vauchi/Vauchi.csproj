@@ -24,6 +24,11 @@
   <!-- Design tokens — vendored from themes/generated/Tokens.cs
        Regenerate: cp themes/generated/Tokens.cs windows/Vauchi/CoreUI/Tokens.cs
        File is auto-included by SDK default globbing (no explicit Compile needed) -->
+  <!-- Brand font files (OFL-1.1) — vendored verbatim from themes/fonts,
+       see REUSE.toml for per-family copyright -->
+  <ItemGroup>
+    <Content Include="Assets\Fonts\*.ttf" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
   <!-- CABI native library — copied to output when present -->
   <ItemGroup>
     <None Include="$(SolutionDir)cabi\vauchi_cabi.dll"
