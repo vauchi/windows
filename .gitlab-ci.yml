@@ -294,20 +294,31 @@ test:snapshots:
     VRT_PLATFORM: windows
     VRT_SCREENSHOT_DIR: tests/snapshots/actual
   script:
-    # The .NET-Core MSBuild that `dotnet build`/`dotnet publish` run cannot
-    # execute the App SDK's self-contained copy step (a CodeTaskFactory
-    # task), so Microsoft.WindowsAppRuntime.dll never reached the output
-    # and every launch died in the type initializer (pipelines 2841331783
-    # and 2841435588, the second one listing zero runtime files). Full
-    # MSBuild from the Visual Studio Build Tools on the runner does run it.
+    # The .NET-Core MSBuild behind `dotnet build`/`dotnet publish` skips the
+    # App SDK's self-contained copy step, and the SaaS Windows image has no
+    # Visual Studio MSBuild (pipelines 2841435588 and 2841492150). Do what
+    # that step does: unpack the framework package the NuGet cache already
+    # holds next to the executable. If no package is found, install the
+    # runtime on the machine instead, which framework-dependent apps accept.
+    - dotnet publish Vauchi/Vauchi.csproj -c Debug -r win-x64 --self-contained -p:Platform=x64 -p:EnableCoreMrtTooling=false -p:AppxGeneratePriEnabled=false -o build/snapshot-app
     - |
-      $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
-      $msbuild = & $vswhere -latest -requires Microsoft.Component.MSBuild -find 'MSBuild\**\Bin\MSBuild.exe' | Select-Object -First 1
-      if (-not $msbuild) { $msbuild = 'msbuild' }
-      Write-Host "[snapshots] MSBuild: $msbuild"
-      $outDir = Join-Path $env:CI_PROJECT_DIR 'build\snapshot-app\'
-      & $msbuild Vauchi/Vauchi.csproj /restore /p:Configuration=Debug /p:Platform=x64 /p:RuntimeIdentifier=win-x64 /p:WindowsAppSDKSelfContained=true /p:EnableCoreMrtTooling=false /p:AppxGeneratePriEnabled=false "/p:OutDir=$outDir" /v:minimal
-      if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      $outDir = Join-Path $env:CI_PROJECT_DIR 'build\snapshot-app'
+      $packages = Join-Path $env:USERPROFILE '.nuget\packages\microsoft.windowsappsdk'
+      $msix = Get-ChildItem -Path $packages -Recurse -Filter 'Microsoft.WindowsAppRuntime.*.msix' -ErrorAction SilentlyContinue |
+        Where-Object { $_.FullName -match 'win10-x64' } |
+        Sort-Object FullName -Descending | Select-Object -First 1
+      if ($msix) {
+        Write-Host "[snapshots] Unpacking framework package $($msix.FullName)"
+        $zip = Join-Path $env:TEMP 'windowsappruntime.zip'
+        Copy-Item $msix.FullName $zip -Force
+        Expand-Archive -Path $zip -DestinationPath $outDir -Force
+      } else {
+        Write-Host "[snapshots] No framework package in $packages; installing the Windows App Runtime"
+        Invoke-WebRequest -Uri 'https://aka.ms/windowsappsdk/1.7/latest/windowsappruntimeinstall-x64.exe' -OutFile windowsappruntimeinstall-x64.exe
+        Start-Process -FilePath .\windowsappruntimeinstall-x64.exe -ArgumentList '--quiet', '--force' -Wait
+      }
+      Write-Host "[snapshots] App SDK runtime files next to the app:"
+      Get-ChildItem $outDir -Filter 'Microsoft.WindowsAppRuntime*.dll' | ForEach-Object { Write-Host "  $($_.Name)" }
     - Copy-Item cabi/vauchi_cabi.dll -Destination build/snapshot-app -Force
     # The App SDK runtime links the Visual C++ runtime, which the SaaS
     # Windows image does not ship as a system library; without it the
