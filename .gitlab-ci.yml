@@ -322,19 +322,21 @@ test:snapshots:
       Write-Host "[snapshots] App SDK runtime files next to the app:"
       Get-ChildItem $outDir -Filter 'Microsoft.WindowsAppRuntime*.dll' | ForEach-Object { Write-Host "  $($_.Name)" }
     - Copy-Item cabi/vauchi_cabi.dll -Destination build/snapshot-app -Force
-    # The App SDK runtime links the Visual C++ runtime, which the SaaS
-    # Windows image does not ship as a system library; without it the
-    # loader reports the App SDK DLL itself as missing (pipeline
-    # 2841382842). Name what is present, then install the redistributable.
+    # Microsoft.WindowsAppRuntime.dll links the whole Visual C++ runtime
+    # (msvcp140, vcruntime140, vcruntime140_1); with only vcruntime140 on
+    # the SaaS image the loader still reports the App SDK DLL as missing
+    # (pipeline 2841637078). Install the redistributable every time and
+    # show what the app directory and System32 hold before launching.
     - |
-      Write-Host "[snapshots] App SDK runtime files in the publish output:"
-      Get-ChildItem build/snapshot-app -Filter 'Microsoft.WindowsAppRuntime*.dll' | ForEach-Object { Write-Host "  $($_.Name)" }
-      Write-Host "[snapshots] vcruntime140.dll in System32: $(Test-Path 'C:\Windows\System32\vcruntime140.dll')"
-      if (-not (Test-Path 'C:\Windows\System32\vcruntime140.dll')) {
-        Invoke-WebRequest -Uri 'https://aka.ms/vs/17/release/vc_redist.x64.exe' -OutFile vc_redist.x64.exe
-        Start-Process -FilePath .\vc_redist.x64.exe -ArgumentList '/install', '/quiet', '/norestart' -Wait
-        Write-Host "[snapshots] vcruntime140.dll after install: $(Test-Path 'C:\Windows\System32\vcruntime140.dll')"
-      }
+      $crt = @('msvcp140.dll', 'vcruntime140.dll', 'vcruntime140_1.dll')
+      Write-Host "[snapshots] Visual C++ runtime in System32 before install: $(($crt | ForEach-Object { "$_=$(Test-Path (Join-Path 'C:\Windows\System32' $_))" }) -join ' ')"
+      Invoke-WebRequest -Uri 'https://aka.ms/vs/17/release/vc_redist.x64.exe' -OutFile vc_redist.x64.exe
+      Start-Process -FilePath .\vc_redist.x64.exe -ArgumentList '/install', '/quiet', '/norestart' -Wait
+      Write-Host "[snapshots] Visual C++ runtime in System32 after install: $(($crt | ForEach-Object { "$_=$(Test-Path (Join-Path 'C:\Windows\System32' $_))" }) -join ' ')"
+      $outDir = Join-Path $env:CI_PROJECT_DIR 'build\snapshot-app'
+      Write-Host "[snapshots] $((Get-ChildItem $outDir -Filter '*.dll').Count) DLLs next to the app; App SDK ones:"
+      Get-ChildItem $outDir -Filter 'Microsoft.*.dll' | ForEach-Object { Write-Host "  $($_.Name)" }
+      Write-Host "[snapshots] manifest next to the app: $(Test-Path (Join-Path $outDir 'Vauchi.exe.manifest'))"
     - powershell -ExecutionPolicy Bypass -File tests/capture-snapshots.ps1 -AppPath build/snapshot-app/Vauchi.exe
   after_script:
     - !reference [.vrt-upload-script, script]
