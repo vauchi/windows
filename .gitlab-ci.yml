@@ -307,8 +307,10 @@ test:snapshots:
       - tests/snapshots/actual/
     expire_in: 7 days
   tags: [saas-windows-medium-amd64]
-  when: manual
   allow_failure: true
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
 # Record new baselines — manual job, commits via PROJECT_ACCESS_TOKEN.
 test:snapshots:record:
