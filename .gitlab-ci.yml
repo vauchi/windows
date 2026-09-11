@@ -294,12 +294,20 @@ test:snapshots:
     VRT_PLATFORM: windows
     VRT_SCREENSHOT_DIR: tests/snapshots/actual
   script:
-    # `dotnet build` leaves Microsoft.WindowsAppRuntime.dll out of an
-    # unpackaged self-contained Debug output, so the launched app died with
-    # DllNotFoundException before its window showed (pipeline 2841331783).
-    # Publishing self-contained lays the Windows App SDK runtime next to
-    # the executable, which is what the app needs to run without an MSIX.
-    - dotnet publish Vauchi/Vauchi.csproj -c Debug -r win-x64 --self-contained -p:Platform=x64 -p:EnableCoreMrtTooling=false -p:AppxGeneratePriEnabled=false -o build/snapshot-app
+    # The .NET-Core MSBuild that `dotnet build`/`dotnet publish` run cannot
+    # execute the App SDK's self-contained copy step (a CodeTaskFactory
+    # task), so Microsoft.WindowsAppRuntime.dll never reached the output
+    # and every launch died in the type initializer (pipelines 2841331783
+    # and 2841435588, the second one listing zero runtime files). Full
+    # MSBuild from the Visual Studio Build Tools on the runner does run it.
+    - |
+      $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
+      $msbuild = & $vswhere -latest -requires Microsoft.Component.MSBuild -find 'MSBuild\**\Bin\MSBuild.exe' | Select-Object -First 1
+      if (-not $msbuild) { $msbuild = 'msbuild' }
+      Write-Host "[snapshots] MSBuild: $msbuild"
+      $outDir = Join-Path $env:CI_PROJECT_DIR 'build\snapshot-app\'
+      & $msbuild Vauchi/Vauchi.csproj /restore /p:Configuration=Debug /p:Platform=x64 /p:RuntimeIdentifier=win-x64 /p:WindowsAppSDKSelfContained=true /p:EnableCoreMrtTooling=false /p:AppxGeneratePriEnabled=false "/p:OutDir=$outDir" /v:minimal
+      if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
     - Copy-Item cabi/vauchi_cabi.dll -Destination build/snapshot-app -Force
     # The App SDK runtime links the Visual C++ runtime, which the SaaS
     # Windows image does not ship as a system library; without it the
