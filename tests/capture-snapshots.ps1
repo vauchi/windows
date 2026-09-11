@@ -314,11 +314,26 @@ function Start-VauchiWindow {
             Write-Host "[snapshots] Diagnostics - processes named ${appName}:"
             Get-Process -Name $appName -ErrorAction SilentlyContinue |
                 Format-Table Id, ProcessName, MainWindowTitle, HasExited -AutoSize | Out-String | Write-Host
+            $proc.Refresh()
+            $exitInfo = if ($proc.HasExited) { "exit code $($proc.ExitCode)" } else { "still running" }
+            Write-Host "[snapshots] Diagnostics - launched process: $exitInfo"
             Write-Host "[snapshots] Diagnostics - all visible top-level windows:"
             [TopLevelWindows]::DumpVisibleWindows() | Write-Host
+            # A WinUI app that dies before its window shows leaves the reason
+            # only in the Application event log (.NET Runtime / Application
+            # Error / Windows Error Reporting entries).
+            Write-Host "[snapshots] Diagnostics - Application event log entries mentioning ${appName}:"
+            try {
+                Get-WinEvent -FilterHashtable @{ LogName = "Application"; StartTime = (Get-Date).AddMinutes(-5) } -ErrorAction Stop |
+                    Where-Object { $_.Message -match $appName } |
+                    Select-Object -First 5 |
+                    ForEach-Object { Write-Host "  [$($_.ProviderName)] $($_.Message)" }
+            } catch {
+                Write-Host "  (no event log entries readable: $_)"
+            }
             if (-not $proc.HasExited) { $proc.Kill() }
-            Write-Error "No visible top-level window for process '$appName' after ${retry} retries."
-            exit 1
+            Write-Warning "No visible top-level window for process '$appName' after ${retry} retries."
+            return [IntPtr]::Zero
         }
         Write-Host "[snapshots] Found app window via EnumWindows (hwnd=$hwnd) after $retry retries"
     }
@@ -379,7 +394,13 @@ function Save-Screen {
 
 # -- Phase 1: onboarding flow (no identity yet on a fresh runner) --
 $hwnd = Start-VauchiWindow @()
-$windowElement = [System.Windows.Automation.AutomationElement]::FromHandle($hwnd)
+$windowElement = $null
+if ($hwnd -ne [IntPtr]::Zero) {
+    $windowElement = [System.Windows.Automation.AutomationElement]::FromHandle($hwnd)
+} else {
+    Write-Warning "[snapshots] Skipping the onboarding flow: the app showed no window"
+    $OnboardingMaxSteps = 0
+}
 for ($step = 1; $step -le $OnboardingMaxSteps; $step++) {
     Save-Screen -Hwnd $hwnd -Name ("onboarding-{0:d2}" -f $step)
     if ($null -ne (Find-Named -Window $windowElement -Name "Contacts")) {
@@ -406,6 +427,10 @@ Stop-VauchiApp
 
 # -- Phase 2: every navigation destination on a seeded identity --
 $hwnd = Start-VauchiWindow @("--reset-for-testing")
+if ($hwnd -eq [IntPtr]::Zero) {
+    Write-Error "The app showed no window with --reset-for-testing either; nothing to capture."
+    exit 1
+}
 $windowElement = [System.Windows.Automation.AutomationElement]::FromHandle($hwnd)
 Save-Screen -Hwnd $hwnd -Name "home"
 foreach ($screen in $Screens) {
