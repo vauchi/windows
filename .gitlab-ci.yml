@@ -304,8 +304,10 @@ test:snapshots:
     - |
       $outDir = Join-Path $env:CI_PROJECT_DIR 'build\snapshot-app'
       $packages = Join-Path $env:USERPROFILE '.nuget\packages\microsoft.windowsappsdk'
+      # The framework package is Microsoft.WindowsAppRuntime.<major>.<minor>.msix;
+      # the Singleton, Main and DDLM packages beside it hold no runtime DLLs.
       $msix = Get-ChildItem -Path $packages -Recurse -Filter 'Microsoft.WindowsAppRuntime.*.msix' -ErrorAction SilentlyContinue |
-        Where-Object { $_.FullName -match 'win10-x64' } |
+        Where-Object { $_.FullName -match 'win10-x64' -and $_.Name -match '^Microsoft\.WindowsAppRuntime\.[0-9]+\.[0-9]+\.msix$' } |
         Sort-Object FullName -Descending | Select-Object -First 1
       if ($msix) {
         Write-Host "[snapshots] Unpacking framework package $($msix.FullName)"
