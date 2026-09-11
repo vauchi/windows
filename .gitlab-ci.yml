@@ -301,6 +301,19 @@ test:snapshots:
     # the executable, which is what the app needs to run without an MSIX.
     - dotnet publish Vauchi/Vauchi.csproj -c Debug -r win-x64 --self-contained -p:Platform=x64 -p:EnableCoreMrtTooling=false -p:AppxGeneratePriEnabled=false -o build/snapshot-app
     - Copy-Item cabi/vauchi_cabi.dll -Destination build/snapshot-app -Force
+    # The App SDK runtime links the Visual C++ runtime, which the SaaS
+    # Windows image does not ship as a system library; without it the
+    # loader reports the App SDK DLL itself as missing (pipeline
+    # 2841382842). Name what is present, then install the redistributable.
+    - |
+      Write-Host "[snapshots] App SDK runtime files in the publish output:"
+      Get-ChildItem build/snapshot-app -Filter 'Microsoft.WindowsAppRuntime*.dll' | ForEach-Object { Write-Host "  $($_.Name)" }
+      Write-Host "[snapshots] vcruntime140.dll in System32: $(Test-Path 'C:\Windows\System32\vcruntime140.dll')"
+      if (-not (Test-Path 'C:\Windows\System32\vcruntime140.dll')) {
+        Invoke-WebRequest -Uri 'https://aka.ms/vs/17/release/vc_redist.x64.exe' -OutFile vc_redist.x64.exe
+        Start-Process -FilePath .\vc_redist.x64.exe -ArgumentList '/install', '/quiet', '/norestart' -Wait
+        Write-Host "[snapshots] vcruntime140.dll after install: $(Test-Path 'C:\Windows\System32\vcruntime140.dll')"
+      }
     - powershell -ExecutionPolicy Bypass -File tests/capture-snapshots.ps1 -AppPath build/snapshot-app/Vauchi.exe
   after_script:
     - !reference [.vrt-upload-script, script]
