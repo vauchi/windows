@@ -6,8 +6,10 @@
     Capture screenshots of each Vauchi screen for visual regression testing.
 
 .DESCRIPTION
-    Launches the app with --reset-for-testing (Debug build), navigates through
-    each screen via UI Automation, and captures window screenshots as PNG images.
+    Launches the app twice (Debug build). The first launch has no identity, so
+    it walks Core's onboarding flow step by step; the second launch uses
+    --reset-for-testing and visits every navigation destination. Each screen
+    is captured as a PNG via UI Automation.
 
     Requires: Debug build with vauchi_cabi.dll in the output directory.
 
@@ -91,15 +93,22 @@ public class Win32Window {
 '@
 try { Add-Type -TypeDefinition $win32Src } catch {}
 
-# -- Screen list (matches NavTabs in MainWindow.xaml.cs) --
+# -- Screen list --
 
+# Core's primary destinations (`primary_destinations` in vauchi-app), as the
+# persistent NavigationView and the navigation overlay label them.
 $Screens = @(
-    @{ Name = "my_info";  Label = "My Card" },
     @{ Name = "contacts"; Label = "Contacts" },
+    @{ Name = "my_card";  Label = "My Card" },
     @{ Name = "exchange"; Label = "Exchange" },
-    @{ Name = "groups";   Label = "Groups" },
-    @{ Name = "settings"; Label = "More" }
+    @{ Name = "devices";  Label = "Devices" },
+    @{ Name = "settings"; Label = "Settings" }
 )
+# Primary actions Core puts on the onboarding surfaces, in the order the
+# flow reaches them. Any of them advances the walk; the walk ends when the
+# destinations appear.
+$OnboardingActions = @("Create new identity", "Continue", "Start using the app")
+$OnboardingMaxSteps = 8
 
 # -- Helper: capture window screenshot --
 
@@ -188,51 +197,9 @@ function Navigate-To {
 }
 
 # -- Main --
-
-# Persistent shell runner: a prior run's app instance may still be
-# alive (earlier cleanup killed only the bootstrap). A leftover
-# instance singleton-redirects the new launch and no window appears.
+# -- App lifecycle --
 $appName = [System.IO.Path]::GetFileNameWithoutExtension($AppPath)
-$leftover = Get-Process -Name $appName -ErrorAction SilentlyContinue
-if ($leftover) {
-    Write-Host "[snapshots] Killing $($leftover.Count) leftover '$appName' process(es) from a prior run"
-    $leftover | Stop-Process -Force
-    Start-Sleep -Seconds 2
-}
 
-Write-Host "[snapshots] Launching Vauchi with --reset-for-testing..."
-$proc = Start-Process -FilePath $AppPath -ArgumentList "--reset-for-testing" -PassThru
-
-# Wait for window to appear. Capture the handle THE MOMENT it shows:
-# the bootstrap process can exit shortly after, making later
-# MainWindowHandle reads return $null while the HWND itself stays valid.
-$timeout = 30
-$elapsed = 0
-$hwnd = [IntPtr]::Zero
-while ($hwnd -eq [IntPtr]::Zero -and $elapsed -lt $timeout) {
-    Start-Sleep -Seconds 1
-    $elapsed++
-    try {
-        $proc.Refresh()
-        $h = $proc.MainWindowHandle
-        if ($null -ne $h -and $h -ne [IntPtr]::Zero) { $hwnd = $h }
-    } catch {}
-}
-
-if ($hwnd -eq [IntPtr]::Zero) {
-    Write-Warning "MainWindowHandle not seen within ${timeout}s - trying EnumWindows fallback"
-} else {
-    Write-Host "[snapshots] Window appeared after ${elapsed}s (hwnd=$hwnd)"
-}
-
-# Extra settle time for rendering
-Start-Sleep -Seconds 3
-
-# WinAppSDK apps hand the visible window to a child/relaunched process:
-# the bootstrap $proc can exit after the splash, making MainWindowHandle
-# $null (not IntPtr.Zero) on later reads. Locate the window via Win32
-# EnumWindows by process name instead of trusting the launch handle
-# (see 2026-04-20-windows-test-jobs-broken, CI run 2026-06-11).
 Add-Type @'
 using System;
 using System.Collections.Generic;
@@ -280,84 +247,186 @@ public static class TopLevelWindows {
 }
 '@
 
-if ($hwnd -eq [IntPtr]::Zero) {
-    # Fallback: enumerate visible top-level windows for any process
-    # matching the app exe name. WinUI windows may carry an EMPTY
-    # title, so do not filter on title length.
-    $retry = 0
-    while ($hwnd -eq [IntPtr]::Zero -and $retry -lt 10) {
-        $pids = New-Object 'System.Collections.Generic.HashSet[uint32]'
-        Get-Process -Name $appName -ErrorAction SilentlyContinue |
-            ForEach-Object { [void]$pids.Add([uint32]$_.Id) }
-        if ($pids.Count -gt 0) {
-            $hwnd = [TopLevelWindows]::FindVisibleWindowForPids($pids)
+function Stop-VauchiApp {
+    # Clean up by process name: the launch handle may already have exited
+    # (bootstrap handoff), so the launch $proc alone cannot shut the app down.
+    Get-Process -Name $appName -ErrorAction SilentlyContinue | ForEach-Object {
+        $_.CloseMainWindow() | Out-Null
     }
-    if ($hwnd -eq [IntPtr]::Zero) {
-        Start-Sleep -Milliseconds (200 * [Math]::Pow(2, $retry))
-        $retry++
-    }
-    }
-    if ($null -eq $hwnd -or $hwnd -eq [IntPtr]::Zero) {
-        Write-Host "[snapshots] Diagnostics - processes named ${appName}:"
-        Get-Process -Name $appName -ErrorAction SilentlyContinue |
-            Format-Table Id, ProcessName, MainWindowTitle, HasExited -AutoSize | Out-String | Write-Host
-        Write-Host "[snapshots] Diagnostics - launched process: exited=$($proc.HasExited) exitcode=$(if ($proc.HasExited) { $proc.ExitCode } else { 'n/a' })"
-        Write-Host "[snapshots] Diagnostics - all visible top-level windows:"
-        [TopLevelWindows]::DumpVisibleWindows() | Write-Host
-        if (-not $proc.HasExited) { $proc.Kill() }
-        Write-Error "No visible top-level window for process '$appName' after ${retry} retries."
-        exit 1
-    }
-    Write-Host "[snapshots] Found app window via EnumWindows (hwnd=$hwnd) after $retry retries"
+    Start-Sleep -Seconds 2
+    Get-Process -Name $appName -ErrorAction SilentlyContinue | Stop-Process -Force
+    Start-Sleep -Seconds 1
 }
 
-# Get automation element for the window
-$windowElement = [System.Windows.Automation.AutomationElement]::FromHandle($hwnd)
+function Start-VauchiWindow {
+    param([string[]]$LaunchArgs)
+    # Persistent shell runner: a prior run's app instance may still be
+    # alive. A leftover instance singleton-redirects the new launch and no
+    # window appears.
+    $leftover = Get-Process -Name $appName -ErrorAction SilentlyContinue
+    if ($leftover) {
+        Write-Host "[snapshots] Killing $($leftover.Count) leftover '$appName' process(es)"
+        $leftover | Stop-Process -Force
+        Start-Sleep -Seconds 2
+    }
+    Write-Host "[snapshots] Launching Vauchi $LaunchArgs..."
+    if ($LaunchArgs.Count -gt 0) {
+        $proc = Start-Process -FilePath $AppPath -ArgumentList $LaunchArgs -PassThru
+    } else {
+        $proc = Start-Process -FilePath $AppPath -PassThru
+    }
+    # Capture the handle THE MOMENT it shows: the bootstrap process can exit
+    # shortly after, making later MainWindowHandle reads return $null while
+    # the HWND itself stays valid.
+    $timeout = 30
+    $elapsed = 0
+    $hwnd = [IntPtr]::Zero
+    while ($hwnd -eq [IntPtr]::Zero -and $elapsed -lt $timeout) {
+        Start-Sleep -Seconds 1
+        $elapsed++
+        try {
+            $proc.Refresh()
+            $h = $proc.MainWindowHandle
+            if ($null -ne $h -and $h -ne [IntPtr]::Zero) { $hwnd = $h }
+        } catch {}
+    }
+    if ($hwnd -ne [IntPtr]::Zero) {
+        Write-Host "[snapshots] Window appeared after ${elapsed}s (hwnd=$hwnd)"
+    } else {
+        # WinAppSDK apps hand the visible window to a child/relaunched
+        # process, so locate it via Win32 EnumWindows by process name
+        # (see 2026-04-20-windows-test-jobs-broken, CI run 2026-06-11).
+        Write-Warning "MainWindowHandle not seen within ${timeout}s - trying EnumWindows fallback"
+        $retry = 0
+        while ($hwnd -eq [IntPtr]::Zero -and $retry -lt 10) {
+            $pids = New-Object 'System.Collections.Generic.HashSet[uint32]'
+            Get-Process -Name $appName -ErrorAction SilentlyContinue |
+                ForEach-Object { [void]$pids.Add([uint32]$_.Id) }
+            if ($pids.Count -gt 0) {
+                $hwnd = [TopLevelWindows]::FindVisibleWindowForPids($pids)
+            }
+            if ($hwnd -eq [IntPtr]::Zero) {
+                Start-Sleep -Milliseconds (200 * [Math]::Pow(2, $retry))
+                $retry++
+            }
+        }
+        if ($null -eq $hwnd -or $hwnd -eq [IntPtr]::Zero) {
+            Write-Host "[snapshots] Diagnostics - processes named ${appName}:"
+            Get-Process -Name $appName -ErrorAction SilentlyContinue |
+                Format-Table Id, ProcessName, MainWindowTitle, HasExited -AutoSize | Out-String | Write-Host
+            Write-Host "[snapshots] Diagnostics - all visible top-level windows:"
+            [TopLevelWindows]::DumpVisibleWindows() | Write-Host
+            if (-not $proc.HasExited) { $proc.Kill() }
+            Write-Error "No visible top-level window for process '$appName' after ${retry} retries."
+            exit 1
+        }
+        Write-Host "[snapshots] Found app window via EnumWindows (hwnd=$hwnd) after $retry retries"
+    }
+    # Extra settle time for rendering
+    Start-Sleep -Seconds 3
+    return $hwnd
+}
+
+function Find-Named {
+    param(
+        [System.Windows.Automation.AutomationElement]$Window,
+        [string]$Name
+    )
+    $condition = New-Object System.Windows.Automation.PropertyCondition(
+        [System.Windows.Automation.AutomationElement]::NameProperty, $Name)
+    return $Window.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $condition)
+}
+
+function Set-FirstEmptyEdit {
+    # Types into the first empty text box on the surface (the display-name
+    # step of onboarding), via ValuePattern so no keyboard focus is needed.
+    param(
+        [System.Windows.Automation.AutomationElement]$Window,
+        [string]$Text
+    )
+    $condition = New-Object System.Windows.Automation.PropertyCondition(
+        [System.Windows.Automation.AutomationElement]::ControlTypeProperty,
+        [System.Windows.Automation.ControlType]::Edit)
+    $edits = $Window.FindAll([System.Windows.Automation.TreeScope]::Descendants, $condition)
+    foreach ($edit in $edits) {
+        $valuePattern = $null
+        try {
+            $valuePattern = $edit.GetCurrentPattern(
+                [System.Windows.Automation.ValuePattern]::Pattern)
+        } catch {}
+        if ($null -ne $valuePattern -and -not $valuePattern.Current.Value) {
+            $valuePattern.SetValue($Text)
+            return $true
+        }
+    }
+    return $false
+}
 
 $captured = 0
 $failed = 0
 
+function Save-Screen {
+    param([IntPtr]$Hwnd, [string]$Name)
+    $outPath = Join-Path $OutputDir "${Name}.png"
+    if (Capture-Window -Hwnd $Hwnd -FilePath $outPath) {
+        Write-Host "[snapshots]   Captured: $outPath"
+        $script:captured++
+    } else {
+        Write-Warning "[snapshots]   FAILED: $Name"
+        $script:failed++
+    }
+}
+
+# -- Phase 1: onboarding flow (no identity yet on a fresh runner) --
+$hwnd = Start-VauchiWindow @()
+$windowElement = [System.Windows.Automation.AutomationElement]::FromHandle($hwnd)
+for ($step = 1; $step -le $OnboardingMaxSteps; $step++) {
+    Save-Screen -Hwnd $hwnd -Name ("onboarding-{0:d2}" -f $step)
+    if ($null -ne (Find-Named -Window $windowElement -Name "Contacts")) {
+        Write-Host "[snapshots] Destinations visible after $step onboarding step(s)"
+        break
+    }
+    if (Set-FirstEmptyEdit -Window $windowElement -Text "Test User") {
+        Start-Sleep -Milliseconds 500
+    }
+    $advanced = $false
+    foreach ($action in $OnboardingActions) {
+        if ($null -ne (Find-Named -Window $windowElement -Name $action)) {
+            $advanced = Navigate-To -Window $windowElement -Label $action
+            if ($advanced) { break }
+        }
+    }
+    if (-not $advanced) {
+        Write-Warning "[snapshots] No onboarding action found at step $step - stopping the flow"
+        break
+    }
+    Start-Sleep -Seconds 2
+}
+Stop-VauchiApp
+
+# -- Phase 2: every navigation destination on a seeded identity --
+$hwnd = Start-VauchiWindow @("--reset-for-testing")
+$windowElement = [System.Windows.Automation.AutomationElement]::FromHandle($hwnd)
+Save-Screen -Hwnd $hwnd -Name "home"
 foreach ($screen in $Screens) {
     $name = $screen.Name
     $label = $screen.Label
-
     Write-Host "[snapshots] Navigating to: $label"
-
-    if ($name -ne "my_info") {
-        $navOk = Navigate-To -Window $windowElement -Label $label
-        if (-not $navOk) {
-            Write-Warning "[snapshots] Failed to navigate to $label - capturing anyway"
-        }
-        Start-Sleep -Seconds 2
+    $navOk = Navigate-To -Window $windowElement -Label $label
+    if (-not $navOk) {
+        Write-Warning "[snapshots] Failed to navigate to $label - capturing anyway"
     }
-
-    $outPath = Join-Path $OutputDir "${name}.png"
-    $ok = Capture-Window -Hwnd $hwnd -FilePath $outPath
-
-    if ($ok) {
-        Write-Host "[snapshots]   Captured: $outPath"
-        $captured++
-    }
-    else {
-        Write-Warning "[snapshots]   FAILED: $name"
-        $failed++
-    }
+    Start-Sleep -Seconds 2
+    Save-Screen -Hwnd $hwnd -Name $name
 }
-
-# Clean up by process name: the launch handle may already have exited
-# (bootstrap handoff), so $proc alone cannot shut the app down.
 Write-Host "[snapshots] Shutting down app..."
-Get-Process -Name $appName -ErrorAction SilentlyContinue | ForEach-Object {
-    $_.CloseMainWindow() | Out-Null
-}
-Start-Sleep -Seconds 2
-Get-Process -Name $appName -ErrorAction SilentlyContinue | Stop-Process -Force
+Stop-VauchiApp
 
 # Summary
 Write-Host ""
 Write-Host "[snapshots] Done: $captured captured, $failed failed"
 Write-Host "[snapshots] Output: $OutputDir"
-
-if ($failed -gt 0) {
+if ($captured -eq 0) {
+    Write-Error "No screenshots captured."
     exit 1
 }

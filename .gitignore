@@ -66,3 +66,7 @@ service-account*.json
 ## CABI native library (downloaded at build time)
 cabi/
 test-results/
+
+# Screenshot captures and diffs are CI artifacts, never committed
+tests/snapshots/actual/
+tests/snapshots/diff/
