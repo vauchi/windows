@@ -60,5 +60,10 @@
     <Compile Include="..\Vauchi\CoreUI\ActionToneStyle.cs" Link="Linked\ActionToneStyle.cs" />
     <Compile Include="..\Vauchi\CoreUI\TargetSize.cs" Link="Linked\TargetSize.cs" />
     <Compile Include="..\Vauchi\CoreUI\FocusVisualStyle.cs" Link="Linked\FocusVisualStyle.cs" />
+    <Compile Include="..\Vauchi\CoreUI\ScreenCatalog.cs" Link="Linked\ScreenCatalog.cs" />
+  </ItemGroup>
+  <!-- Screen-catalog batches copied from Core's presentation_contract_v1.json -->
+  <ItemGroup>
+    <Content Include="Fixtures\*.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>
