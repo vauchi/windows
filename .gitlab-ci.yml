@@ -125,6 +125,48 @@ default:
       }
       Write-Host "SHA-256 verified: $actual"
 
+# T2.5 — proves pam before any real job is routed to it (runbook §7.2).
+#
+# Pinned to the IDENTITY tag, never the capability tags. `[windows,
+# dotnet]` asks GitLab for *some* Windows runner, so a probe using those
+# can pass by reaching a different machine while pam is wedged — the
+# mirror image of why pam deliberately carries no `self-hosted` tag.
+# Same rationale as `canary-allyson-*` in `_private/.gitlab-ci.yml`.
+#
+# Checks the §1 toolchain preconditions rather than just "a shell ran".
+# The MakeAppx path is literal and hardcoded in `package:msix`; the
+# runbook notes that a missing SDK there "fails only at tag time — the
+# worst moment to discover it". This surfaces it on demand instead.
+#
+# Manual and allow_failure on purpose: pam has no health-check timer
+# (runbook §9), so this doubles as the on-demand liveness probe, and a
+# wedged or offline pam must not block unrelated merge requests.
+check:pam-toolchain:
+  stage: .pre
+  needs: []
+  tags: [canary-pam-shell]
+  when: manual
+  allow_failure: true
+  timeout: 5 minutes
+  variables:
+    GIT_STRATEGY: none
+  script:
+    - 'Write-Host "probe on $env:COMPUTERNAME at $(Get-Date -Format o)"'
+    - dotnet --list-sdks
+    - pwsh -v
+    - git --version
+    - |
+      $makeappx = "${env:ProgramFiles(x86)}\Windows Kits\10\bin\10.0.22621.0\x64\MakeAppx.exe"
+      if (-not (Test-Path $makeappx)) {
+        Write-Host "MISSING: $makeappx"
+        Write-Host "package:msix hardcodes this exact path and would fail at tag time."
+        exit 1
+      }
+      Write-Host "MakeAppx present: $makeappx"
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
 build:app:
   stage: build
   needs: []
@@ -171,7 +213,7 @@ build:app:
       - Vauchi/bin/x64/Release/
       - cabi/vauchi_cabi.dll
       - metrics.json
-  tags: [saas-windows-medium-amd64]
+  tags: [windows, dotnet]
 
 test:unit:
   stage: test
@@ -185,7 +227,7 @@ test:unit:
     when: always
     reports:
       junit: test-results/unit.xml
-  tags: [saas-windows-medium-amd64]
+  tags: [windows, dotnet]
 
 # Coverage: dotnet test with Coverlet collector (main merges only).
 # Produces Cobertura XML for GitLab MR annotations and pushes metrics
@@ -243,7 +285,7 @@ coverage:unit:
     paths:
       - cobertura.xml
     expire_in: 1 week
-  tags: [saas-windows-medium-amd64]
+  tags: [windows, dotnet]
   rules:
     - if: $CI_PIPELINE_SOURCE == "pipeline" || $CI_PIPELINE_SOURCE == "trigger" || $CI_PIPELINE_SOURCE == "api"
       when: never
