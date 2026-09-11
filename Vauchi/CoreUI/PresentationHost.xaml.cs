@@ -17,7 +17,7 @@ namespace Vauchi.CoreUI;
 
 public sealed partial class PresentationHost : UserControl
 {
-    private readonly PresentationState _state = new();
+    private PresentationState _state = new();
     private IntPtr _appHandle;
     private bool _reducedMotion;
     private int _reportedWidth = -1;
@@ -69,6 +69,17 @@ public sealed partial class PresentationHost : UserControl
 
     public void DispatchPlatformEvent(string eventJson) =>
         Dispatch(eventJson);
+
+    /// <summary>
+    /// Shows an already-reduced state without a Core handle, for the
+    /// screen-catalog renderer. Effects are not executed: nothing here
+    /// can answer them, and the catalog is a set of stills.
+    /// </summary>
+    public void Present(PresentationState state)
+    {
+        _state = state;
+        RenderPresentation();
+    }
 
     public void RequestBack()
     {

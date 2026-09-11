@@ -20,9 +20,20 @@ public sealed partial class MainWindow : Window
     private DispatcherTimer? _wakeupTimer;
 
     public MainWindow()
+        : this(initializeCore: true)
+    {
+    }
+
+    /// <summary>
+    /// The screen-catalog renderer needs the real window chrome but no
+    /// Core engine, identity or capture protection behind it.
+    /// </summary>
+    internal MainWindow(bool initializeCore)
     {
         InitializeComponent();
         Title = Localizer.T("app.name");
+        if (!initializeCore)
+            return;
         ScreenCaptureProtection.Enable(this);
 
         Presentation.NativeEffectReady += ExecuteNativeEffect;
@@ -30,6 +41,8 @@ public sealed partial class MainWindow : Window
         Activated += OnActivated;
         _ = InitializeAsync();
     }
+
+    internal PresentationHost Host => Presentation;
 
     private async System.Threading.Tasks.Task InitializeAsync()
     {

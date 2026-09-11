@@ -5,6 +5,7 @@ using Microsoft.UI.Xaml;
 using System;
 using System.IO;
 using System.Threading;
+using Vauchi.CoreUI;
 using Vauchi.Services;
 
 namespace Vauchi;
@@ -21,6 +22,21 @@ public partial class App : Application
 
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
+        // Before the single-instance gate: a leftover instance on a CI
+        // runner must not turn the catalog run into a silent no-op.
+        if (ScreenCatalog.TryParseLaunchArguments(
+                Environment.GetCommandLineArgs(),
+                out string catalogPath,
+                out string outputDirectory))
+        {
+            Localizer.Init(Path.Combine(AppContext.BaseDirectory, "locales"));
+            var renderWindow = new MainWindow(initializeCore: false);
+            _window = renderWindow;
+            renderWindow.Activate();
+            _ = ScreenCatalogRenderer.RunAsync(renderWindow, catalogPath, outputDirectory);
+            return;
+        }
+
         _singleInstanceMutex = new Mutex(true, @"Global\VauchiDesktopSingleInstance", out bool isNew);
         if (!isNew)
         {
