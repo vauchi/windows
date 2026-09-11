@@ -151,18 +151,74 @@ check:pam-toolchain:
   variables:
     GIT_STRATEGY: none
   script:
-    - 'Write-Host "probe on $env:COMPUTERNAME at $(Get-Date -Format o)"'
-    - dotnet --list-sdks
-    - pwsh -v
-    - git --version
+    # One run reports EVERY gap, not the first. Checking tools one at a
+    # time cost six runs to find two gaps during pam's provisioning:
+    # each failure hid the next. Deliberately plain PowerShell so this
+    # behaves the same under Desktop 5.1 and pwsh 7 — the shell itself is
+    # one of the things being checked.
     - |
+      $missing = @()
+      Write-Host "probe on $env:COMPUTERNAME as $env:USERNAME at $(Get-Date -Format o)"
+      Write-Host "shell: $($PSVersionTable.PSEdition) $($PSVersionTable.PSVersion)"
+      Write-Host "PATH:"
+      $env:PATH -split ';' | Where-Object { $_ } | ForEach-Object { Write-Host "  $_" }
+
+      # A tool can be absent, or present but unreachable on PATH. Those
+      # need different fixes, so report which one it is.
+      function Probe($name, $cmd, $knownPath) {
+        $onPath = Get-Command $cmd -ErrorAction SilentlyContinue
+        if ($onPath) {
+          Write-Host "OK       $name -> $($onPath.Source)"
+          return $null
+        }
+        if ($knownPath -and (Test-Path $knownPath)) {
+          Write-Host "NOT ON PATH  $name exists at $knownPath but is not resolvable"
+          return "$name (installed, not on PATH - add its directory to the MACHINE PATH, then restart the runner task)"
+        }
+        Write-Host "MISSING  $name"
+        return "$name (not installed)"
+      }
+
+      $missing += Probe "dotnet" "dotnet" "C:\Program Files\dotnet\dotnet.exe"
+      $missing += Probe "pwsh"   "pwsh"   "C:\Program Files\PowerShell\7\pwsh.exe"
+      $missing += Probe "git"    "git"    "C:\Program Files\Git\cmd\git.exe"
+
+      # package:msix hardcodes this literal path; the runbook notes a
+      # missing SDK there "fails only at tag time - the worst moment to
+      # discover it".
       $makeappx = "${env:ProgramFiles(x86)}\Windows Kits\10\bin\10.0.22621.0\x64\MakeAppx.exe"
-      if (-not (Test-Path $makeappx)) {
-        Write-Host "MISSING: $makeappx"
-        Write-Host "package:msix hardcodes this exact path and would fail at tag time."
+      if (Test-Path $makeappx) {
+        Write-Host "OK       MakeAppx -> $makeappx"
+      } else {
+        Write-Host "MISSING  MakeAppx at $makeappx"
+        $missing += "Windows SDK 10.0.22621 (MakeAppx.exe) - package:msix would fail at tag time"
+      }
+
+      # .NET 8 specifically: every csproj targets net8.0-windows10.0.22621.0.
+      # A newer SDK alone builds it but cannot run the tests.
+      if (Get-Command dotnet -ErrorAction SilentlyContinue) {
+        $sdks = & dotnet --list-sdks
+        $sdks | ForEach-Object { Write-Host "  sdk: $_" }
+        if (-not ($sdks | Select-String '^8\.')) {
+          $missing += ".NET 8 SDK - every csproj targets net8.0-windows10.0.22621.0"
+        }
+      }
+
+      # @() forces an array: a single result is a scalar in 5.1 and
+      # .Count on it is unreliable.
+      $missing = @($missing | Where-Object { $_ })
+      if ($missing.Count -gt 0) {
+        Write-Host ""
+        Write-Host "=== pam is not ready. $($missing.Count) gap(s): ==="
+        $missing | ForEach-Object { Write-Host "  - $_" }
+        Write-Host ""
+        Write-Host "Provisioning contract: _private/infra/runners/pam-windows-setup.md"
+        Write-Host "Installing a tool does NOT update an already-running runner's PATH;"
+        Write-Host "restart the scheduled task after any install."
         exit 1
       }
-      Write-Host "MakeAppx present: $makeappx"
+      Write-Host ""
+      Write-Host "=== pam has everything the windows jobs need ==="
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
