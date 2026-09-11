@@ -313,7 +313,12 @@ test:snapshots:
         Write-Host "[snapshots] Unpacking framework package $($msix.FullName)"
         $zip = Join-Path $env:TEMP 'windowsappruntime.zip'
         Copy-Item $msix.FullName $zip -Force
-        Expand-Archive -Path $zip -DestinationPath $outDir -Force
+        try {
+          Expand-Archive -Path $zip -DestinationPath $outDir -Force -ErrorAction Stop
+          Write-Host "[snapshots] Unpacked $((Get-ChildItem $outDir -Filter 'Microsoft.*.dll').Count) Microsoft.*.dll files"
+        } catch {
+          Write-Host "[snapshots] Expand-Archive failed: $_"
+        }
       } else {
         Write-Host "[snapshots] No framework package in $packages; installing the Windows App Runtime"
         Invoke-WebRequest -Uri 'https://aka.ms/windowsappsdk/1.7/latest/windowsappruntimeinstall-x64.exe' -OutFile windowsappruntimeinstall-x64.exe
@@ -337,20 +342,20 @@ test:snapshots:
       Write-Host "[snapshots] $((Get-ChildItem $outDir -Filter '*.dll').Count) DLLs next to the app; App SDK ones:"
       Get-ChildItem $outDir -Filter 'Microsoft.*.dll' | ForEach-Object { Write-Host "  $($_.Name)" }
       Write-Host "[snapshots] manifest next to the app: $(Test-Path (Join-Path $outDir 'Vauchi.exe.manifest'))"
-      # Resolve the loader failure to the exact module: LoadLibrary each
-      # import of Microsoft.WindowsAppRuntime.dll (api-set names resolve
-      # only through the loader, so Test-Path on System32 says nothing).
-      Add-Type -Namespace Probe -Name Native -MemberDefinition @'
-      [System.Runtime.InteropServices.DllImport("kernel32.dll", SetLastError = true, CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
-      public static extern System.IntPtr LoadLibraryExW(string path, System.IntPtr file, uint flags);
-      '@
+      # Resolve the loader failure to the exact module: LoadLibrary the DLL
+      # and each of its imports (api-set names resolve only through the
+      # loader). One-line member definition: a PowerShell here-string cannot
+      # close inside an indented YAML block.
+      Add-Type -Namespace Probe -Name Native -MemberDefinition '[System.Runtime.InteropServices.DllImport("kernel32.dll", SetLastError = true, CharSet = System.Runtime.InteropServices.CharSet.Unicode)] public static extern System.IntPtr LoadLibraryExW(string path, System.IntPtr file, uint flags);'
       Write-Host "[snapshots] OS: $([System.Environment]::OSVersion.VersionString)"
+      Get-ChildItem $outDir | Select-Object -First 60 | ForEach-Object { Write-Host "[snapshots]   file: $($_.Name)" }
       $runtime = Join-Path $outDir 'Microsoft.WindowsAppRuntime.dll'
-      $handle = [Probe.Native]::LoadLibraryExW($runtime, [System.IntPtr]::Zero, 0x1100)
+      Write-Host "[snapshots] runtime present: $(Test-Path $runtime)"
+      $handle = [Probe.Native]::LoadLibraryExW($runtime, [System.IntPtr]::Zero, [uint32]0x1100)
       $err = [System.Runtime.InteropServices.Marshal]::GetLastWin32Error()
-      Write-Host "[snapshots] LoadLibraryEx(Microsoft.WindowsAppRuntime.dll, LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR|DEFAULT_DIRS): handle=$handle error=$err"
+      Write-Host "[snapshots] LoadLibraryEx(runtime): handle=$handle error=$err"
       foreach ($dep in @('RoMetadata.dll', 'XmlLite.dll', 'USERENV.dll', 'api-ms-win-appmodel-runtime-l1-1-1.dll', 'api-ms-win-power-setting-l1-1-1.dll', 'api-ms-win-power-base-l1-1-0.dll', 'api-ms-win-ro-typeresolution-l1-1-0.dll', 'api-ms-win-core-winrt-l1-1-0.dll', 'api-ms-win-crt-runtime-l1-1-0.dll')) {
-        $h = [Probe.Native]::LoadLibraryExW($dep, [System.IntPtr]::Zero, 0)
+        $h = [Probe.Native]::LoadLibraryExW($dep, [System.IntPtr]::Zero, [uint32]0)
         $e = [System.Runtime.InteropServices.Marshal]::GetLastWin32Error()
         Write-Host "[snapshots]   $dep handle=$h error=$e"
       }
