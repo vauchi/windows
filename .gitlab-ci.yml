@@ -294,11 +294,14 @@ test:snapshots:
     VRT_PLATFORM: windows
     VRT_SCREENSHOT_DIR: tests/snapshots/actual
   script:
-    - dotnet build Vauchi/Vauchi.csproj -c Debug -p:Platform=x64 -p:EnableCoreMrtTooling=false -p:AppxGeneratePriEnabled=false
-    - |
-      $debugDir = "Vauchi\bin\x64\Debug\net8.0-windows10.0.22621.0\win-x64"
-      Copy-Item cabi/vauchi_cabi.dll -Destination $debugDir -Force
-    - powershell -ExecutionPolicy Bypass -File tests/capture-snapshots.ps1
+    # `dotnet build` leaves Microsoft.WindowsAppRuntime.dll out of an
+    # unpackaged self-contained Debug output, so the launched app died with
+    # DllNotFoundException before its window showed (pipeline 2841331783).
+    # Publishing self-contained lays the Windows App SDK runtime next to
+    # the executable, which is what the app needs to run without an MSIX.
+    - dotnet publish Vauchi/Vauchi.csproj -c Debug -r win-x64 --self-contained -p:Platform=x64 -p:EnableCoreMrtTooling=false -p:AppxGeneratePriEnabled=false -o build/snapshot-app
+    - Copy-Item cabi/vauchi_cabi.dll -Destination build/snapshot-app -Force
+    - powershell -ExecutionPolicy Bypass -File tests/capture-snapshots.ps1 -AppPath build/snapshot-app/Vauchi.exe
   after_script:
     - !reference [.vrt-upload-script, script]
   artifacts:
