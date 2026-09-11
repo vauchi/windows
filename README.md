@@ -31,6 +31,13 @@ dotnet build Vauchi.sln
 dotnet test Vauchi.Tests
 ```
 
+### Screen catalog stills
+
+`Vauchi.exe --render-catalog <catalog.json> <out-dir>` replays Core's
+`screen_catalog_v1.json` through the real renderer and writes
+`<code_id>.png` and `<code_id>.dark.png` per screen at 1440x900, without
+starting the Core engine. CI runs it as `test:screen-catalog`.
+
 ## Architecture
 
 This app implements the core-driven UI contract:
