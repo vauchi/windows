@@ -160,6 +160,21 @@ check:pam-toolchain:
       $missing = @()
       Write-Host "probe on $env:COMPUTERNAME as $env:USERNAME at $(Get-Date -Format o)"
       Write-Host "shell: $($PSVersionTable.PSEdition) $($PSVersionTable.PSVersion)"
+
+      # §0: the three UI jobs drive a real WinUI window, which needs an
+      # interactive session. Session 0 is the service/non-interactive
+      # session and has no desktop — UI automation there does not fail
+      # loudly, it sees an empty desktop or hangs until the job times
+      # out. Running as the right ACCOUNT does not prove this; a service
+      # configured with a user account still lands in session 0.
+      $session = (Get-Process -Id $PID).SessionId
+      if ($session -eq 0) {
+        Write-Host "SESSION 0  no desktop — test:snapshots and test:a11y would hang or capture an empty screen"
+        $uiBlocked = "interactive session (runner is in session 0; see runbook §0, §2, §6)"
+      } else {
+        Write-Host "OK       interactive session $session"
+        $uiBlocked = $null
+      }
       Write-Host "PATH:"
       $env:PATH -split ';' | Where-Object { $_ } | ForEach-Object { Write-Host "  $_" }
 
@@ -187,11 +202,12 @@ check:pam-toolchain:
       # missing SDK there "fails only at tag time - the worst moment to
       # discover it".
       $makeappx = "${env:ProgramFiles(x86)}\Windows Kits\10\bin\10.0.22621.0\x64\MakeAppx.exe"
+      $msixOnly = @()
       if (Test-Path $makeappx) {
         Write-Host "OK       MakeAppx -> $makeappx"
       } else {
         Write-Host "MISSING  MakeAppx at $makeappx"
-        $missing += "Windows SDK 10.0.22621 (MakeAppx.exe) - package:msix would fail at tag time"
+        $msixOnly += "Windows SDK 10.0.22621 (MakeAppx.exe)"
       }
 
       # .NET 8 specifically: every csproj targets net8.0-windows10.0.22621.0.
@@ -206,19 +222,40 @@ check:pam-toolchain:
 
       # @() forces an array: a single result is a scalar in 5.1 and
       # .Count on it is unreliable.
-      $missing = @($missing | Where-Object { $_ })
-      if ($missing.Count -gt 0) {
-        Write-Host ""
-        Write-Host "=== pam is not ready. $($missing.Count) gap(s): ==="
-        $missing | ForEach-Object { Write-Host "  - $_" }
-        Write-Host ""
-        Write-Host "Provisioning contract: _private/infra/runners/pam-windows-setup.md"
-        Write-Host "Installing a tool does NOT update an already-running runner's PATH;"
-        Write-Host "restart the scheduled task after any install."
-        exit 1
-      }
+      $missing  = @($missing | Where-Object { $_ })
+      $msixOnly = @($msixOnly | Where-Object { $_ })
+      $uiOnly   = @($uiBlocked | Where-Object { $_ })
+
       Write-Host ""
-      Write-Host "=== pam has everything the windows jobs need ==="
+      # Report by what each gap actually blocks. A missing Windows SDK is
+      # not a reason to hold T3.1, and an unusable desktop is not a reason
+      # to hold it either — conflating them stalls the whole migration on
+      # the least urgent gap.
+      if ($missing.Count -gt 0) {
+        Write-Host "=== BLOCKS every job on pam ($($missing.Count)): ==="
+        $missing | ForEach-Object { Write-Host "  - $_" }
+      }
+      if ($uiOnly.Count -gt 0) {
+        Write-Host "=== BLOCKS the UI jobs only, T3.2 ($($uiOnly.Count)): ==="
+        $uiOnly | ForEach-Object { Write-Host "  - $_" }
+      }
+      if ($msixOnly.Count -gt 0) {
+        Write-Host "=== BLOCKS package:msix only, T3.3 ($($msixOnly.Count)): ==="
+        $msixOnly | ForEach-Object { Write-Host "  - $_" }
+        Write-Host "    (T3.3 is gated on the signing decision regardless — see"
+        Write-Host "     backlog/2026-09-11-windows-dual-track-msix-packaging)"
+      }
+
+      if ($missing.Count -eq 0 -and $uiOnly.Count -eq 0 -and $msixOnly.Count -eq 0) {
+        Write-Host "=== pam has everything the windows jobs need ==="
+        exit 0
+      }
+
+      Write-Host ""
+      Write-Host "Provisioning contract: _private/infra/runners/pam-windows-setup.md"
+      Write-Host "Installing a tool does NOT update an already-running runner's PATH;"
+      Write-Host "restart the scheduled task after any install."
+      exit 1
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
