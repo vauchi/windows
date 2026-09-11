@@ -278,21 +278,11 @@ secret_detection:
 # Visual snapshot tests — capture each screen, compare against baselines.
 # Requires Debug build (--reset-for-testing) and desktop session.
 # Manual: SaaS runners may lack a desktop session for UI rendering.
-test:snapshots:
-  stage: test
-  needs: []
-  cache:
-    key:
-      files:
-        - cabi-version.json
-    paths:
-      - cabi/
-    policy: pull
-  before_script:
-    - !reference [.cabi-download-script, script]
-  variables:
-    VRT_PLATFORM: windows
-    VRT_SCREENSHOT_DIR: tests/snapshots/actual
+# Shared launchable-app build for the jobs that run Vauchi.exe on a
+# runner: test:snapshots and test:screen-catalog. Produces
+# build/snapshot-app with the App SDK runtime, the CABI DLL and the
+# Visual C++ runtime in place.
+.snapshot-app-build:
   script:
     # The .NET-Core MSBuild behind `dotnet build`/`dotnet publish` skips the
     # App SDK's self-contained copy step, and the SaaS Windows image has no
@@ -330,14 +320,32 @@ test:snapshots:
     # Microsoft.WindowsAppRuntime.dll links the whole Visual C++ runtime
     # (msvcp140, vcruntime140, vcruntime140_1); with only vcruntime140 on
     # the SaaS image the loader still reports the App SDK DLL as missing
-    # (pipeline 2841637078). Install the redistributable every time and
-    # show what the app directory and System32 hold before launching.
+    # (pipeline 2841637078). Install the redistributable every time.
     - |
       $crt = @('msvcp140.dll', 'vcruntime140.dll', 'vcruntime140_1.dll')
       Write-Host "[snapshots] Visual C++ runtime in System32 before install: $(($crt | ForEach-Object { "$_=$(Test-Path (Join-Path 'C:\Windows\System32' $_))" }) -join ' ')"
       Invoke-WebRequest -Uri 'https://aka.ms/vs/17/release/vc_redist.x64.exe' -OutFile vc_redist.x64.exe
       Start-Process -FilePath .\vc_redist.x64.exe -ArgumentList '/install', '/quiet', '/norestart' -Wait
       Write-Host "[snapshots] Visual C++ runtime in System32 after install: $(($crt | ForEach-Object { "$_=$(Test-Path (Join-Path 'C:\Windows\System32' $_))" }) -join ' ')"
+
+test:snapshots:
+  stage: test
+  needs: []
+  cache:
+    key:
+      files:
+        - cabi-version.json
+    paths:
+      - cabi/
+    policy: pull
+  before_script:
+    - !reference [.cabi-download-script, script]
+  variables:
+    VRT_PLATFORM: windows
+    VRT_SCREENSHOT_DIR: tests/snapshots/actual
+  script:
+    - !reference [.snapshot-app-build, script]
+    - |
       $outDir = Join-Path $env:CI_PROJECT_DIR 'build\snapshot-app'
       Write-Host "[snapshots] $((Get-ChildItem $outDir -Filter '*.dll').Count) DLLs next to the app; App SDK ones:"
       Get-ChildItem $outDir -Filter 'Microsoft.*.dll' | ForEach-Object { Write-Host "  $($_.Name)" }
@@ -371,6 +379,84 @@ test:snapshots:
     when: always
     paths:
       - tests/snapshots/actual/
+    expire_in: 7 days
+  tags: [saas-windows-medium-amd64]
+  allow_failure: true
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+# Replays Core's screen catalog (every app screen as a Command batch)
+# through the real WinUI renderer to PNG files. Needs a desktop-capable
+# Windows runner: saas-windows-medium-amd64 is a Server Core image
+# without explorer.exe or RoMetadata.dll, so the Windows App SDK cannot
+# load there and this job only produces images once it moves to the
+# self-hosted desktop runner the fleet rebuild adds — see
+# _private/docs/backlog/2026-09-11-windows-screenshot-capture-needs-desktop-runner.
+test:screen-catalog:
+  stage: test
+  needs: []
+  timeout: 40m
+  cache:
+    key:
+      files:
+        - cabi-version.json
+    paths:
+      - cabi/
+    policy: pull
+  before_script:
+    - !reference [.cabi-download-script, script]
+  variables:
+    VRT_PLATFORM: windows
+    VRT_SCREENSHOT_DIR: build/screen-catalog
+  script:
+    - !reference [.snapshot-app-build, script]
+    # Core main is the catalog's source of truth. Until it publishes
+    # screen_catalog_v1.json, fold presentation_contract_v1.json (the
+    # same batch shape: initial_commands plus one batch per step) into a
+    # catalog so the renderer still exercises every code path.
+    - |
+      $catalog = Join-Path $env:CI_PROJECT_DIR 'build\screen_catalog_v1.json'
+      $coreFiles = "$env:CI_API_V4_URL/projects/vauchi%2Fcore/repository/files"
+      $headers = @{ 'JOB-TOKEN' = $env:CI_JOB_TOKEN }
+      try {
+        Invoke-WebRequest -Headers $headers -Uri "$coreFiles/vauchi-app%2Ffixtures%2Fscreen_catalog_v1.json/raw?ref=main" -OutFile $catalog -ErrorAction Stop
+        Write-Host "[screen-catalog] catalog source: core main vauchi-app/fixtures/screen_catalog_v1.json"
+      } catch {
+        Write-Host "[screen-catalog] core main has no screen_catalog_v1.json ($($_.Exception.Message)); converting presentation_contract_v1.json"
+        $contractPath = Join-Path $env:CI_PROJECT_DIR 'build\presentation_contract_v1.json'
+        Invoke-WebRequest -Headers $headers -Uri "$coreFiles/vauchi-app%2Ffixtures%2Fpresentation_contract_v1.json/raw?ref=main" -OutFile $contractPath -ErrorAction Stop
+        $contract = Get-Content $contractPath -Raw | ConvertFrom-Json
+        $screens = @(@{ code_id = 'contract_initial'; title = 'Contract initial'; locale = 'en'; commands = $contract.initial_commands })
+        $step = 0
+        foreach ($entry in $contract.steps) {
+          $step++
+          $screens += @{ code_id = "contract_step_$step"; title = "Contract step $step"; locale = 'en'; commands = $entry.commands }
+        }
+        @{ schema_version = 1; screens = $screens } | ConvertTo-Json -Depth 100 | Set-Content $catalog -Encoding UTF8
+        Write-Host "[screen-catalog] catalog source: presentation_contract_v1.json folded into $($screens.Count) screens"
+      }
+    - |
+      $outDir = Join-Path $env:CI_PROJECT_DIR 'build\screen-catalog'
+      $catalog = Join-Path $env:CI_PROJECT_DIR 'build\screen_catalog_v1.json'
+      New-Item -ItemType Directory -Force -Path $outDir | Out-Null
+      $app = Join-Path $env:CI_PROJECT_DIR 'build\snapshot-app\Vauchi.exe'
+      $proc = Start-Process -FilePath $app -ArgumentList '--render-catalog', "`"$catalog`"", "`"$outDir`"" -PassThru
+      if (-not $proc.WaitForExit(600000)) {
+        $proc.Kill()
+        throw "[screen-catalog] Vauchi.exe did not finish within 600 s"
+      }
+      $log = Join-Path $outDir 'render-catalog.log'
+      if (Test-Path $log) { Get-Content $log | ForEach-Object { Write-Host $_ } }
+      $count = (Get-ChildItem $outDir -Filter '*.png' -ErrorAction SilentlyContinue | Measure-Object).Count
+      Write-Host "[screen-catalog] exit code $($proc.ExitCode); $count PNG files in $outDir"
+      if ($proc.ExitCode -ne 0) { throw "[screen-catalog] Vauchi.exe exited with $($proc.ExitCode)" }
+  after_script:
+    - !reference [.vrt-upload-script, script]
+  artifacts:
+    when: always
+    paths:
+      - build/screen-catalog/
     expire_in: 7 days
   tags: [saas-windows-medium-amd64]
   allow_failure: true
