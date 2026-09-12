@@ -5,6 +5,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using System;
+using System.Collections.Generic;
 using System.Text.Json;
 using Windows.System;
 
@@ -118,35 +119,65 @@ public sealed partial class PresentationSurface
     private FrameworkElement RenderChoice(JsonElement payload)
     {
         string bindingId = String(payload, "binding_id");
-        string selected = String(payload, "selected");
+        var options = PresentationChoiceShape.Options(payload);
+        int selectedIndex = PresentationChoiceShape.SelectedIndex(options, String(payload, "selected"));
+        bool enabled = Boolean(payload, "enabled", true);
         var container = FieldContainer(String(payload, "label"));
-        var choice = new ComboBox
+        Control choice = PresentationChoiceShape.Control(options.Count) switch
         {
-            IsEnabled = Boolean(payload, "enabled", true),
+            PresentationChoiceControl.Segmented =>
+                SegmentedChoice(bindingId, options, selectedIndex, enabled),
+            _ => DropDownChoice(bindingId, options, selectedIndex, enabled),
+        };
+        AutomationProperties.SetAutomationId(choice, bindingId);
+        ApplyAccessibility(choice, payload);
+        container.Children.Add(choice);
+        return container;
+    }
+
+    private SelectorBar SegmentedChoice(
+        string bindingId,
+        IReadOnlyList<PresentationChoiceOption> options,
+        int selectedIndex,
+        bool enabled)
+    {
+        var bar = new SelectorBar
+        {
+            IsEnabled = enabled,
+            MinHeight = _minimumTargetSize,
+        };
+        foreach (PresentationChoiceOption option in options)
+        {
+            bar.Items.Add(new SelectorBarItem { Text = option.Label, Tag = option.Id });
+        }
+        if (selectedIndex >= 0)
+            bar.SelectedItem = bar.Items[selectedIndex];
+        bar.SelectionChanged += (_, _) =>
+            EmitChoice(bindingId, bar.SelectedItem?.Tag as string);
+        return bar;
+    }
+
+    private ComboBox DropDownChoice(
+        string bindingId,
+        IReadOnlyList<PresentationChoiceOption> options,
+        int selectedIndex,
+        bool enabled)
+    {
+        var box = new ComboBox
+        {
+            IsEnabled = enabled,
             MinHeight = _minimumTargetSize,
             HorizontalAlignment = HorizontalAlignment.Stretch,
         };
-        if (payload.TryGetProperty("options", out JsonElement options)
-            && options.ValueKind == JsonValueKind.Array)
+        foreach (PresentationChoiceOption option in options)
         {
-            foreach (JsonElement option in options.EnumerateArray())
-            {
-                var item = new ComboBoxItem
-                {
-                    Content = String(option, "label"),
-                    Tag = String(option, "id"),
-                };
-                choice.Items.Add(item);
-                if ((string)item.Tag == selected)
-                    choice.SelectedItem = item;
-            }
+            box.Items.Add(new ComboBoxItem { Content = option.Label, Tag = option.Id });
         }
-        AutomationProperties.SetAutomationId(choice, bindingId);
-        ApplyAccessibility(choice, payload);
-        choice.SelectionChanged += (_, _) =>
-            EmitChoice(bindingId, (choice.SelectedItem as ComboBoxItem)?.Tag as string);
-        container.Children.Add(choice);
-        return container;
+        if (selectedIndex >= 0)
+            box.SelectedIndex = selectedIndex;
+        box.SelectionChanged += (_, _) =>
+            EmitChoice(bindingId, (box.SelectedItem as ComboBoxItem)?.Tag as string);
+        return box;
     }
 
     private FrameworkElement RenderSlider(JsonElement payload)
