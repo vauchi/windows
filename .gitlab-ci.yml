@@ -245,6 +245,18 @@ check:pam-toolchain:
         if (-not ($sdks | Select-String '^8\.')) {
           $missing += ".NET 8 SDK - every csproj targets net8.0-windows10.0.22621.0"
         }
+
+        # An SDK that cannot reach a package feed builds nothing. The repo
+        # carries no nuget.config, so restore uses whatever sources this
+        # ACCOUNT has - and a freshly provisioned account has none. That is
+        # NU1100 "Unable to resolve" on every package, including Microsoft's
+        # own runtime packs, with no source named in the message; a source
+        # that exists but is unreachable is NU1301 instead.
+        $sources = & dotnet nuget list source
+        $sources | ForEach-Object { Write-Host "  nuget: $_" }
+        if (-not ($sources | Select-String '\[Enabled\]')) {
+          $missing += "a NuGet package source - 'dotnet nuget list source' reports none enabled for this account, so every restore fails NU1100. Fix: dotnet nuget add source https://api.nuget.org/v3/index.json -n nuget.org"
+        }
       }
 
       # @() forces an array: a single result is a scalar in 5.1 and
