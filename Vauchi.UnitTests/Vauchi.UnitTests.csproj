@@ -48,6 +48,7 @@
     <Compile Include="..\Vauchi\CoreUI\PresentationHostEffects.cs" Link="Linked\PresentationHostEffects.cs" />
     <Compile Include="..\Vauchi\CoreUI\PresentationJson.cs" Link="Linked\PresentationJson.cs" />
     <Compile Include="..\Vauchi\CoreUI\PresentationImageShape.cs" Link="Linked\PresentationImageShape.cs" />
+    <Compile Include="..\Vauchi\CoreUI\PresentationChoiceShape.cs" Link="Linked\PresentationChoiceShape.cs" />
     <Compile Include="..\Vauchi\CoreUI\NavigationIcons.cs" Link="Linked\NavigationIcons.cs" />
     <Compile Include="..\Vauchi\CoreUI\NavigationSpec.cs" Link="Linked\NavigationSpec.cs" />
     <Compile Include="..\Vauchi\CoreUI\SidebarModel.cs" Link="Linked\SidebarModel.cs" />
