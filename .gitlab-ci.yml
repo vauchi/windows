@@ -225,6 +225,20 @@ check:pam-toolchain:
       $missing += Probe "pwsh"   "pwsh"   "C:\Program Files\PowerShell\7\pwsh.exe"
       $missing += Probe "git"    "git"    "C:\Program Files\Git\cmd\git.exe"
 
+      # vauchi_cabi.dll is a Rust cdylib built with the MSVC toolchain, so
+      # loading it needs the Visual C++ runtime. Without it the failure is
+      # "Unable to load DLL 'vauchi_cabi' or one of its dependencies"
+      # (job 16461809800) - which reads as a missing or corrupt DLL, while
+      # the DLL is present and intact and the dependency is what is gone.
+      $vcRuntime = @('vcruntime140.dll', 'vcruntime140_1.dll', 'msvcp140.dll')
+      $vcMissing = @($vcRuntime | Where-Object { -not (Test-Path (Join-Path $env:SystemRoot "System32\$_")) })
+      if ($vcMissing.Count -eq 0) {
+        Write-Host "OK       Visual C++ runtime ($($vcRuntime -join ', '))"
+      } else {
+        Write-Host "MISSING  Visual C++ runtime: $($vcMissing -join ', ')"
+        $missing += "the Visual C++ Redistributable ($($vcMissing -join ', ')) - vauchi_cabi.dll cannot load without it and the error blames vauchi_cabi, not the runtime. Fix: winget install --id Microsoft.VCRedist.2015+.x64 -e"
+      }
+
       # package:msix hardcodes this literal path; the runbook notes a
       # missing SDK there "fails only at tag time - the worst moment to
       # discover it".
