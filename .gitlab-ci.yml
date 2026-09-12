@@ -161,6 +161,20 @@ check:pam-toolchain:
       Write-Host "probe on $env:COMPUTERNAME as $env:USERNAME at $(Get-Date -Format o)"
       Write-Host "shell: $($PSVersionTable.PSEdition) $($PSVersionTable.PSVersion)"
 
+      # The probe reaches pam by its identity tag, so it says nothing
+      # about whether pam also carries the capability tags the real jobs
+      # ask for. Without this line a green probe reads as "pam is ready"
+      # while every retagged job sits in stuck_pending_no_matching_runners.
+      Write-Host "runner tags: $env:CI_RUNNER_TAGS"
+      foreach ($needed in @('windows', 'dotnet')) {
+        if (($env:CI_RUNNER_TAGS -split '\s*,\s*') -contains $needed) {
+          Write-Host "OK       carries the '$needed' capability tag"
+        } else {
+          Write-Host "MISSING  '$needed' capability tag"
+          $missing += "the '$needed' runner tag (add it in GitLab: Settings - CI/CD - Runners - Pam - Edit; the probe's own tag cannot substitute)"
+        }
+      }
+
       # §0: the three UI jobs drive a real WinUI window, which needs an
       # interactive session. Session 0 is the service/non-interactive
       # session and has no desktop — UI automation there does not fail
