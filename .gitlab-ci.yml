@@ -163,15 +163,28 @@ check:pam-toolchain:
 
       # The probe reaches pam by its identity tag, so it says nothing
       # about whether pam also carries the capability tags the real jobs
-      # ask for. Without this line a green probe reads as "pam is ready"
-      # while every retagged job sits in stuck_pending_no_matching_runners.
+      # ask for. Without this check a green probe reads as "pam is ready"
+      # while every retagged job sits in stuck_pending_no_matching_runners
+      # — which is exactly what job 16460782323 did.
+      #
+      # CI_RUNNER_TAGS is a JSON array, not a comma-separated list.
+      # Splitting it on "," yields '["powershell"' and ' "windows"' and
+      # matches nothing, which reads as a missing tag that is present.
       Write-Host "runner tags: $env:CI_RUNNER_TAGS"
+      $runnerTags = @()
+      if ($env:CI_RUNNER_TAGS) {
+        try {
+          $runnerTags = @($env:CI_RUNNER_TAGS | ConvertFrom-Json)
+        } catch {
+          $runnerTags = @($env:CI_RUNNER_TAGS -split ',' | ForEach-Object { $_.Trim() })
+        }
+      }
       foreach ($needed in @('windows', 'dotnet')) {
-        if (($env:CI_RUNNER_TAGS -split '\s*,\s*') -contains $needed) {
+        if ($runnerTags -contains $needed) {
           Write-Host "OK       carries the '$needed' capability tag"
         } else {
           Write-Host "MISSING  '$needed' capability tag"
-          $missing += "the '$needed' runner tag (add it in GitLab: Settings - CI/CD - Runners - Pam - Edit; the probe's own tag cannot substitute)"
+          $missing += "the '$needed' runner tag - every job here asks for it, so its absence is stuck_pending_no_matching_runners, not a build error. Add it in GitLab: Settings > CI/CD > Runners > pam-shell > Edit. The probe's own identity tag cannot substitute."
         }
       }
 
