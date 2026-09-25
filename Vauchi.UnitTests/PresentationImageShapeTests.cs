@@ -84,4 +84,46 @@ public class PresentationImageShapeTests
             PresentationImageShape.NaturalCornerRadius,
             PresentationImageShape.CornerRadiusFor(shape));
     }
+
+    /// <summary>
+    /// Core omits `size` for every avatar today (core commit 5711401e) and
+    /// sends it only for the onboarding mark. Absent must keep the shell's
+    /// own unsized default, whatever that default is for the element asking.
+    /// </summary>
+    [Fact]
+    public void AbsentSizeKeepsTheShellsOwnDefault()
+    {
+        Assert.Equal(
+            PresentationImageShape.UnsizedPictureCap,
+            PresentationImageShape.SideFor(null, PresentationImageShape.UnsizedPictureCap));
+        Assert.Equal(
+            PresentationImageShape.AvatarSide,
+            PresentationImageShape.SideFor(null, PresentationImageShape.AvatarSide));
+    }
+
+    [Fact]
+    public void PresentSizeOverridesTheShellsOwnDefault()
+    {
+        Assert.Equal(88, PresentationImageShape.SideFor(88, PresentationImageShape.UnsizedPictureCap));
+    }
+
+    /// <summary>
+    /// A circular clip sized by Core still rounds to half its own side, not
+    /// half the shell's fixed <see cref="PresentationImageShape.AvatarSide"/>.
+    /// </summary>
+    [Fact]
+    public void ACoreSizedCircleIsRoundedToHalfItsOwnSide()
+    {
+        Assert.Equal(44, PresentationImageShape.CornerRadiusFor("circle", 88));
+    }
+
+    [Theory]
+    [InlineData("natural")]
+    [InlineData(null)]
+    public void ACoreSizedNonCircleStillKeepsItsCorners(string? shape)
+    {
+        Assert.Equal(
+            PresentationImageShape.NaturalCornerRadius,
+            PresentationImageShape.CornerRadiusFor(shape, 88));
+    }
 }
