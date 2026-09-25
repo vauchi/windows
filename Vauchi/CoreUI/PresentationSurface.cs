@@ -209,6 +209,17 @@ public sealed partial class PresentationSurface : UserControl
             ? element.GetBoolean()
             : fallback;
 
+    /// <summary>
+    /// Absent (not `null`) is how Core spells "the shell decides" for an
+    /// optional integer such as `Image.size` — the decoder must keep
+    /// accepting JSON without the property.
+    /// </summary>
+    private static int? Int32(JsonElement value, string property) =>
+        value.TryGetProperty(property, out JsonElement element)
+        && element.TryGetInt32(out int number)
+            ? number
+            : null;
+
     private static double Token(JsonElement surface, string property, double fallback) =>
         surface.TryGetProperty("tokens", out JsonElement tokens)
         && tokens.TryGetProperty(property, out JsonElement value)

@@ -27,10 +27,14 @@ public enum PresentationImageVisual
 public static class PresentationImageShape
 {
     /// <summary>
-    /// Side of a standalone avatar. Core names no size for <c>Image</c>, so
-    /// the shell picks one.
+    /// Side of a standalone avatar's circular clip when Core leaves sizing
+    /// to the shell — every avatar today. Core names an explicit `size`
+    /// only for the onboarding mark.
     /// </summary>
     public const double AvatarSide = 160;
+
+    /// <summary>Cap for a free-form picture when Core leaves sizing to the shell.</summary>
+    public const double UnsizedPictureCap = 240;
 
     /// <summary>Radius for a natural-shaped image, which keeps its corners.</summary>
     public const double NaturalCornerRadius = 8;
@@ -55,9 +59,19 @@ public static class PresentationImageShape
     public static bool IsCircular(string? shape) => shape == "circle";
 
     /// <summary>
+    /// The square side Core asked for, or the shell's own default for the
+    /// element asking (the free-form cap, the avatar clip side, the
+    /// initials diameter) when Core left sizing to the shell.
+    /// </summary>
+    public static double SideFor(int? size, double unsizedDefault) => size ?? unsizedDefault;
+
+    /// <summary>
     /// A circle is half the side. Anything else keeps its corners, because
     /// rounding them away loses what distinguishes a diagram from a face.
     /// </summary>
-    public static double CornerRadiusFor(string? shape) =>
-        IsCircular(shape) ? AvatarSide / 2 : NaturalCornerRadius;
+    public static double CornerRadiusFor(string? shape) => CornerRadiusFor(shape, AvatarSide);
+
+    /// <summary>Same rule as <see cref="CornerRadiusFor(string?)"/>, for a side Core named.</summary>
+    public static double CornerRadiusFor(string? shape, double side) =>
+        IsCircular(shape) ? side / 2 : NaturalCornerRadius;
 }

@@ -52,11 +52,12 @@ public sealed partial class PresentationSurface
             : null;
         string shape = String(payload, "shape");
         string fallbackText = String(payload, "fallback_text");
+        int? size = Int32(payload, "size");
 
         FrameworkElement? visual = PresentationImageShape.Visual(bytes, fallbackText) switch
         {
-            PresentationImageVisual.Picture => Picture(bytes!, shape),
-            PresentationImageVisual.Initials => Initials(fallbackText),
+            PresentationImageVisual.Picture => Picture(bytes!, shape, size),
+            PresentationImageVisual.Initials => Initials(fallbackText, size),
             // Nothing to show shows nothing. An empty element still carrying
             // the node's accessibility name announced a picture that was not
             // there.
@@ -78,27 +79,52 @@ public sealed partial class PresentationSurface
         return visual;
     }
 
-    private static FrameworkElement Picture(byte[] bytes, string shape)
+    /// <summary>
+    /// Core naming a `size` means the picture (or its circular clip) must
+    /// shrink to whatever width is available and sit centred there, unlike
+    /// the shell's own unsized defaults below, whose fixed caps always had
+    /// room. A bare <c>MaxWidth</c> (no <c>Width</c>) plus centred alignment
+    /// gives WinUI exactly that: it shrinks the element under a narrow
+    /// parent instead of overflowing it.
+    /// </summary>
+    private static FrameworkElement Picture(byte[] bytes, string shape, int? size)
     {
+        bool sized = size is not null;
+        double side = PresentationImageShape.SideFor(size, PresentationImageShape.UnsizedPictureCap);
         var image = new Image
         {
-            MaxWidth = 240,
-            MaxHeight = 240,
+            MaxWidth = side,
+            MaxHeight = side,
             Stretch = Microsoft.UI.Xaml.Media.Stretch.Uniform,
         };
+        if (sized)
+        {
+            image.HorizontalAlignment = HorizontalAlignment.Center;
+        }
         LoadImage(image, bytes);
         if (!PresentationImageShape.IsCircular(shape))
         {
             return image;
         }
 
-        return new Border
+        double clipSide = PresentationImageShape.SideFor(size, PresentationImageShape.AvatarSide);
+        var border = new Border
         {
             Child = image,
-            Width = PresentationImageShape.AvatarSide,
-            Height = PresentationImageShape.AvatarSide,
-            CornerRadius = new CornerRadius(PresentationImageShape.CornerRadiusFor(shape)),
+            CornerRadius = new CornerRadius(PresentationImageShape.CornerRadiusFor(shape, clipSide)),
         };
+        if (sized)
+        {
+            border.MaxWidth = clipSide;
+            border.MaxHeight = clipSide;
+            border.HorizontalAlignment = HorizontalAlignment.Center;
+        }
+        else
+        {
+            border.Width = clipSide;
+            border.Height = clipSide;
+        }
+        return border;
     }
 
     /// <summary>
@@ -109,10 +135,14 @@ public sealed partial class PresentationSurface
     /// macOS and <c>RowAvatar</c> on Android already use for the same
     /// fallback.
     /// </summary>
-    private FrameworkElement Initials(string fallbackText)
+    private FrameworkElement Initials(string fallbackText, int? size)
     {
-        double diameter = _minimumTargetSize;
+        double diameter = PresentationImageShape.SideFor(size, _minimumTargetSize);
         var avatar = new Grid { Width = diameter, Height = diameter };
+        if (size is not null)
+        {
+            avatar.HorizontalAlignment = HorizontalAlignment.Center;
+        }
         avatar.Children.Add(new Ellipse
         {
             Fill = new SolidColorBrush(ThemeColors.SecondaryContainer),
