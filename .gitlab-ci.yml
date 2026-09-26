@@ -13,6 +13,9 @@ include:
       - '/ci-templates/badges.yml'
       - '/ci-templates/github-mirror.yml'
       - '/ci-templates/vrt-upload.yml'
+      - '/ci-templates/verified-fetch.yml'
+      - '/ci-templates/tool-install.yml'
+      - '/ci-templates/cross-cutting-lint.yml'
 
 variables:
   VAUCHI_SCRIPTS_REF: "ci-templates-v2026.09.26"
@@ -816,10 +819,21 @@ lint:cross-cutting-blocking:
 # Deploy Stage — Badge Pages
 # ============================================================
 
+# Exact-zero release gate (ADR-066): every configured boundary counter
+# must be zero at the moment a semver-shaped tag is pushed — no
+# TODO(HUMBLE) exceptions, no forgiving stored baseline debt. No rules
+# override needed: the shared default's semver-only regex already
+# matches package:msix's own tag rule exactly.
+release:ratchet-zero:
+  extends: .release-ratchet-zero
+
 package:msix:
   stage: deploy
   tags: [windows, dotnet]
-  needs: ["build:app"]
+  needs:
+    - build:app
+    - job: release:ratchet-zero
+      optional: true
   rules:
     - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
   script:
