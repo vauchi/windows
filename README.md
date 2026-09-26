@@ -40,11 +40,13 @@ starting the Core engine. CI runs it as `test:screen-catalog`.
 
 ## Architecture
 
-This app implements the core-driven UI contract:
+This app is a display-only shell: core emits generic, fully prepared
+presentation commands, and the app reports opaque events back.
 
-- **ScreenRenderer** renders `ScreenModel` from core (JSON via C ABI)
-- **14 component UserControls** map to core's `Component` enum variants
-- **ActionHandler** maps user input to `UserAction` JSON
+- **PresentationHost** (`CoreUI/PresentationHost.xaml`) renders core's
+  presentation commands (JSON via C ABI) with WinUI controls
+- **PresentationEvents** (`CoreUI/PresentationEvents.cs`) reports user
+  input to core as opaque event JSON
 - **VauchiNative.cs** wraps C ABI via `LibraryImport` + `System.Text.Json`
 - **Platform chrome**: taskbar, notifications, MSIX packaging
 
