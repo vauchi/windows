@@ -244,6 +244,63 @@ public class PresentationStateTests
         Assert.Null(state.PresentedOverlay);
     }
 
+    private const string MainWithActionMenu = """
+        {"commands":[
+          {"ReplaceSurface":{"surface":{"surface_id":"main","revision":1,"title":"Main","nodes":[]}}},
+          {"SetPresentationProfile":{"profile":{"window_class":"compact","pane_layout":"single","primary_surface":"main","detail_surface":null,"active_surface":"main"}}},
+          {"PresentOverlay":{"surface_id":"main","revision":1,"overlay":{"kind":"action_menu","title":"More","items":[]}}}
+        ]}
+        """;
+
+    // vauchi/private#308 — Core dismisses the overlay it opened; a shell that
+    // drops DismissOverlay keeps the scrim over the next surface.
+    [Fact]
+    public void DismissOverlay_ClearsTheOverlayItNames()
+    {
+        var state = new PresentationState();
+        Assert.True(state.TryApplyEnvelope(MainWithActionMenu, out _, out _));
+
+        Assert.True(state.TryApplyEnvelope("""
+            {"commands":[{"DismissOverlay":{"surface_id":"main","revision":1,"kind":"action_menu"}}]}
+            """, out _, out string? error), error);
+
+        Assert.Null(state.PresentedOverlay);
+        Assert.Null(state.ActiveOverlay);
+    }
+
+    [Fact]
+    public void DismissOverlay_ForAnotherSurface_LeavesThePresentedOverlay()
+    {
+        var state = new PresentationState();
+        Assert.True(state.TryApplyEnvelope(MainWithActionMenu, out _, out _));
+
+        Assert.True(state.TryApplyEnvelope("""
+            {"commands":[{"DismissOverlay":{"surface_id":"other","revision":1,"kind":"action_menu"}}]}
+            """, out _, out _));
+
+        Assert.Equal("action_menu",
+            state.ActiveOverlay?.GetProperty("overlay").GetProperty("kind").GetString());
+    }
+
+    // vauchi/private#308 Defect 1 — an overlay belongs to the surface it was
+    // raised over and stops rendering once another surface is active.
+    [Fact]
+    public void ActiveOverlay_IsNull_OnceAnotherSurfaceIsActive()
+    {
+        var state = new PresentationState();
+        Assert.True(state.TryApplyEnvelope(MainWithActionMenu, out _, out _));
+
+        Assert.True(state.TryApplyEnvelope("""
+            {"commands":[
+              {"ReplaceSurface":{"surface":{"surface_id":"exchange","revision":1,"title":"Exchange","nodes":[]}}},
+              {"SetPresentationProfile":{"profile":{"window_class":"compact","pane_layout":"single","primary_surface":"exchange","detail_surface":null,"active_surface":"exchange"}}}
+            ]}
+            """, out _, out _));
+
+        Assert.Equal("exchange", state.ActiveSurfaceId);
+        Assert.Null(state.ActiveOverlay);
+    }
+
     [Fact]
     public void ResponsiveProfile_PreservesSelectionActiveSurfaceAndCausalUndo()
     {
