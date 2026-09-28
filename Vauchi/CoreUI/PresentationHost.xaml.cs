@@ -247,7 +247,7 @@ public sealed partial class PresentationHost : UserControl
     private void RenderOverlay()
     {
         OverlayItems.Children.Clear();
-        if (_state.PresentedOverlay is not { } presented
+        if (_state.ActiveOverlay is not { } presented
             || !presented.TryGetProperty("surface_id", out JsonElement surfaceIdValue)
             || surfaceIdValue.GetString() is not { Length: > 0 } surfaceId
             || !presented.TryGetProperty("overlay", out JsonElement overlay)

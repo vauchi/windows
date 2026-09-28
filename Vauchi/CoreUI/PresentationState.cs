@@ -29,6 +29,18 @@ public sealed class PresentationState
 
     public JsonElement? PresentedOverlay { get; private set; }
 
+    /// <summary>
+    /// The presented overlay, only while the surface it was raised over is
+    /// the active one — an overlay must not outlive its surface
+    /// (vauchi/private#308).
+    /// </summary>
+    public JsonElement? ActiveOverlay =>
+        PresentedOverlay is { } presented
+        && presented.TryGetProperty("surface_id", out var surfaceId)
+        && surfaceId.GetString() == ActiveSurfaceId
+            ? presented
+            : null;
+
     public string? WindowClass => ProfileString("window_class");
 
     public IReadOnlyList<string> VisibleSurfaceIds
@@ -179,6 +191,9 @@ public sealed class PresentationState
                     return false;
                 effects.Add(command.Clone());
                 return true;
+            case "DismissOverlay":
+                DismissOverlay(payload);
+                return true;
             default:
                 effects.Add(command.Clone());
                 return true;
@@ -326,6 +341,21 @@ public sealed class PresentationState
         }
         PresentedOverlay = payload.Clone();
         return true;
+    }
+
+    private void DismissOverlay(JsonElement payload)
+    {
+        if (PresentedOverlay is not { } presented
+            || !presented.TryGetProperty("surface_id", out var presentedSurface)
+            || !payload.TryGetProperty("surface_id", out var dismissedSurface)
+            || presentedSurface.GetString() != dismissedSurface.GetString())
+            return;
+        if (payload.TryGetProperty("kind", out var dismissedKind)
+            && presented.TryGetProperty("overlay", out var overlay)
+            && overlay.TryGetProperty("kind", out var presentedKind)
+            && presentedKind.GetString() != dismissedKind.GetString())
+            return;
+        PresentedOverlay = null;
     }
 
     private static bool TryIdentity(
