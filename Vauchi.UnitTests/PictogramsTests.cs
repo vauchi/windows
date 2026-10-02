@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using Vauchi.CoreUI;
 using Xunit;
 
@@ -81,5 +82,34 @@ public class PictogramsTests
     public void AnyOtherTokenHasNoPictogram(string? token)
     {
         Assert.Null(Pictograms.Resolve(token));
+    }
+
+    private static JsonElement StatusPayload(string iconTokenJson) =>
+        JsonDocument.Parse(
+            "{\"title\":\"Hover\",\"detail\":null,\"icon_token\":" + iconTokenJson
+            + ",\"badge\":null,\"tone\":\"neutral\",\"activation\":null}").RootElement;
+
+    [Fact]
+    public void ANodeCarryingAPictogramTokenDrawsThatPictogram()
+    {
+        Assert.Equal(
+            Pictograms.Resolve("pictogram.exchange.hover"),
+            Pictograms.ForNode(StatusPayload("\"pictogram.exchange.hover\"")));
+    }
+
+    [Theory]
+    [InlineData("\"person.2\"")]
+    [InlineData("\"pictogram.exchange.not_a_mode\"")]
+    [InlineData("null")]
+    [InlineData("42")]
+    public void ANodeWithoutABundledPictogramTokenDrawsNoPictogram(string iconTokenJson)
+    {
+        Assert.Null(Pictograms.ForNode(StatusPayload(iconTokenJson)));
+    }
+
+    [Fact]
+    public void ANodeWithNoIconTokenDrawsNoPictogram()
+    {
+        Assert.Null(Pictograms.ForNode(JsonDocument.Parse("{\"title\":\"Hover\"}").RootElement));
     }
 }
