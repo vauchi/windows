@@ -7,6 +7,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text.Json;
 using System.Xml.Linq;
 
 namespace Vauchi.CoreUI;
@@ -42,6 +43,13 @@ public static class Pictograms
     public static IReadOnlyList<PictogramPath>? Resolve(string? token) =>
         token is not null && Bundled.Value.TryGetValue(token, out IReadOnlyList<PictogramPath>? paths)
             ? paths
+            : null;
+
+    /// <summary>The pictogram a presentation node's <c>icon_token</c> names, if any.</summary>
+    public static IReadOnlyList<PictogramPath>? ForNode(JsonElement payload) =>
+        payload.TryGetProperty("icon_token", out JsonElement token)
+        && token.ValueKind == JsonValueKind.String
+            ? Resolve(token.GetString())
             : null;
 
     private static IReadOnlyDictionary<string, IReadOnlyList<PictogramPath>> LoadBundled(Assembly assembly)

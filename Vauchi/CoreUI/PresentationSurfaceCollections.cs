@@ -158,20 +158,6 @@ public sealed partial class PresentationSurface
                 });
             }
         }
-
-        // Rows drew no icon before pictograms, so only a pictogram adds one.
-        FrameworkElement? pictogram = PresentationIcons.PictogramElement(
-            String(row, "icon_token"),
-            Pictograms.CanvasSize);
-        if (pictogram is null)
-            return text;
-        pictogram.VerticalAlignment = VerticalAlignment.Center;
-        var withIcon = new Grid { ColumnSpacing = 12 };
-        withIcon.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        withIcon.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        Grid.SetColumn(text, 1);
-        withIcon.Children.Add(pictogram);
-        withIcon.Children.Add(text);
-        return withIcon;
+        return PresentationIcons.LeadWithPictogram(row, text);
     }
 }

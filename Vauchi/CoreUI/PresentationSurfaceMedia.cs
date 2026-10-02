@@ -34,12 +34,16 @@ public sealed partial class PresentationSurface
             && action.ValueKind == JsonValueKind.Object)
         {
             var button = ActionButton(action);
-            button.Content = text;
+            button.Content = PresentationIcons.LeadWithPictogram(
+                payload,
+                new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap });
             status = button;
         }
         else
         {
-            status = new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap };
+            status = PresentationIcons.LeadWithPictogram(
+                payload,
+                new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap });
         }
         ApplyAccessibility(status, payload);
         return status;
