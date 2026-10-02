@@ -51,6 +51,9 @@
     <Compile Include="..\Vauchi\CoreUI\PresentationChoiceShape.cs" Link="Linked\PresentationChoiceShape.cs" />
     <Compile Include="..\Vauchi\CoreUI\NavigationIcons.cs" Link="Linked\NavigationIcons.cs" />
     <Compile Include="..\Vauchi\CoreUI\NavigationSpec.cs" Link="Linked\NavigationSpec.cs" />
+    <Compile Include="..\Vauchi\CoreUI\Pictograms.cs" Link="Linked\Pictograms.cs" />
+    <Compile Include="..\Vauchi\CoreUI\PictogramIcon.cs" Link="Linked\PictogramIcon.cs" />
+    <Compile Include="..\Vauchi\CoreUI\PresentationIcons.cs" Link="Linked\PresentationIcons.cs" />
     <Compile Include="..\Vauchi\CoreUI\SidebarModel.cs" Link="Linked\SidebarModel.cs" />
     <Compile Include="..\Vauchi\CoreUI\PresentationState.cs" Link="Linked\PresentationState.cs" />
     <Compile Include="..\Vauchi\CoreUI\PresentationSurface.cs" Link="Linked\PresentationSurface.cs" />
@@ -62,6 +65,12 @@
     <Compile Include="..\Vauchi\CoreUI\TargetSize.cs" Link="Linked\TargetSize.cs" />
     <Compile Include="..\Vauchi\CoreUI\FocusVisualStyle.cs" Link="Linked\FocusVisualStyle.cs" />
     <Compile Include="..\Vauchi\CoreUI\ScreenCatalog.cs" Link="Linked\ScreenCatalog.cs" />
+  </ItemGroup>
+  <!-- Same logical names as Vauchi.csproj: the linked Pictograms.cs reads
+       them from whichever assembly it is compiled into -->
+  <ItemGroup>
+    <EmbeddedResource Include="..\Vauchi\Assets\Pictograms\**\*.svg"
+                      LogicalName="Vauchi.Pictograms/%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
   <!-- Screen-catalog batches copied from Core's presentation_contract_v1.json -->
   <ItemGroup>

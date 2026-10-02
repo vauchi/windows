@@ -29,6 +29,14 @@
   <ItemGroup>
     <Content Include="Assets\Fonts\*.ttf" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
+  <!-- Pictograms — vendored verbatim from assets/pictograms/<group>/generated/svg.
+       Pictograms.Resolve reads them back by logical name, so a new drawing
+       needs no code. Regenerate: cp ../assets/pictograms/exchange/generated/svg/*.svg
+       Vauchi/Assets/Pictograms/exchange/ -->
+  <ItemGroup>
+    <EmbeddedResource Include="Assets\Pictograms\**\*.svg"
+                      LogicalName="Vauchi.Pictograms/%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
   <!-- CABI native library — copied to output when present -->
   <ItemGroup>
     <None Include="$(SolutionDir)cabi\vauchi_cabi.dll"

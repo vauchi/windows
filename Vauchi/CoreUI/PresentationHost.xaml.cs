@@ -298,10 +298,7 @@ public sealed partial class PresentationHost : UserControl
             Orientation = Orientation.Horizontal,
             Spacing = 12,
         };
-        content.Children.Add(new FontIcon
-        {
-            Glyph = NavigationIcons.Glyph(iconToken),
-        });
+        content.Children.Add(PresentationIcons.Element(iconToken));
         content.Children.Add(new TextBlock
         {
             Text = action.TryGetProperty("label", out JsonElement label)
