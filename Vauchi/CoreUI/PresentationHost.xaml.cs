@@ -206,13 +206,10 @@ public sealed partial class PresentationHost : UserControl
         ConfigureRole(NavigationButton, bar, "navigation");
         ConfigureRole(PrimaryButton, bar, "primary");
         ConfigureRole(SecondaryButton, bar, "secondary");
-        CommandStrip.Visibility =
-            BackButton.Visibility == Visibility.Collapsed
-            && NavigationButton.Visibility == Visibility.Collapsed
-            && PrimaryButton.Visibility == Visibility.Collapsed
-            && SecondaryButton.Visibility == Visibility.Collapsed
-                ? Visibility.Collapsed
-                : Visibility.Visible;
+        ConfigureRole(InfoButton, bar, "info");
+        CommandStrip.Visibility = ContextBarLayout.Slots(bar).Count == 0
+            ? Visibility.Collapsed
+            : Visibility.Visible;
         RegisterShortcuts(bar);
     }
 
@@ -371,6 +368,9 @@ public sealed partial class PresentationHost : UserControl
     private void SecondaryButton_Click(object sender, RoutedEventArgs e) =>
         ActivateRole(SecondaryButton);
 
+    private void InfoButton_Click(object sender, RoutedEventArgs e) =>
+        ActivateRole(InfoButton);
+
     private void RegisterShortcuts(JsonElement? bar)
     {
         KeyboardAccelerators.Clear();
@@ -378,6 +378,7 @@ public sealed partial class PresentationHost : UserControl
         AddShortcut(VirtualKey.K, VirtualKeyModifiers.Control, () => ActivateRole(NavigationButton));
         AddShortcut(VirtualKey.Enter, VirtualKeyModifiers.Control, () => ActivateRole(PrimaryButton));
         AddShortcut(VirtualKey.Down, VirtualKeyModifiers.Menu, () => ActivateRole(SecondaryButton));
+        AddShortcut(VirtualKey.F1, VirtualKeyModifiers.None, () => ActivateRole(InfoButton));
         if (bar is { } value
             && value.TryGetProperty("primary", out JsonElement primary)
             && primary.ValueKind == JsonValueKind.Object

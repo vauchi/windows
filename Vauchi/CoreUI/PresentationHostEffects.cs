@@ -8,6 +8,7 @@ using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Media.Animation;
 using System;
 using System.Text.Json;
+using Vauchi.Services;
 using Windows.System;
 
 namespace Vauchi.CoreUI;
@@ -48,8 +49,37 @@ public sealed partial class PresentationHost
         string kind = overlay.GetProperty("kind").GetString() ?? "";
         if (kind == "navigation")
             PresentNavigationOverlay(surfaceId, overlay);
+        else if (kind == "information")
+            PresentInformationOverlay(surfaceId, overlay);
         else
             PresentActionOverlay(surfaceId, overlay);
+    }
+
+    /// <summary>
+    /// Text about the surface (vauchi/private#479): read once, closed with
+    /// the one button, and reported as dismissed so Core forgets it.
+    /// </summary>
+    private async void PresentInformationOverlay(string surfaceId, JsonElement overlay)
+    {
+        var body = new TextBlock
+        {
+            Text = overlay.TryGetProperty("body", out JsonElement text)
+                ? text.GetString() ?? ""
+                : "",
+            TextWrapping = TextWrapping.Wrap,
+        };
+        var dialog = new ContentDialog
+        {
+            Title = overlay.TryGetProperty("title", out JsonElement title)
+                ? title.GetString() ?? ""
+                : "",
+            Content = body,
+            CloseButtonText = Localizer.T("action.close"),
+            XamlRoot = XamlRoot,
+        };
+        dialog.Closed += (_, _) =>
+            Dispatch(PresentationEvents.OverlayDismissed(surfaceId, "information"));
+        await dialog.ShowAsync();
     }
 
     private async void PresentNavigationOverlay(
