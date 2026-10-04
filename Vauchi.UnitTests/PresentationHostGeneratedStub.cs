@@ -14,6 +14,7 @@ public sealed partial class PresentationHost
     private readonly Button NavigationButton = new();
     private readonly Button PrimaryButton = new();
     private readonly Button SecondaryButton = new();
+    private readonly Button InfoButton = new();
     private readonly InfoBar ProtocolErrorBar = new();
     private readonly InfoBar AlertBar = new();
     private readonly InfoBar FeedbackBar = new();
