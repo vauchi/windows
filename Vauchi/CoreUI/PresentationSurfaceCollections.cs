@@ -66,6 +66,7 @@ public sealed partial class PresentationSurface
         var layout = new Grid { ColumnSpacing = 6 };
         layout.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         layout.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        layout.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
         FrameworkElement content = RowContent(row);
         if (row.TryGetProperty("activation", out JsonElement activation)
@@ -113,8 +114,28 @@ public sealed partial class PresentationSurface
             }
             more.Flyout = flyout;
             ApplyAccessibility(more, row);
-            Grid.SetColumn(more, 1);
+            Grid.SetColumn(more, 2);
             layout.Children.Add(more);
+        }
+
+        // Explains this one item (vauchi/private#479); Core names it
+        // "About <item>" so Narrator says what the icon is for.
+        if (RowInfo.Read(row) is { } info)
+        {
+            var infoButton = new Button
+            {
+                Content = new FontIcon { Glyph = "\uE946" },
+                MinWidth = _minimumTargetSize,
+                MinHeight = _minimumTargetSize,
+                IsEnabled = info.Enabled,
+            };
+            FocusVisualStyle.Apply(infoButton);
+            AutomationProperties.SetAutomationId(infoButton, info.InteractionId);
+            AutomationProperties.SetName(infoButton, info.AccessibilityLabel);
+            ToolTipService.SetToolTip(infoButton, info.AccessibilityLabel);
+            infoButton.Click += (_, _) => EmitAction(info.InteractionId);
+            Grid.SetColumn(infoButton, 1);
+            layout.Children.Add(infoButton);
         }
 
         var result = new StackPanel { Spacing = 4 };
