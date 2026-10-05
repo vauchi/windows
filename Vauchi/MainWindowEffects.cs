@@ -75,26 +75,35 @@ public sealed partial class MainWindow
 
     private void ArmWakeupTimer(JsonElement schedule)
     {
-        int earliest = schedule.TryGetProperty(
+        int earliestSecs = schedule.TryGetProperty(
             "earliest_secs",
             out JsonElement earliestValue)
-            && earliestValue.TryGetInt32(out int parsedEarliest)
-                ? parsedEarliest
+            && earliestValue.TryGetInt32(out int parsedEarliestSecs)
+                ? parsedEarliestSecs
                 : 0;
-        int minimum = schedule.TryGetProperty(
-            "min_interval_secs",
-            out JsonElement minimumValue)
-            && minimumValue.TryGetInt32(out int parsedMinimum)
-                ? parsedMinimum
+        int deadlineSecs = schedule.TryGetProperty(
+            "deadline_secs",
+            out JsonElement deadlineValue)
+            && deadlineValue.TryGetInt32(out int parsedDeadlineSecs)
+                ? parsedDeadlineSecs
                 : 0;
-        int seconds = Math.Max(earliest, minimum);
-        if (seconds <= 0)
+        int? earliestMillis = schedule.TryGetProperty(
+            "earliest_millis",
+            out JsonElement earliestMillisValue)
+            && earliestMillisValue.TryGetInt32(out int parsedEarliestMillis)
+                ? parsedEarliestMillis
+                : null;
+        int delayMilliseconds = WakeupTiming.DelayMillisecondsFor(
+            earliestSecs,
+            deadlineSecs,
+            earliestMillis);
+        if (delayMilliseconds <= 0)
             return;
 
         _wakeupTimer?.Stop();
         _wakeupTimer = new DispatcherTimer
         {
-            Interval = TimeSpan.FromSeconds(seconds),
+            Interval = TimeSpan.FromMilliseconds(delayMilliseconds),
         };
         _wakeupTimer.Tick += (_, _) => RunWakeupTick();
         _wakeupTimer.Start();
