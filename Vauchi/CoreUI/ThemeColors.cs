@@ -39,6 +39,10 @@ public static class ThemeColors
     // keep in sync.
     public static readonly Color FocusRing = Info;
 
+    // White in every theme, so a peer's camera sees one bright square
+    // around a display code (vauchi/private#450).
+    public static readonly Color QrSquare = ParseHex("#ffffff");
+
     private static Color WithAlpha(Color color, byte alpha) =>
         Color.FromArgb(alpha, color.R, color.G, color.B);
 

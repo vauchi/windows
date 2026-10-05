@@ -207,7 +207,7 @@ public sealed partial class PresentationSurface
         {
             Width = QrSide,
             Height = QrSide,
-            Background = new SolidColorBrush(Microsoft.UI.Colors.White),
+            Background = new SolidColorBrush(ThemeColors.QrSquare),
         };
         square.Children.Add(image);
         AutomationProperties.SetAutomationId(square, bindingId);
