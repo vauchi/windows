@@ -267,7 +267,7 @@ public sealed partial class PresentationHost : UserControl
             : "";
         AutomationProperties.SetName(OverlayPanel, OverlayTitle.Text);
         OverlayCloseButton.Content = new FontIcon { Glyph = "\uE8BB" };
-        AutomationProperties.SetName(OverlayCloseButton, Localizer.T("action.close"));
+        AutomationProperties.SetName(OverlayCloseButton, OverlayCloseLabel.For(overlay, Localizer.T));
 
         if (overlay.TryGetProperty("items", out JsonElement items)
             && items.ValueKind == JsonValueKind.Array)

@@ -67,6 +67,7 @@
     <Compile Include="..\Vauchi\CoreUI\ScreenCatalog.cs" Link="Linked\ScreenCatalog.cs" />
     <Compile Include="..\Vauchi\CoreUI\ContextBarLayout.cs" Link="Linked\ContextBarLayout.cs" />
     <Compile Include="..\Vauchi\CoreUI\RowInfo.cs" Link="Linked\RowInfo.cs" />
+    <Compile Include="..\Vauchi\CoreUI\OverlayCloseLabel.cs" Link="Linked\OverlayCloseLabel.cs" />
   </ItemGroup>
   <!-- Same logical names as Vauchi.csproj: the linked Pictograms.cs reads
        them from whichever assembly it is compiled into -->

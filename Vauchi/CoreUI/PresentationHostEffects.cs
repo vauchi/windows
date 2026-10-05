@@ -74,7 +74,7 @@ public sealed partial class PresentationHost
                 ? title.GetString() ?? ""
                 : "",
             Content = body,
-            CloseButtonText = Localizer.T("action.close"),
+            CloseButtonText = OverlayCloseLabel.For(overlay, Localizer.T),
             XamlRoot = XamlRoot,
         };
         dialog.Closed += (_, _) =>
@@ -119,7 +119,7 @@ public sealed partial class PresentationHost
                 ? title.GetString() ?? ""
                 : "",
             Content = items,
-            CloseButtonText = "Close",
+            CloseButtonText = OverlayCloseLabel.For(overlay, Localizer.T),
             XamlRoot = XamlRoot,
         };
         items.ItemClick += (_, args) =>
