@@ -12,7 +12,7 @@ using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text.Json;
 using Windows.Storage.Streams;
 using ZXing;
-using ZXing.Common;
+using ZXing.QrCode;
 
 namespace Vauchi.CoreUI;
 
@@ -188,18 +188,37 @@ public sealed partial class PresentationSurface
         {
             data = payloads[0].GetString() ?? "";
         }
+        QrFrameSpec frame = QrFrameSpec.For(QrPlacement.FromJson(payload), QrSide);
         var image = new Image
         {
-            Width = 250,
-            Height = 250,
-            Source = data.Length > 0 ? QrBitmap(data) : null,
+            Width = frame.Side,
+            Height = frame.Side,
+            HorizontalAlignment = HorizontalAlignment.Left,
+            VerticalAlignment = VerticalAlignment.Top,
+            Margin = new Thickness(frame.Left, frame.Top, 0, 0),
+            Source = data.Length > 0
+                ? QrBitmap(data, PresentationQrCorrection.FromJson(payload))
+                : null,
         };
-        AutomationProperties.SetAutomationId(image, bindingId);
-        ApplyAccessibility(image, payload);
+        // A placed code leaves part of the square empty. That part is
+        // white, so the peer's camera sees one bright square whatever the
+        // shell's theme.
+        var square = new Grid
+        {
+            Width = QrSide,
+            Height = QrSide,
+            Background = new SolidColorBrush(Microsoft.UI.Colors.White),
+        };
+        square.Children.Add(image);
+        AutomationProperties.SetAutomationId(square, bindingId);
+        ApplyAccessibility(square, payload);
         var displayContainer = FieldContainer(label);
-        displayContainer.Children.Add(image);
+        displayContainer.Children.Add(square);
         return displayContainer;
     }
+
+    /// <summary>The square a display code is drawn in, in device-independent pixels.</summary>
+    private const double QrSide = 250;
 
     private FrameworkElement RenderConfirmation(JsonElement payload)
     {
@@ -235,12 +254,18 @@ public sealed partial class PresentationSurface
         }
     }
 
-    private static WriteableBitmap QrBitmap(string data)
+    private static WriteableBitmap QrBitmap(string data, string? errorCorrection)
     {
         var writer = new BarcodeWriterPixelData
         {
             Format = BarcodeFormat.QR_CODE,
-            Options = new EncodingOptions { Width = 250, Height = 250, Margin = 2 },
+            Options = new QrCodeEncodingOptions
+            {
+                Width = 250,
+                Height = 250,
+                Margin = 2,
+                ErrorCorrection = PresentationQrCorrection.Level(errorCorrection),
+            },
         };
         var pixels = writer.Write(data);
         var bitmap = new WriteableBitmap(pixels.Width, pixels.Height);
