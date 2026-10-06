@@ -46,4 +46,50 @@ public class ContextBarLayoutTests
         Assert.Empty(ContextBarLayout.Slots(Bar(
             """{"back":null,"navigation":null,"primary":null,"secondary":null,"info":null}""")));
     }
+
+    // The retired bottom row is gone (2026-10-06 design, vauchi/private#534):
+    // Back and Navigation now draw at the leading end of the surface's own
+    // title row, Back first since a navigation launcher only ever appears
+    // where no persistent destinations already show it.
+    // @scenario: generic_presentation_protocol.feature :: Contextual controls expose four stable roles
+    [Fact]
+    public void LeadingSlots_PutsBackBeforeNavigation()
+    {
+        JsonElement bar = Bar(
+            $$"""{"back":{{Action}},"navigation":{{Action}},"primary":null,"secondary":null,"info":null}""");
+
+        Assert.Equal(new[] { "back", "navigation" }, ContextBarLayout.LeadingSlots(bar));
+    }
+
+    // @scenario: generic_presentation_protocol.feature :: Contextual controls expose four stable roles
+    [Fact]
+    public void LeadingSlots_OmitsAbsentRolesAndTrailingRoles()
+    {
+        JsonElement bar = Bar(
+            $$"""{"back":null,"navigation":null,"primary":{{Action}},"secondary":{{Action}},"info":{{Action}}}""");
+
+        Assert.Empty(ContextBarLayout.LeadingSlots(bar));
+    }
+
+    // Info sits beside Actions, closer to the title; the menu button is the
+    // very trailing end (diagram: `[‹] Title … [ⓘ] [⋯]`).
+    // @scenario: generic_presentation_protocol.feature :: Contextual controls expose four stable roles
+    [Fact]
+    public void TrailingSlots_PutsInfoBeforeSecondary()
+    {
+        JsonElement bar = Bar(
+            $$"""{"back":{{Action}},"navigation":null,"primary":null,"secondary":{{Action}},"info":{{Action}}}""");
+
+        Assert.Equal(new[] { "info", "secondary" }, ContextBarLayout.TrailingSlots(bar));
+    }
+
+    // @scenario: generic_presentation_protocol.feature :: Contextual controls expose four stable roles
+    [Fact]
+    public void TrailingSlots_OmitsAbsentRolesAndLeadingRoles()
+    {
+        JsonElement bar = Bar(
+            $$"""{"back":{{Action}},"navigation":{{Action}},"primary":{{Action}},"secondary":null,"info":null}""");
+
+        Assert.Empty(ContextBarLayout.TrailingSlots(bar));
+    }
 }
