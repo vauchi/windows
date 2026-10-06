@@ -9,12 +9,6 @@ public sealed partial class PresentationHost
 {
     private readonly NavigationView Sidebar = new();
     private readonly Grid SurfaceGrid = new();
-    private readonly Border CommandStrip = new();
-    private readonly Button BackButton = new();
-    private readonly Button NavigationButton = new();
-    private readonly Button PrimaryButton = new();
-    private readonly Button SecondaryButton = new();
-    private readonly Button InfoButton = new();
     private readonly InfoBar ProtocolErrorBar = new();
     private readonly InfoBar AlertBar = new();
     private readonly InfoBar FeedbackBar = new();

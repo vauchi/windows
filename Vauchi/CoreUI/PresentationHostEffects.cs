@@ -175,7 +175,9 @@ public sealed partial class PresentationHost
             if (!activated)
                 Dispatch(PresentationEvents.OverlayDismissed(surfaceId, "action_menu"));
         };
-        menu.ShowAt(SecondaryButton);
+        // Falls back to the host itself: this overlay can be raised from a
+        // surface whose own title row has no Secondary slot.
+        menu.ShowAt((FrameworkElement?)_activeSecondaryAnchor ?? this);
     }
 
     private void ShowToast(JsonElement toast)

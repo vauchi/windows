@@ -24,6 +24,7 @@ public sealed partial class PresentationHost : UserControl
     private int _reportedHeight = -1;
     private string _overlaySurfaceId = "";
     private string _overlayKind = "";
+    private Button? _activeSecondaryAnchor;
 
     public event Action<JsonElement>? NativeEffectReady;
     public event Action? NativeBackRequested;
@@ -132,13 +133,16 @@ public sealed partial class PresentationHost : UserControl
                 Width = new GridLength(1, GridUnitType.Star),
             });
 
+        _activeSecondaryAnchor = null;
         for (int index = 0; index < visible.Count; index++)
         {
             string surfaceId = visible[index];
             if (_state.Surface(surfaceId) is not { } surface)
                 continue;
-            var renderer = new PresentationSurface(surface);
+            var renderer = new PresentationSurface(surface, _state.ContextBar(surfaceId));
             renderer.EventReady += DispatchSurfaceEvent;
+            if (surfaceId == _state.ActiveSurfaceId)
+                _activeSecondaryAnchor = renderer.SecondaryActionButton;
             var border = new Border
             {
                 Child = renderer,
@@ -150,7 +154,7 @@ public sealed partial class PresentationHost : UserControl
             Grid.SetColumn(border, index);
             SurfaceGrid.Children.Add(border);
         }
-        RenderContextBar();
+        RegisterShortcuts(_state.ActiveContextBar);
         RenderNavigation();
         RenderOverlay();
     }
@@ -197,43 +201,6 @@ public sealed partial class PresentationHost : UserControl
         DispatchSurfaceEvent(
             surfaceId,
             PresentationEvents.ActionActivated(surfaceId, interactionId));
-    }
-
-    private void RenderContextBar()
-    {
-        JsonElement? bar = _state.ActiveContextBar;
-        ConfigureRole(BackButton, bar, "back");
-        ConfigureRole(NavigationButton, bar, "navigation");
-        ConfigureRole(PrimaryButton, bar, "primary");
-        ConfigureRole(SecondaryButton, bar, "secondary");
-        ConfigureRole(InfoButton, bar, "info");
-        CommandStrip.Visibility = ContextBarLayout.Slots(bar).Count == 0
-            ? Visibility.Collapsed
-            : Visibility.Visible;
-        RegisterShortcuts(bar);
-    }
-
-    private static void ConfigureRole(Button button, JsonElement? bar, string role)
-    {
-        if (bar is not { } value
-            || !value.TryGetProperty(role, out JsonElement action)
-            || action.ValueKind != JsonValueKind.Object)
-        {
-            button.Visibility = Visibility.Collapsed;
-            button.Tag = null;
-            return;
-        }
-        button.Visibility = Visibility.Visible;
-        button.Content = action.GetProperty("label").GetString() ?? "";
-        button.IsEnabled = !action.TryGetProperty("enabled", out JsonElement enabled)
-                           || enabled.GetBoolean();
-        button.Tag = action.GetProperty("interaction_id").GetString() ?? "";
-        string accessible = action.TryGetProperty(
-            "accessibility_label",
-            out JsonElement accessibility)
-            ? accessibility.GetString() ?? ""
-            : "";
-        AutomationProperties.SetName(button, accessible);
     }
 
     /// <summary>
@@ -346,46 +313,40 @@ public sealed partial class PresentationHost : UserControl
             PresentationEvents.OverlayDismissed(_overlaySurfaceId, _overlayKind));
     }
 
-    private void ActivateRole(Button button)
+    /// <summary>
+    /// Keyboard equivalent of tapping a role's button in its surface's
+    /// title row or bottom primary button (vauchi/private#534) — reads the
+    /// role straight from the active bar rather than a named control, since
+    /// each surface now builds its own buttons.
+    /// </summary>
+    private void ActivateRole(JsonElement? bar, string role)
     {
         if (_state.ActiveSurfaceId is not { Length: > 0 } surfaceId
-            || button.Tag is not string { Length: > 0 } interactionId)
+            || bar is not { } value
+            || !value.TryGetProperty(role, out JsonElement action)
+            || action.ValueKind != JsonValueKind.Object
+            || action.GetProperty("interaction_id").GetString() is not { Length: > 0 } interactionId)
             return;
         DispatchSurfaceEvent(
             surfaceId,
             PresentationEvents.ActionActivated(surfaceId, interactionId));
     }
 
-    private void BackButton_Click(object sender, RoutedEventArgs e) =>
-        ActivateRole(BackButton);
-
-    private void NavigationButton_Click(object sender, RoutedEventArgs e) =>
-        ActivateRole(NavigationButton);
-
-    private void PrimaryButton_Click(object sender, RoutedEventArgs e) =>
-        ActivateRole(PrimaryButton);
-
-    private void SecondaryButton_Click(object sender, RoutedEventArgs e) =>
-        ActivateRole(SecondaryButton);
-
-    private void InfoButton_Click(object sender, RoutedEventArgs e) =>
-        ActivateRole(InfoButton);
-
     private void RegisterShortcuts(JsonElement? bar)
     {
         KeyboardAccelerators.Clear();
         AddShortcut(VirtualKey.Escape, VirtualKeyModifiers.None, RequestBack);
-        AddShortcut(VirtualKey.K, VirtualKeyModifiers.Control, () => ActivateRole(NavigationButton));
-        AddShortcut(VirtualKey.Enter, VirtualKeyModifiers.Control, () => ActivateRole(PrimaryButton));
-        AddShortcut(VirtualKey.Down, VirtualKeyModifiers.Menu, () => ActivateRole(SecondaryButton));
-        AddShortcut(VirtualKey.F1, VirtualKeyModifiers.None, () => ActivateRole(InfoButton));
+        AddShortcut(VirtualKey.K, VirtualKeyModifiers.Control, () => ActivateRole(bar, "navigation"));
+        AddShortcut(VirtualKey.Enter, VirtualKeyModifiers.Control, () => ActivateRole(bar, "primary"));
+        AddShortcut(VirtualKey.Down, VirtualKeyModifiers.Menu, () => ActivateRole(bar, "secondary"));
+        AddShortcut(VirtualKey.F1, VirtualKeyModifiers.None, () => ActivateRole(bar, "info"));
         if (bar is { } value
             && value.TryGetProperty("primary", out JsonElement primary)
             && primary.ValueKind == JsonValueKind.Object
             && primary.TryGetProperty("shortcut", out JsonElement shortcut)
             && shortcut.GetString() == "undo")
         {
-            AddShortcut(VirtualKey.Z, VirtualKeyModifiers.Control, () => ActivateRole(PrimaryButton));
+            AddShortcut(VirtualKey.Z, VirtualKeyModifiers.Control, () => ActivateRole(bar, "primary"));
         }
     }
 

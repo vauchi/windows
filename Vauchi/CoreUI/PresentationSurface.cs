@@ -17,14 +17,27 @@ public sealed partial class PresentationSurface : UserControl
 
     public event Action<string, string>? EventReady;
 
-    public PresentationSurface(JsonElement surface)
+    public PresentationSurface(JsonElement surface, JsonElement? contextBar)
     {
-        Render(surface);
+        Render(surface, contextBar);
     }
 
     public string SurfaceId => _surfaceId;
 
-    private void Render(JsonElement surface)
+    /// <summary>
+    /// The trailing ⋯ button, if this surface's bar has a Secondary slot —
+    /// the anchor the action-menu overlay opens against (vauchi/private#534).
+    /// </summary>
+    public Button? SecondaryActionButton { get; private set; }
+
+    /// <summary>
+    /// Builds the surface the way the design canvas now draws every screen
+    /// (vauchi/private#534): a title row carrying Back/Navigation leading
+    /// and Info/Secondary trailing, the body below, and — only when Core
+    /// sends one — a full-width Primary button under it. Absent slots take
+    /// no space; the retired separate bottom row no longer exists.
+    /// </summary>
+    private void Render(JsonElement surface, JsonElement? contextBar)
     {
         _surfaceId = String(surface, "surface_id");
         _minimumTargetSize = TargetSize.From(surface);
@@ -34,13 +47,6 @@ public sealed partial class PresentationSurface : UserControl
             Spacing = Token(surface, "spacing_medium", 12),
             Padding = new Thickness(Token(surface, "spacing_large", 24)),
         };
-        content.Children.Add(new TextBlock
-        {
-            Text = String(surface, "title"),
-            FontSize = 28,
-            FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
-            TextWrapping = TextWrapping.Wrap,
-        });
         string subtitle = String(surface, "subtitle");
         if (subtitle.Length > 0)
         {
@@ -59,7 +65,7 @@ public sealed partial class PresentationSurface : UserControl
         }
 
         string layout = String(surface, "layout");
-        Content = layout == "scroll"
+        FrameworkElement body = layout == "scroll"
             ? new ScrollViewer
             {
                 Content = content,
@@ -67,8 +73,93 @@ public sealed partial class PresentationSurface : UserControl
                 VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
             }
             : content;
+
+        var root = new Grid();
+        root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+        Grid.SetRow(body, 1);
+        root.Children.Add(RenderTitleRow(surface, contextBar));
+        root.Children.Add(body);
+
+        if (contextBar is { } bar
+            && bar.TryGetProperty("primary", out JsonElement primary)
+            && primary.ValueKind == JsonValueKind.Object)
+        {
+            root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            Button primaryButton = ActionButton(primary);
+            primaryButton.HorizontalContentAlignment = HorizontalAlignment.Center;
+            AutomationProperties.SetAutomationId(primaryButton, "context-primary");
+            Grid.SetRow(primaryButton, 2);
+            root.Children.Add(primaryButton);
+        }
+
+        Content = root;
         AutomationProperties.SetAutomationId(this, _surfaceId);
         AutomationProperties.SetName(this, String(surface, "accessibility_label"));
+    }
+
+    /// <summary>
+    /// `[‹] Title ……… [ⓘ] [⋯]` — Back/Navigation leading, Info/Secondary
+    /// trailing, the title wrapping or shortening before either side moves
+    /// (vauchi/private#534 design).
+    /// </summary>
+    private FrameworkElement RenderTitleRow(JsonElement surface, JsonElement? contextBar)
+    {
+        var row = new Grid { ColumnSpacing = 4 };
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+        var leading = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4 };
+        foreach (string role in ContextBarLayout.LeadingSlots(contextBar))
+            leading.Children.Add(RoleButton(contextBar!.Value, role));
+        Grid.SetColumn(leading, 0);
+
+        var title = new TextBlock
+        {
+            Text = String(surface, "title"),
+            FontSize = 22,
+            FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
+            TextWrapping = TextWrapping.Wrap,
+            VerticalAlignment = VerticalAlignment.Center,
+            Margin = new Thickness(8, 0, 8, 0),
+        };
+        Grid.SetColumn(title, 1);
+
+        var trailing = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4 };
+        foreach (string role in ContextBarLayout.TrailingSlots(contextBar))
+        {
+            Button button = RoleButton(contextBar!.Value, role);
+            if (role == "secondary")
+                SecondaryActionButton = button;
+            trailing.Children.Add(button);
+        }
+        Grid.SetColumn(trailing, 2);
+
+        row.Children.Add(leading);
+        row.Children.Add(title);
+        row.Children.Add(trailing);
+        return row;
+    }
+
+    private Button RoleButton(JsonElement contextBar, string role)
+    {
+        JsonElement action = contextBar.GetProperty(role);
+        string interactionId = String(action, "interaction_id");
+        var button = new Button
+        {
+            Content = String(action, "label"),
+            IsEnabled = Boolean(action, "enabled", true),
+            MinWidth = _minimumTargetSize,
+            MinHeight = _minimumTargetSize,
+        };
+        FocusVisualStyle.Apply(button);
+        AutomationProperties.SetAutomationId(button, $"context-{role}");
+        AutomationProperties.SetName(
+            button,
+            String(action, "accessibility_label", String(action, "label")));
+        button.Click += (_, _) => EmitAction(interactionId);
+        return button;
     }
 
     private FrameworkElement RenderNode(JsonElement node)
