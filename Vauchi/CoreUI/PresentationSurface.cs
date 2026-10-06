@@ -113,7 +113,7 @@ public sealed partial class PresentationSurface : UserControl
 
         var leading = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4 };
         foreach (string role in ContextBarLayout.LeadingSlots(contextBar))
-            leading.Children.Add(RoleButton(contextBar!.Value, role));
+            leading.Children.Add(RoleButton(contextBar, role));
         Grid.SetColumn(leading, 0);
 
         var title = new TextBlock
@@ -130,7 +130,7 @@ public sealed partial class PresentationSurface : UserControl
         var trailing = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4 };
         foreach (string role in ContextBarLayout.TrailingSlots(contextBar))
         {
-            Button button = RoleButton(contextBar!.Value, role);
+            Button button = RoleButton(contextBar, role);
             if (role == "secondary")
                 SecondaryActionButton = button;
             trailing.Children.Add(button);
@@ -158,9 +158,9 @@ public sealed partial class PresentationSurface : UserControl
             ["secondary"] = "\uE712", // More
         };
 
-    private Button RoleButton(JsonElement contextBar, string role)
+    private Button RoleButton(JsonElement? contextBar, string role)
     {
-        JsonElement action = contextBar.GetProperty(role);
+        JsonElement action = contextBar!.Value.GetProperty(role);
         string interactionId = String(action, "interaction_id");
         var button = new Button
         {
