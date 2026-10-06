@@ -6,6 +6,7 @@ using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using System;
+using System.Collections.Generic;
 using System.Text.Json;
 
 namespace Vauchi.CoreUI;
@@ -142,13 +143,32 @@ public sealed partial class PresentationSurface : UserControl
         return row;
     }
 
+    /// <summary>
+    /// The platform glyph for a title-row role — fixed by the role itself,
+    /// never by Core's <c>icon_token</c>: back/navigation/info/secondary
+    /// are chrome, not domain content (ADR-066; vauchi/private#534 design,
+    /// "platform back chevron").
+    /// </summary>
+    private static readonly IReadOnlyDictionary<string, string> RoleGlyphs =
+        new Dictionary<string, string>
+        {
+            ["back"] = "\uE72B", // ChevronLeft
+            ["navigation"] = "\uE700", // GlobalNavButton
+            ["info"] = "\uE946", // Info
+            ["secondary"] = "\uE712", // More
+        };
+
     private Button RoleButton(JsonElement contextBar, string role)
     {
         JsonElement action = contextBar.GetProperty(role);
         string interactionId = String(action, "interaction_id");
         var button = new Button
         {
-            Content = String(action, "label"),
+            Content = new FontIcon
+            {
+                Glyph = RoleGlyphs[role],
+                FontSize = PresentationIcons.DefaultSize,
+            },
             IsEnabled = Boolean(action, "enabled", true),
             MinWidth = _minimumTargetSize,
             MinHeight = _minimumTargetSize,
