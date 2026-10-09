@@ -329,10 +329,7 @@ build:app:
   before_script:
     - !reference [.cabi-download-script, script]
   script:
-    # PRI tooling disabled: SaaS runners lack Visual Studio's
-    # Microsoft.Build.Packaging.Pri.Tasks.dll. Unpackaged WinUI apps
-    # don't need PRI at runtime (XAML loads from loose .xbf files).
-    - dotnet build Vauchi.sln -c Release -p:EnableCoreMrtTooling=false -p:AppxGeneratePriEnabled=false
+    - dotnet build Vauchi.sln -c Release
     - |
       # Report binary sizes for Grafana tracking
       $outDir = "Vauchi\bin\x64\Release\net8.0-windows10.0.22621.0\win-x64"
@@ -481,7 +478,7 @@ secret_detection:
     # that step does: unpack the framework package the NuGet cache already
     # holds next to the executable. If no package is found, install the
     # runtime on the machine instead, which framework-dependent apps accept.
-    - dotnet publish Vauchi/Vauchi.csproj -c Debug -r win-x64 --self-contained -p:Platform=x64 -p:EnableCoreMrtTooling=false -p:AppxGeneratePriEnabled=false -o build/snapshot-app
+    - dotnet publish Vauchi/Vauchi.csproj -c Debug -r win-x64 --self-contained -p:Platform=x64 -o build/snapshot-app
     - |
       $outDir = Join-Path $env:CI_PROJECT_DIR 'build\snapshot-app'
       $packages = Join-Path $env:USERPROFILE '.nuget\packages\microsoft.windowsappsdk'
@@ -673,7 +670,7 @@ test:snapshots:record:
   before_script:
     - !reference [.cabi-download-script, script]
   script:
-    - dotnet build Vauchi/Vauchi.csproj -c Debug -p:Platform=x64 -p:EnableCoreMrtTooling=false -p:AppxGeneratePriEnabled=false
+    - dotnet build Vauchi/Vauchi.csproj -c Debug -p:Platform=x64
     - |
       $debugDir = "Vauchi\bin\x64\Debug\net8.0-windows10.0.22621.0\win-x64"
       Copy-Item cabi/vauchi_cabi.dll -Destination $debugDir -Force
@@ -697,17 +694,13 @@ test:snapshots:record:
 test:a11y:
   stage: test
   script:
-    # Suppress PRI tooling exactly like build:app + test:snapshots:record do.
-    # Without these flags, MRT restore fails with MSB4062 on SaaS Windows
-    # runners whose SDK layout lacks Microsoft.Build.Packaging.Pri.Tasks.dll.
-    # See 2026-04-20-windows-test-jobs-broken.
     # No name filter: Vauchi.Tests holds only WinUI-app-context tests
     # (accessibility). Headless unit tests live in Vauchi.UnitTests (test:unit).
     # A name filter here once hid SmokeTests from every lane — see
     # 2026-06-11-e2e-tests-invisible-to-ci (windows instance).
     # -r win-x64: WinUI test projects need a RID so the testhost output carries
     # the test-platform assemblies (see Vauchi.Tests.csproj + 2026-04-20 record).
-    - dotnet test Vauchi.Tests/Vauchi.Tests.csproj -r win-x64 -p:EnableCoreMrtTooling=false -p:AppxGeneratePriEnabled=false
+    - dotnet test Vauchi.Tests/Vauchi.Tests.csproj -r win-x64
   tags: [windows, dotnet]
   when: manual
 
