@@ -582,8 +582,8 @@ test:snapshots:
 # through the real WinUI renderer to PNG files. Needs a desktop-capable
 # Windows runner: saas-windows-medium-amd64 is a Server Core image
 # without explorer.exe or RoMetadata.dll, so the Windows App SDK cannot
-# load there and this job only produces images once it moves to the
-# self-hosted desktop runner the fleet rebuild adds — see
+# load there. pam runs jobs in an interactive console session, like
+# test:snapshots — see
 # _private/docs/backlog/2026-09-11-windows-screenshot-capture-needs-desktop-runner.
 test:screen-catalog:
   stage: test
@@ -654,7 +654,7 @@ test:screen-catalog:
     paths:
       - build/screen-catalog/
     expire_in: 7 days
-  tags: [saas-windows-medium-amd64]
+  tags: [windows, dotnet]
   allow_failure: true
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
