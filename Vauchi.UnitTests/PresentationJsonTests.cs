@@ -64,4 +64,50 @@ public class PresentationJsonTests
         Assert.Equal(new byte[] { 0, 127, 255 }, PresentationJson.Bytes(valid.RootElement));
         Assert.Null(PresentationJson.Bytes(invalid.RootElement));
     }
+
+    // Core serializes an absent optional number as null; JsonElement.TryGetInt32
+    // throws on null instead of returning false, which stopped the screen
+    // catalog render at the first input without max_length (private#593).
+    [Theory]
+    [InlineData("null")]
+    [InlineData("\"3\"")]
+    [InlineData("true")]
+    [InlineData("{}")]
+    [InlineData("[]")]
+    [InlineData("2147483648")]
+    [InlineData("1.5")]
+    public void Int32_IsNullForAnythingButAnInt32Number(string json)
+    {
+        using JsonDocument document = JsonDocument.Parse(json);
+
+        Assert.Null(PresentationJson.Int32(document.RootElement));
+    }
+
+    [Fact]
+    public void Int32_ReadsAnInt32Number()
+    {
+        using JsonDocument document = JsonDocument.Parse("-7");
+
+        Assert.Equal(-7, PresentationJson.Int32(document.RootElement));
+    }
+
+    [Theory]
+    [InlineData("null")]
+    [InlineData("\"0.5\"")]
+    [InlineData("false")]
+    [InlineData("{}")]
+    public void Double_IsNullForAnythingButANumber(string json)
+    {
+        using JsonDocument document = JsonDocument.Parse(json);
+
+        Assert.Null(PresentationJson.Double(document.RootElement));
+    }
+
+    [Fact]
+    public void Double_ReadsANumber()
+    {
+        using JsonDocument document = JsonDocument.Parse("0.25");
+
+        Assert.Equal(0.25, PresentationJson.Double(document.RootElement));
+    }
 }

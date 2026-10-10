@@ -179,4 +179,28 @@ public class PresentationStateNavigationTests
 
         Assert.Null(state.Navigation("contacts"));
     }
+
+    [Fact]
+    public void SetNavigationWithNullBadgeCount_ShowsNoBadge()
+    {
+        var state = new PresentationState();
+        Assert.True(state.TryApplyEnvelope("""
+            {"commands":[
+              {"ReplaceSurface":{"surface":{"surface_id":"contacts","revision":1,"title":"Contacts","nodes":[]}}},
+              {"SetNavigation":{"surface_id":"contacts","revision":1,"navigation":{"items":[
+                {
+                  "interaction_id":"surface.1.context.presentation.navigation.contacts",
+                  "label":"Contacts",
+                  "accessibility_label":"Contacts",
+                  "icon_token":null,
+                  "selected":false,
+                  "badge_count":null
+                }
+              ]}}}
+            ]}
+            """, out _, out var error), error);
+
+        NavigationSpec item = Assert.Single(state.Navigation("contacts")!);
+        Assert.Equal(0, item.BadgeCount);
+    }
 }
