@@ -337,6 +337,7 @@ build:app:
   before_script:
     - !reference [.cabi-download-script, script]
   script:
+    - powershell -ExecutionPolicy Bypass -File tests/check-cabi-exports.ps1
     # PRI tooling off: `dotnet build` looks for the App SDK's PRI tasks under
     # the dotnet SDK, never under Visual Studio, so it fails with MSB4062 even
     # on pam with VS 2026 installed (windows!182). Unpackaged WinUI apps don't
