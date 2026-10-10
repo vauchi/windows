@@ -62,71 +62,79 @@ default:
 .cabi-download-script:
   script:
     - |
+      # This block runs as before_script, and on a shell executor
+      # before_script and script are ONE PowerShell script: a top-level
+      # `return` or `exit 0` here ends the whole job as a success before
+      # script runs. build:app passed that way on every cache hit (job
+      # 17064703386 never ran dotnet build). Skip with a flag instead.
       $config = Get-Content cabi-version.json | ConvertFrom-Json
+      $cabiReady = $false
       if ($config.version -eq "0.0.0") {
         Write-Host "CABI version is placeholder (0.0.0) — skipping download"
-        exit 0
+        $cabiReady = $true
       }
 
       # Skip if DLL already matches expected hash (from cache or prior job)
-      if (Test-Path cabi/vauchi_cabi.dll) {
+      if (-not $cabiReady -and (Test-Path cabi/vauchi_cabi.dll)) {
         $actual = (Get-FileHash cabi/vauchi_cabi.dll -Algorithm SHA256).Hash.ToLower()
         if ($actual -eq $config.sha256) {
           Write-Host "CABI DLL already up to date ($($config.version))"
-          return
+          $cabiReady = $true
         }
       }
 
-      New-Item -ItemType Directory -Force -Path cabi | Out-Null
-      # Hardcoded core project ID (77874344) — eliminates dependency on
-      # VAUCHI_CORE_PROJECT_ID CI variable which is protected (empty on MR pipelines).
-      $base = "$env:CI_API_V4_URL/projects/77874344/packages/generic/vauchi-cabi-windows/$($config.version)"
+      if (-not $cabiReady) {
+        New-Item -ItemType Directory -Force -Path cabi | Out-Null
+        # Hardcoded core project ID (77874344) — eliminates dependency on
+        # VAUCHI_CORE_PROJECT_ID CI variable which is protected (empty on MR pipelines).
+        $base = "$env:CI_API_V4_URL/projects/77874344/packages/generic/vauchi-cabi-windows/$($config.version)"
 
-      Write-Host "Downloading vauchi_cabi.dll v$($config.version)..."
-      Write-Host "URL base: $base"
-      # Use curl.exe with HTTP Basic Auth (gitlab-ci-token:<JOB_TOKEN>).
-      # JOB-TOKEN header triggers 308 redirect to CDN which may 404;
-      # Basic Auth avoids the CDN redirect path entirely.
-      $curlAuth = "gitlab-ci-token:$env:CI_JOB_TOKEN"
-      foreach ($file in @("vauchi_cabi.dll", "vauchi_cabi.dll.sha256", "vauchi_cabi.dll.sha256.bundle")) {
-        $attempt = 0
-        $ok = $false
-        while ($attempt -lt 3 -and -not $ok) {
-          $attempt++
-          Write-Host "  $file (attempt $attempt)..."
-          curl.exe -fSL -u $curlAuth --retry 2 -o "cabi/$file" "$base/$file"
-          if ($LASTEXITCODE -eq 0) { $ok = $true } else {
-            Write-Host "  Failed (exit $LASTEXITCODE), retrying..."
-            Start-Sleep -Seconds 2
+        Write-Host "Downloading vauchi_cabi.dll v$($config.version)..."
+        Write-Host "URL base: $base"
+        # Use curl.exe with HTTP Basic Auth (gitlab-ci-token:<JOB_TOKEN>).
+        # JOB-TOKEN header triggers 308 redirect to CDN which may 404;
+        # Basic Auth avoids the CDN redirect path entirely.
+        $curlAuth = "gitlab-ci-token:$env:CI_JOB_TOKEN"
+        foreach ($file in @("vauchi_cabi.dll", "vauchi_cabi.dll.sha256", "vauchi_cabi.dll.sha256.bundle")) {
+          $attempt = 0
+          $ok = $false
+          while ($attempt -lt 3 -and -not $ok) {
+            $attempt++
+            Write-Host "  $file (attempt $attempt)..."
+            curl.exe -fSL -u $curlAuth --retry 2 -o "cabi/$file" "$base/$file"
+            if ($LASTEXITCODE -eq 0) { $ok = $true } else {
+              Write-Host "  Failed (exit $LASTEXITCODE), retrying..."
+              Start-Sleep -Seconds 2
+            }
+          }
+          if (-not $ok) {
+            Write-Error "Failed to download $file after 3 attempts"
+            exit 1
           }
         }
-        if (-not $ok) {
-          Write-Error "Failed to download $file after 3 attempts"
+
+        # Install cosign
+        $COSIGN_VERSION = "v3.0.5"
+        $COSIGN_URL = "https://github.com/sigstore/cosign/releases/download/$COSIGN_VERSION/cosign-windows-amd64.exe"
+        curl.exe -fSL --retry 2 -o cosign.exe $COSIGN_URL
+
+        # Verify cosign signature
+        Write-Host "Verifying cosign signature..."
+        & .\cosign.exe verify-blob --key cosign.pub --bundle cabi/vauchi_cabi.dll.sha256.bundle cabi/vauchi_cabi.dll.sha256
+        if ($LASTEXITCODE -ne 0) {
+          Write-Error "Cosign verification FAILED"
           exit 1
         }
-      }
+        Write-Host "Cosign signature verified"
 
-      # Install cosign
-      $COSIGN_VERSION = "v3.0.5"
-      $COSIGN_URL = "https://github.com/sigstore/cosign/releases/download/$COSIGN_VERSION/cosign-windows-amd64.exe"
-      curl.exe -fSL --retry 2 -o cosign.exe $COSIGN_URL
-
-      # Verify cosign signature
-      Write-Host "Verifying cosign signature..."
-      & .\cosign.exe verify-blob --key cosign.pub --bundle cabi/vauchi_cabi.dll.sha256.bundle cabi/vauchi_cabi.dll.sha256
-      if ($LASTEXITCODE -ne 0) {
-        Write-Error "Cosign verification FAILED"
-        exit 1
+        # Verify SHA-256
+        $actual = (Get-FileHash cabi/vauchi_cabi.dll -Algorithm SHA256).Hash.ToLower()
+        if ($actual -ne $config.sha256) {
+          Write-Error "SHA-256 mismatch: expected $($config.sha256), got $actual"
+          exit 1
+        }
+        Write-Host "SHA-256 verified: $actual"
       }
-      Write-Host "Cosign signature verified"
-
-      # Verify SHA-256
-      $actual = (Get-FileHash cabi/vauchi_cabi.dll -Algorithm SHA256).Hash.ToLower()
-      if ($actual -ne $config.sha256) {
-        Write-Error "SHA-256 mismatch: expected $($config.sha256), got $actual"
-        exit 1
-      }
-      Write-Host "SHA-256 verified: $actual"
 
 # T2.5 — proves pam before any real job is routed to it (runbook §7.2).
 #
