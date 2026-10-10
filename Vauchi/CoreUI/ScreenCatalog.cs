@@ -80,7 +80,7 @@ public static class ScreenCatalog
             if (root.ValueKind != JsonValueKind.Object)
                 throw new FormatException("screen catalog must be an object");
             if (!root.TryGetProperty("schema_version", out JsonElement version)
-                || !version.TryGetInt32(out int schemaVersion)
+                || PresentationJson.Int32(version) is not int schemaVersion
                 || schemaVersion != SupportedSchemaVersion)
             {
                 throw new FormatException(

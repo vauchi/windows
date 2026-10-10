@@ -78,19 +78,19 @@ public sealed partial class MainWindow
         int earliestSecs = schedule.TryGetProperty(
             "earliest_secs",
             out JsonElement earliestValue)
-            && earliestValue.TryGetInt32(out int parsedEarliestSecs)
+            && PresentationJson.Int32(earliestValue) is int parsedEarliestSecs
                 ? parsedEarliestSecs
                 : 0;
         int deadlineSecs = schedule.TryGetProperty(
             "deadline_secs",
             out JsonElement deadlineValue)
-            && deadlineValue.TryGetInt32(out int parsedDeadlineSecs)
+            && PresentationJson.Int32(deadlineValue) is int parsedDeadlineSecs
                 ? parsedDeadlineSecs
                 : 0;
         int? earliestMillis = schedule.TryGetProperty(
             "earliest_millis",
             out JsonElement earliestMillisValue)
-            && earliestMillisValue.TryGetInt32(out int parsedEarliestMillis)
+            && PresentationJson.Int32(earliestMillisValue) is int parsedEarliestMillis
                 ? parsedEarliestMillis
                 : null;
         int delayMilliseconds = WakeupTiming.DelayMillisecondsFor(

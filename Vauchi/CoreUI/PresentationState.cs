@@ -281,7 +281,7 @@ public sealed class PresentationState
         Selected: item.TryGetProperty("selected", out var selected)
             && selected.ValueKind == JsonValueKind.True,
         BadgeCount: item.TryGetProperty("badge_count", out var badge)
-            && badge.TryGetInt32(out int count)
+            && PresentationJson.Int32(badge) is int count
                 ? count
                 : 0);
 

@@ -30,7 +30,7 @@ public readonly record struct QrPlacement(int Size, int X, int Y)
 
     private static int IntProperty(JsonElement value, string property) =>
         value.TryGetProperty(property, out JsonElement element)
-        && element.TryGetInt32(out int number)
+        && PresentationJson.Int32(element) is int number
             ? number
             : 0;
 }

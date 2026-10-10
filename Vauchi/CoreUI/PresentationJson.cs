@@ -20,6 +20,14 @@ public static class PresentationJson
         return (properties.Current.Name, properties.Current.Value);
     }
 
+    // JsonElement.TryGetInt32/TryGetDouble throw on a non-number instead of
+    // returning false, and Core serializes an absent optional number as null.
+    public static int? Int32(JsonElement value) =>
+        value.ValueKind == JsonValueKind.Number && value.TryGetInt32(out int number) ? number : null;
+
+    public static double? Double(JsonElement value) =>
+        value.ValueKind == JsonValueKind.Number && value.TryGetDouble(out double number) ? number : null;
+
     public static byte[]? Bytes(JsonElement value)
     {
         if (value.ValueKind != JsonValueKind.Array)
@@ -29,7 +37,7 @@ public static class PresentationJson
         int index = 0;
         foreach (JsonElement element in value.EnumerateArray())
         {
-            if (!element.TryGetInt32(out int number) || number is < 0 or > 255)
+            if (Int32(element) is not int number || number is < 0 or > 255)
                 return null;
             result[index++] = (byte)number;
         }

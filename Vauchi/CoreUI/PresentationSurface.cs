@@ -327,14 +327,14 @@ public sealed partial class PresentationSurface : UserControl
     /// </summary>
     private static int? Int32(JsonElement value, string property) =>
         value.TryGetProperty(property, out JsonElement element)
-        && element.TryGetInt32(out int number)
+        && PresentationJson.Int32(element) is int number
             ? number
             : null;
 
     private static double Token(JsonElement surface, string property, double fallback) =>
         surface.TryGetProperty("tokens", out JsonElement tokens)
         && tokens.TryGetProperty(property, out JsonElement value)
-        && value.TryGetDouble(out double number)
+        && PresentationJson.Double(value) is double number
             ? number
             : fallback;
 }

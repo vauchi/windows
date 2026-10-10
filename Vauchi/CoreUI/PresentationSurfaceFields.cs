@@ -64,7 +64,7 @@ public sealed partial class PresentationSurface
                 MinHeight = _minimumTargetSize,
             };
             if (payload.TryGetProperty("max_length", out JsonElement maximum)
-                && maximum.TryGetInt32(out int maxLength)
+                && PresentationJson.Int32(maximum) is int maxLength
                 && maxLength > 0)
             {
                 text.MaxLength = maxLength;
@@ -204,7 +204,7 @@ public sealed partial class PresentationSurface
         var container = FieldContainer(String(payload, "label"));
         var progress = new ProgressBar { Minimum = 0, Maximum = 1 };
         if (payload.TryGetProperty("value", out JsonElement value)
-            && value.TryGetDouble(out double number))
+            && PresentationJson.Double(value) is double number)
         {
             progress.Value = number;
         }
@@ -227,7 +227,7 @@ public sealed partial class PresentationSurface
 
     private static double Number(JsonElement value, string property, double fallback) =>
         value.TryGetProperty(property, out JsonElement element)
-        && element.TryGetDouble(out double number)
+        && PresentationJson.Double(element) is double number
             ? number
             : fallback;
 }

@@ -26,7 +26,7 @@ public static class TargetSize
     public static double From(JsonElement surface) =>
         surface.TryGetProperty("tokens", out JsonElement tokens)
         && tokens.TryGetProperty("minimum_target_size", out JsonElement minimum)
-        && minimum.TryGetDouble(out double value)
+        && PresentationJson.Double(minimum) is double value
             ? Math.Max(Floor, value)
             : Default;
 }
