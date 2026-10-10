@@ -52,8 +52,10 @@ default:
 .stop-stale-vauchi:
   script:
     - |
-      $stale = Get-Process -Name Vauchi -ErrorAction SilentlyContinue
-      if ($stale) {
+      # Get-Process -Name errors when nothing matches, and the runner fails
+      # the step on it even with -ErrorAction SilentlyContinue.
+      $stale = @(Get-Process | Where-Object { $_.ProcessName -eq 'Vauchi' })
+      if ($stale.Count -gt 0) {
         Write-Host "Stopping $($stale.Count) leftover Vauchi process(es) before checkout"
         $stale | Stop-Process -Force
         Start-Sleep -Seconds 2
