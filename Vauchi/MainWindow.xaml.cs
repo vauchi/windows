@@ -93,8 +93,6 @@ public sealed partial class MainWindow : Window
         IntPtr config = VauchiNative.ConfigNew(dataDirectory, null);
         VauchiNative.ConfigSetStorageKey(config, key, (nuint)key.Length);
         Array.Clear(key);
-        VauchiNative.ConfigEnableBle(config, true);
-        VauchiNative.ConfigEnableAudio(config, true);
         _appHandle = VauchiNative.AppCreateFromConfig(config);
         if (_appHandle == IntPtr.Zero)
         {

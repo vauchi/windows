@@ -3,7 +3,6 @@
 
 using System;
 using System.Linq;
-using System.Text.Json;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Vauchi.Helpers;
@@ -92,10 +91,13 @@ public sealed class ExchangeCommandHandler : IDisposable
                     HandleBleCommand(cmd);
                     break;
 
+                // Core's C ABI has had no audio exports since April
+                // (core 3dd36f88); calling them threw on a background
+                // task and the command was never answered (private#609).
                 case ExchangeCommandKind.AudioEmitChallenge:
                 case ExchangeCommandKind.AudioListenForResponse:
                 case ExchangeCommandKind.AudioStop:
-                    HandleAudioCommand(cmd);
+                    SendHardwareUnavailable("Audio");
                     break;
 
                 case ExchangeCommandKind.NfcActivate:
@@ -214,62 +216,6 @@ public sealed class ExchangeCommandHandler : IDisposable
                 break;
             case ExchangeCommandKind.BleDisconnect:
                 _ble.Disconnect();
-                break;
-        }
-    }
-
-    private void HandleAudioCommand(ExchangeCommand cmd)
-    {
-        // Audio commands block — run on background thread
-        switch (cmd.Kind)
-        {
-            case ExchangeCommandKind.AudioEmitChallenge:
-                var emitData = cmd.GetBytes("data") ?? Array.Empty<byte>();
-                System.Threading.Tasks.Task.Run(() =>
-                {
-                    int ok = VauchiNative.AudioEmit(emitData, (nuint)emitData.Length);
-                    if (ok != 1)
-                    {
-                        _dispatcher.TryEnqueue(() => SendHardwareUnavailable("Audio"));
-                    }
-                });
-                break;
-
-            case ExchangeCommandKind.AudioListenForResponse:
-                long t = cmd.GetLong("timeout_ms");
-                ulong timeoutMs = t > 0 ? (ulong)t : 5000;
-                System.Threading.Tasks.Task.Run(() =>
-                {
-                    string? json = VauchiNative.AudioListen(timeoutMs);
-                    _dispatcher.TryEnqueue(() =>
-                    {
-                        if (json == null) return;
-                        // Parse data array from {"data":[1,2,...]}
-                        try
-                        {
-                            using var doc = JsonDocument.Parse(json);
-                            if (doc.RootElement.TryGetProperty("data", out var arr))
-                            {
-                                byte[] bytes = new byte[arr.GetArrayLength()];
-                                int i = 0;
-                                foreach (var elem in arr.EnumerateArray())
-                                    bytes[i++] = (byte)elem.GetInt32();
-                                _sendHardwareEvent(
-                                    ExchangeHardwareEventJson.AudioResponseReceived(bytes));
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            SendHardwareUnavailable("Audio");
-                            System.Diagnostics.Debug.WriteLine(
-                                $"[Vauchi] Audio response parse error: {ex.Message}");
-                        }
-                    });
-                });
-                break;
-
-            case ExchangeCommandKind.AudioStop:
-                System.Threading.Tasks.Task.Run(() => VauchiNative.AudioStop());
                 break;
         }
     }

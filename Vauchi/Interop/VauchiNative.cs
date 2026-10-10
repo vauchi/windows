@@ -100,12 +100,6 @@ public static partial class VauchiNative
         [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2)] byte[] key,
         nuint keyLen);
 
-    [LibraryImport(LibName, EntryPoint = "vauchi_config_enable_ble")]
-    public static partial void ConfigEnableBle(IntPtr config, [MarshalAs(UnmanagedType.U1)] bool enabled);
-
-    [LibraryImport(LibName, EntryPoint = "vauchi_config_enable_audio")]
-    public static partial void ConfigEnableAudio(IntPtr config, [MarshalAs(UnmanagedType.U1)] bool enabled);
-
     [LibraryImport(LibName, EntryPoint = "vauchi_app_create_from_config")]
     public static partial IntPtr AppCreateFromConfig(IntPtr config);
 
@@ -165,8 +159,6 @@ public static partial class VauchiNative
     [LibraryImport(LibName, EntryPoint = "vauchi_app_create_identity", StringMarshalling = StringMarshalling.Utf8)]
     public static partial int AppCreateIdentity(IntPtr handle, string? displayName);
 
-    // ── Audio (ultrasonic proximity, behind 'audio' feature) ────────────
-
     // ── Event callback (Phase 2E) ────────────────────────────────────
 
     /// <summary>
@@ -193,28 +185,4 @@ public static partial class VauchiNative
         StringFree(ptr);
         return result;
     }
-
-    // ── Audio (ultrasonic proximity, behind 'audio' feature) ────────────
-
-    [LibraryImport(LibName, EntryPoint = "vauchi_audio_is_available")]
-    public static partial int AudioIsAvailable();
-
-    [LibraryImport(LibName, EntryPoint = "vauchi_audio_emit")]
-    public static partial int AudioEmit(
-        [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] byte[] data, nuint dataLen);
-
-    [LibraryImport(LibName, EntryPoint = "vauchi_audio_listen")]
-    private static partial IntPtr AudioListenRaw(ulong timeoutMs);
-
-    public static string? AudioListen(ulong timeoutMs)
-    {
-        IntPtr ptr = AudioListenRaw(timeoutMs);
-        if (ptr == IntPtr.Zero) return null;
-        string result = System.Runtime.InteropServices.Marshal.PtrToStringUTF8(ptr)!;
-        StringFree(ptr);
-        return result;
-    }
-
-    [LibraryImport(LibName, EntryPoint = "vauchi_audio_stop")]
-    public static partial void AudioStop();
 }
