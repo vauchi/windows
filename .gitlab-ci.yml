@@ -484,38 +484,19 @@ secret_detection:
 # Visual C++ runtime in place.
 .snapshot-app-build:
   script:
-    # The .NET-Core MSBuild behind `dotnet build`/`dotnet publish` skips the
-    # App SDK's self-contained copy step, and the SaaS Windows image has no
-    # Visual Studio MSBuild (pipelines 2841435588 and 2841492150). Do what
-    # that step does: unpack the framework package the NuGet cache already
-    # holds next to the executable. If no package is found, install the
-    # runtime on the machine instead, which framework-dependent apps accept.
-    - dotnet publish Vauchi/Vauchi.csproj -c Debug -r win-x64 --self-contained -p:Platform=x64 -p:EnableCoreMrtTooling=false -p:AppxGeneratePriEnabled=false -o build/snapshot-app
+    # EnableMsixTooling brings the App SDK's NuGet-shipped PRI tooling, so
+    # `dotnet publish` writes resources.pri and the self-contained runtime
+    # without Visual Studio (pam has no PRI tasks). The PRI-off flags left
+    # the app unable to find ms-appx:///MainWindow.xaml, and unpacking the
+    # framework .msix over the output replaced the app's resources.pri with
+    # the runtime's: XamlParseException, then 0xC000027B (private#593).
+    - dotnet publish Vauchi/Vauchi.csproj -c Debug -r win-x64 --self-contained -p:Platform=x64 -p:EnableMsixTooling=true -o build/snapshot-app
     - |
       $outDir = Join-Path $env:CI_PROJECT_DIR 'build\snapshot-app'
-      $packages = Join-Path $env:USERPROFILE '.nuget\packages\microsoft.windowsappsdk'
-      # The framework package is Microsoft.WindowsAppRuntime.<major>.<minor>.msix;
-      # the Singleton, Main and DDLM packages beside it hold no runtime DLLs.
-      $msix = Get-ChildItem -Path $packages -Recurse -Filter 'Microsoft.WindowsAppRuntime.*.msix' -ErrorAction SilentlyContinue |
-        Where-Object { $_.FullName -match 'win10-x64' -and $_.Name -match '^Microsoft\.WindowsAppRuntime\.[0-9]+\.[0-9]+\.msix$' } |
-        Sort-Object FullName -Descending | Select-Object -First 1
-      if ($msix) {
-        Write-Host "[snapshots] Unpacking framework package $($msix.FullName)"
-        $zip = Join-Path $env:TEMP 'windowsappruntime.zip'
-        Copy-Item $msix.FullName $zip -Force
-        try {
-          Expand-Archive -Path $zip -DestinationPath $outDir -Force -ErrorAction Stop
-          Write-Host "[snapshots] Unpacked $((Get-ChildItem $outDir -Filter 'Microsoft.*.dll').Count) Microsoft.*.dll files"
-        } catch {
-          Write-Host "[snapshots] Expand-Archive failed: $_"
-        }
-      } else {
-        Write-Host "[snapshots] No framework package in $packages; installing the Windows App Runtime"
-        Invoke-WebRequest -Uri 'https://aka.ms/windowsappsdk/1.7/latest/windowsappruntimeinstall-x64.exe' -OutFile windowsappruntimeinstall-x64.exe
-        Start-Process -FilePath .\windowsappruntimeinstall-x64.exe -ArgumentList '--quiet', '--force' -Wait
+      foreach ($required in @('resources.pri', 'Microsoft.UI.Xaml.dll', 'Microsoft.WindowsAppRuntime.dll')) {
+        if (-not (Test-Path (Join-Path $outDir $required))) { Write-Host "[snapshots] publish output lacks $required"; exit 1 }
       }
-      Write-Host "[snapshots] App SDK runtime files next to the app:"
-      Get-ChildItem $outDir -Filter 'Microsoft.WindowsAppRuntime*.dll' | ForEach-Object { Write-Host "  $($_.Name)" }
+      Write-Host "[snapshots] publish output has resources.pri and the App SDK runtime"
     - Copy-Item cabi/vauchi_cabi.dll -Destination build/snapshot-app -Force
     # Microsoft.WindowsAppRuntime.dll links the whole Visual C++ runtime
     # (msvcp140, vcruntime140, vcruntime140_1); with only vcruntime140 on
