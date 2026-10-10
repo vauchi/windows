@@ -46,6 +46,19 @@ workflow:
 default:
   interruptible: true
 
+# A snapshot or catalog job that dies mid-run can leave Vauchi.exe running on
+# pam with build/snapshot-app/*.dll open; git clean then fails every later
+# job on the runner before its script can kill it (windows!190, 2026-10-10).
+.stop-stale-vauchi:
+  script:
+    - |
+      $stale = Get-Process -Name Vauchi -ErrorAction SilentlyContinue
+      if ($stale) {
+        Write-Host "Stopping $($stale.Count) leftover Vauchi process(es) before checkout"
+        $stale | Stop-Process -Force
+        Start-Sleep -Seconds 2
+      }
+
 # Shared CABI download-and-verify logic, invoked via !reference from
 # before_script in any job that needs vauchi_cabi.dll. Consolidated
 # 2026-04-22 (T3.3 of 2026-04-22-windows-main-pipeline-speed) — the
@@ -373,6 +386,8 @@ build:app:
       - cabi/vauchi_cabi.dll
       - metrics.json
   tags: [windows, dotnet]
+  hooks:
+    pre_get_sources_script: !reference [.stop-stale-vauchi, script]
 
 test:unit:
   stage: test
@@ -387,6 +402,8 @@ test:unit:
     reports:
       junit: test-results/unit.xml
   tags: [windows, dotnet]
+  hooks:
+    pre_get_sources_script: !reference [.stop-stale-vauchi, script]
 
 # Coverage: dotnet test with Coverlet collector (main merges only).
 # Produces Cobertura XML for GitLab MR annotations and pushes metrics
@@ -445,6 +462,8 @@ coverage:unit:
       - cobertura.xml
     expire_in: 1 week
   tags: [windows, dotnet]
+  hooks:
+    pre_get_sources_script: !reference [.stop-stale-vauchi, script]
   rules:
     - if: $CI_PIPELINE_SOURCE == "pipeline" || $CI_PIPELINE_SOURCE == "trigger" || $CI_PIPELINE_SOURCE == "api"
       when: never
@@ -563,6 +582,8 @@ test:snapshots:
       - tests/snapshots/actual/
     expire_in: 7 days
   tags: [windows, dotnet]
+  hooks:
+    pre_get_sources_script: !reference [.stop-stale-vauchi, script]
   allow_failure: true
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
@@ -645,6 +666,8 @@ test:screen-catalog:
       - build/screen-catalog/
     expire_in: 7 days
   tags: [windows, dotnet]
+  hooks:
+    pre_get_sources_script: !reference [.stop-stale-vauchi, script]
   allow_failure: true
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
@@ -681,6 +704,8 @@ test:snapshots:record:
         Write-Host "No baseline changes to commit"
       }
   tags: [windows, dotnet]
+  hooks:
+    pre_get_sources_script: !reference [.stop-stale-vauchi, script]
   when: manual
   allow_failure: true
 
@@ -698,6 +723,8 @@ test:a11y:
     # the test-platform assemblies (see Vauchi.Tests.csproj + 2026-04-20 record).
     - dotnet test Vauchi.Tests/Vauchi.Tests.csproj -r win-x64 -p:EnableCoreMrtTooling=false -p:AppxGeneratePriEnabled=false
   tags: [windows, dotnet]
+  hooks:
+    pre_get_sources_script: !reference [.stop-stale-vauchi, script]
   when: manual
 
 check:design-drift:
@@ -821,6 +848,8 @@ release:ratchet-zero:
 package:msix:
   stage: deploy
   tags: [windows, dotnet]
+  hooks:
+    pre_get_sources_script: !reference [.stop-stale-vauchi, script]
   needs:
     - build:app
     - job: release:ratchet-zero

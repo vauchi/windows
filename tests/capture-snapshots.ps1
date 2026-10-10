@@ -258,6 +258,13 @@ function Stop-VauchiApp {
     Start-Sleep -Seconds 1
 }
 
+# Any terminating error below would otherwise leave the app running with
+# build/snapshot-app open, and the runner's next checkout fails on it.
+trap {
+    Stop-VauchiApp
+    break
+}
+
 function Start-VauchiWindow {
     param([string[]]$LaunchArgs)
     # Persistent shell runner: a prior run's app instance may still be
