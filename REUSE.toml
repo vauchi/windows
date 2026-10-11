@@ -57,3 +57,11 @@ SPDX-License-Identifier = "OFL-1.1"
 path = ["LICENSES/OFL-1.1.txt"]
 SPDX-FileCopyrightText = "SIL International"
 SPDX-License-Identifier = "OFL-1.1"
+
+# MSIX tile images, rendered from assets/logo.svg (private#589).
+# Regenerate when the logo changes: rsvg-convert at each size, and the
+# wide tile as the 150x150 render centred on a transparent 310x150 canvas.
+[[annotations]]
+path = ["Vauchi/Assets/StoreLogo.png", "Vauchi/Assets/Square44x44Logo.png", "Vauchi/Assets/Square150x150Logo.png", "Vauchi/Assets/Wide310x150Logo.png"]
+SPDX-FileCopyrightText = "2026 Mattia Egloff <mattia.egloff@pm.me>"
+SPDX-License-Identifier = "GPL-3.0-or-later"
