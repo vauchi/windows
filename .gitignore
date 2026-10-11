@@ -70,3 +70,6 @@ test-results/
 # Screenshot captures and diffs are CI artifacts, never committed
 tests/snapshots/actual/
 tests/snapshots/diff/
+
+## vauchi/locales clone made by CI (.locales-fetch)
+.locales/

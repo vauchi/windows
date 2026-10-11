@@ -41,21 +41,31 @@
   </ItemGroup>
   <!-- CABI native library — copied to output when present -->
   <ItemGroup>
-    <None Include="$(SolutionDir)cabi\vauchi_cabi.dll"
+    <!-- Relative to this file, not $(SolutionDir): building the project on
+         its own (snapshot app, package:msix) leaves SolutionDir undefined,
+         so the DLL was silently left out (private#635). -->
+    <None Include="$(MSBuildThisFileDirectory)..\cabi\vauchi_cabi.dll"
           CopyToOutputDirectory="PreserveNewest"
           Link="vauchi_cabi.dll"
           Visible="false"
-          Condition="Exists('$(SolutionDir)cabi\vauchi_cabi.dll')" />
+          Condition="Exists('$(MSBuildThisFileDirectory)..\cabi\vauchi_cabi.dll')" />
   </ItemGroup>
-  <!-- Locale JSON files — copied to $(OutDir)/locales/ for Localizer.Init().
-       Source is the vauchi/locales sibling repo; path resolves from the
-       Windows working copy. Consumed by CABI vauchi_i18n_init at startup. -->
+  <!-- Locale JSON files — copied to $(OutDir)/locales/ for Localizer.Init()
+       (CABI vauchi_i18n_init). Default source: the vauchi/locales checkout
+       next to this repo; CI clones it and sets LocalesDir. A build without
+       them showed raw keys everywhere, so it now fails (private#635). -->
+  <PropertyGroup>
+    <LocalesDir Condition="'$(LocalesDir)' == ''">$(MSBuildThisFileDirectory)..\..\locales</LocalesDir>
+  </PropertyGroup>
   <ItemGroup>
-    <Content Include="$(SolutionDir)..\locales\*.json"
-             Exclude="$(SolutionDir)..\locales\locales.schema.json"
+    <Content Include="$(LocalesDir)\*.json"
+             Exclude="$(LocalesDir)\locales.schema.json"
              CopyToOutputDirectory="PreserveNewest"
              Link="locales\%(Filename)%(Extension)"
-             Visible="false"
-             Condition="Exists('$(SolutionDir)..\locales')" />
+             Visible="false" />
   </ItemGroup>
+  <Target Name="RequireLocales" BeforeTargets="Build">
+    <Error Condition="!Exists('$(LocalesDir)\en.json')"
+           Text="No locales at $(LocalesDir) (en.json missing): clone vauchi/locales next to this repo, or set LocalesDir. Without them the app shows raw keys." />
+  </Target>
 </Project>

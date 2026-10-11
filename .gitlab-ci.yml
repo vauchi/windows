@@ -74,6 +74,20 @@ default:
 # calls in parallel jobs that share a runner disk are safe. Still
 # keyed on cabi-version.json for the cache slot, so repeated runs
 # with the same cabi version reuse the cached DLL.
+# vauchi/locales at main, as the other shells build (linux-gtk, android, ios).
+# Cloned into the project, not ../locales, so two jobs on pam cannot race on
+# one sibling directory; MSBuild reads the LocalesDir environment variable
+# as a property (private#635).
+.locales-fetch:
+  script:
+    - |
+      $locales = Join-Path $env:CI_PROJECT_DIR '.locales'
+      if (Test-Path $locales) { Remove-Item -Recurse -Force $locales }
+      git clone --depth=1 --quiet https://gitlab.com/vauchi/locales.git $locales
+      if ($LASTEXITCODE -ne 0) { Write-Host "[locales] clone failed ($LASTEXITCODE)"; exit 1 }
+      $env:LocalesDir = $locales
+      Write-Host "[locales] vauchi/locales $(git -C $locales rev-parse --short HEAD): $(@(Get-ChildItem $locales -Filter *.json).Count) files"
+
 .cabi-download-script:
   script:
     - |
@@ -351,6 +365,7 @@ build:app:
     policy: pull-push
   before_script:
     - !reference [.cabi-download-script, script]
+    - !reference [.locales-fetch, script]
   script:
     - powershell -ExecutionPolicy Bypass -File tests/check-cabi-exports.ps1
     # PRI tooling off: `dotnet build` looks for the App SDK's PRI tasks under
@@ -543,6 +558,7 @@ test:snapshots:
     policy: pull
   before_script:
     - !reference [.cabi-download-script, script]
+    - !reference [.locales-fetch, script]
   variables:
     VRT_PLATFORM: windows
     VRT_SCREENSHOT_DIR: tests/snapshots/actual
@@ -611,6 +627,7 @@ test:screen-catalog:
     policy: pull
   before_script:
     - !reference [.cabi-download-script, script]
+    - !reference [.locales-fetch, script]
   variables:
     VRT_PLATFORM: windows
     VRT_SCREENSHOT_DIR: build/screen-catalog
@@ -688,6 +705,7 @@ test:snapshots:record:
     policy: pull
   before_script:
     - !reference [.cabi-download-script, script]
+    - !reference [.locales-fetch, script]
   script:
     - dotnet build Vauchi/Vauchi.csproj -c Debug -p:Platform=x64 -p:EnableCoreMrtTooling=false -p:AppxGeneratePriEnabled=false
     - |
@@ -714,6 +732,8 @@ test:snapshots:record:
 # Design drift: verify all design-spec components are implemented
 test:a11y:
   stage: test
+  before_script:
+    - !reference [.locales-fetch, script]
   script:
     # PRI tooling off for the same reason as build:app: dotnet's MSBuild
     # cannot load the PRI tasks (MSB4062). See 2026-04-20-windows-test-jobs-broken.
@@ -856,6 +876,9 @@ package:msix:
     - build:app
     - job: release:ratchet-zero
       optional: true
+  before_script:
+    - !reference [.cabi-download-script, script]
+    - !reference [.locales-fetch, script]
   rules:
     - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
     # windows had never been tagged, so this job had never run (private#589).
@@ -883,6 +906,7 @@ package:msix:
       $manifest.Package.Identity.Version = $VERSION
       $manifest.Save((Join-Path $out 'AppxManifest.xml'))
       $required = @('AppxManifest.xml', 'Vauchi.exe', 'resources.pri', 'Microsoft.UI.Xaml.dll',
+        'vauchi_cabi.dll', 'locales\en.json',
         'Assets\StoreLogo.png', 'Assets\Square44x44Logo.png', 'Assets\Square150x150Logo.png', 'Assets\Wide310x150Logo.png')
       $missing = @($required | Where-Object { -not (Test-Path (Join-Path $out $_)) })
       if ($missing) { Write-Host "[msix] publish output lacks: $($missing -join ', ')"; exit 1 }
