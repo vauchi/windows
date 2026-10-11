@@ -454,11 +454,40 @@ foreach ($screen in $Screens) {
 Write-Host "[snapshots] Shutting down app..."
 Stop-VauchiApp
 
+# -- Phase 3: a startup failure is shown to the user (private#610) --
+# The error dialog used to be created before the window had a XamlRoot, so
+# ShowAsync threw and the user saw nothing. The DEBUG-only flag makes
+# startup fail with a known message; the dialog must show it.
+$initFailureMessage = "Vauchi test: startup failed on purpose"
+$initErrorShown = $false
+$hwnd = Start-VauchiWindow @("--fail-init-for-testing")
+if ($hwnd -ne [IntPtr]::Zero) {
+    $windowElement = [System.Windows.Automation.AutomationElement]::FromHandle($hwnd)
+    for ($wait = 0; $wait -lt 20 -and -not $initErrorShown; $wait++) {
+        if ($null -ne (Find-Named -Window $windowElement -Name $initFailureMessage)) {
+            $initErrorShown = $true
+        } else {
+            Start-Sleep -Seconds 1
+        }
+    }
+    if ($initErrorShown) { Save-Screen -Hwnd $hwnd -Name "init-error" }
+}
+Stop-VauchiApp
+if ($initErrorShown) {
+    Write-Host "[snapshots] Startup failure dialog shown"
+} else {
+    Write-Warning "[snapshots] Startup failure dialog NOT shown within 20s"
+}
+
 # Summary
 Write-Host ""
 Write-Host "[snapshots] Done: $captured captured, $failed failed"
 Write-Host "[snapshots] Output: $OutputDir"
 if ($captured -eq 0) {
     Write-Error "No screenshots captured."
+    exit 1
+}
+if (-not $initErrorShown) {
+    Write-Error "A startup failure was not shown to the user (private#610)."
     exit 1
 }

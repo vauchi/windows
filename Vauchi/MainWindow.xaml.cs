@@ -81,8 +81,21 @@ public sealed partial class MainWindow : Window
         }
     }
 
+#if DEBUG
+    // Lets tests/capture-snapshots.ps1 prove a startup failure reaches the user.
+    internal const string InitFailureForTesting = "Vauchi test: startup failed on purpose";
+#endif
+
     private void InitializeApp()
     {
+#if DEBUG
+        if (Array.Exists(
+                Environment.GetCommandLineArgs(),
+                argument => argument == "--fail-init-for-testing"))
+        {
+            throw new InvalidOperationException(InitFailureForTesting);
+        }
+#endif
         string dataDirectory = System.IO.Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "Vauchi");
