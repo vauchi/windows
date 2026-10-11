@@ -1,5 +1,5 @@
 {
-  "version": "0.79.1",
-  "sha256": "3d8cc081775aa0cc078e95123f24281d80a4f16dcb3d85568a03b1663367ecac",
-  "source_commit": "5311ae557c14ec4a26c9b72103483c11dc48d5a1"
+  "version": "0.80.0",
+  "sha256": "ff257c1521fdf7db2a014ebd49aaf34d6b659c7a8c1036f7962bfc0fb529e5bb",
+  "source_commit": "b98267ee5cd261ec1494546108ebc83aebab7052"
 }
