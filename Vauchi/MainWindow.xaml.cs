@@ -58,7 +58,7 @@ public sealed partial class MainWindow : Window
                     Content = Localizer.T("auth.windows_hello_required"),
                     PrimaryButtonText = Localizer.T("action.retry"),
                     CloseButtonText = Localizer.T("action.quit"),
-                    XamlRoot = Content.XamlRoot,
+                    XamlRoot = await LoadedXamlRootAsync(),
                 };
                 ContentDialogResult result = await dialog.ShowAsync();
                 if (result == ContentDialogResult.Primary)
@@ -166,9 +166,27 @@ public sealed partial class MainWindow : Window
             Title = Localizer.T("app.error_title"),
             Content = exception.Message,
             CloseButtonText = Localizer.T("action.ok"),
-            XamlRoot = Content.XamlRoot,
+            XamlRoot = await LoadedXamlRootAsync(),
         };
         await dialog.ShowAsync();
+    }
+
+    // InitializeAsync starts in the constructor, before the window content is
+    // in the visual tree; a ContentDialog shown then has no XamlRoot and
+    // ShowAsync throws, so the user never sees the dialog (private#610).
+    private System.Threading.Tasks.Task<XamlRoot> LoadedXamlRootAsync()
+    {
+        var root = (FrameworkElement)Content;
+        if (root.IsLoaded && root.XamlRoot is not null)
+            return System.Threading.Tasks.Task.FromResult(root.XamlRoot);
+        var loaded = new System.Threading.Tasks.TaskCompletionSource<XamlRoot>();
+        void OnLoaded(object sender, RoutedEventArgs args)
+        {
+            root.Loaded -= OnLoaded;
+            loaded.TrySetResult(root.XamlRoot);
+        }
+        root.Loaded += OnLoaded;
+        return loaded.Task;
     }
 
     private void HideWindow()
