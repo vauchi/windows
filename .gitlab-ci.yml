@@ -858,6 +858,15 @@ package:msix:
       optional: true
   rules:
     - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
+    # windows had never been tagged, so this job had never run (private#589).
+    # An MR that changes packaging now proves the package builds before a
+    # release does.
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes:
+        - packaging/**/*
+        - Vauchi/Vauchi.csproj
+        - Vauchi/Assets/**/*
+        - .gitlab-ci.yml
   script:
     - $VERSION = "$env:CI_COMMIT_TAG" -replace '^v', ''
     - >
