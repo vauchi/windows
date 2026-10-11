@@ -5,7 +5,7 @@ include:
   - template: Security/SAST.gitlab-ci.yml
   - template: Security/Secret-Detection.gitlab-ci.yml
   - project: 'vauchi/scripts'
-    ref: ci-templates-v2026.10.04
+    ref: issue/592  # TEMP: test vauchi/scripts!? before its tag (private#592)
     file:
       - '/ci-templates/design-drift.yml'
       - '/ci-templates/parser-parity.yml'
@@ -18,7 +18,7 @@ include:
       - '/ci-templates/cross-cutting-lint.yml'
 
 variables:
-  VAUCHI_SCRIPTS_REF: "ci-templates-v2026.10.04"
+  VAUCHI_SCRIPTS_REF: "issue/592"  # TEMP, see include ref
   SAST_EXCLUDED_PATHS: "bin/, obj/, packages/"
   SECRET_DETECTION_EXCLUDED_PATHS: "bin/, obj/, packages/"
   SAST_ANALYZER_IMAGE_TAG: "5"
@@ -593,7 +593,7 @@ test:snapshots:
       }
     - powershell -ExecutionPolicy Bypass -File tests/capture-snapshots.ps1 -AppPath build/snapshot-app/Vauchi.exe
   after_script:
-    - !reference [.vrt-upload-script, script]
+    - !reference [.vrt-upload-script-pwsh, script]
   artifacts:
     when: always
     paths:
@@ -678,7 +678,7 @@ test:screen-catalog:
       # job 16457763478 passed with zero images.
       if ($proc.ExitCode -ne 0) { exit 1 }
   after_script:
-    - !reference [.vrt-upload-script, script]
+    - !reference [.vrt-upload-script-pwsh, script]
   artifacts:
     when: always
     paths:
