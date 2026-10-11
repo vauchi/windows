@@ -33,7 +33,7 @@
   <Applications>
     <Application Id="App"
                  Executable="Vauchi.exe"
-                 EntryPoint="Vauchi.App">
+                 EntryPoint="Windows.FullTrustApplication">
       <uap:VisualElements
         DisplayName="Vauchi"
         Description="Privacy-focused updatable contact cards"
@@ -45,9 +45,12 @@
     </Application>
   </Applications>
 
+  <!-- Least privilege (private#589): file access goes through pickers, which
+       need no capability, and the app has no camera code; add webcam back
+       when camera QR scanning lands. runFullTrust is what a packaged desktop
+       (WinUI) app runs under. -->
   <Capabilities>
     <Capability Name="internetClient" />
-    <rescap:Capability Name="broadFileSystemAccess" />
-    <uap:Capability Name="webcam" />
+    <rescap:Capability Name="runFullTrust" />
   </Capabilities>
 </Package>

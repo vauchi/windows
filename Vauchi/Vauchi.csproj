@@ -28,6 +28,8 @@
        see REUSE.toml for per-family copyright -->
   <ItemGroup>
     <Content Include="Assets\Fonts\*.ttf" CopyToOutputDirectory="PreserveNewest" />
+    <!-- MSIX tiles named by packaging/Package.appxmanifest (private#589) -->
+    <Content Include="Assets\*.png" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
   <!-- Pictograms — vendored verbatim from assets/pictograms/<group>/generated/svg.
        Pictograms.Resolve reads them back by logical name, so a new drawing

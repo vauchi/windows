@@ -868,14 +868,35 @@ package:msix:
         - Vauchi/Assets/**/*
         - .gitlab-ci.yml
   script:
-    - $VERSION = "$env:CI_COMMIT_TAG" -replace '^v', ''
-    - >
-      dotnet publish Vauchi.sln -c Release
-      -p:Platform=x64
-      -o publish-output
-    - >
-      & "${env:ProgramFiles(x86)}\Windows Kits\10\bin\10.0.22621.0\x64\MakeAppx.exe"
-      pack /d publish-output /p "Vauchi-${VERSION}.msix" /nv
+    - |
+      # MSIX versions have four parts; an MR build has no tag and packs 0.0.0.0.
+      $tag = "$env:CI_COMMIT_TAG" -replace '^v', ''
+      $VERSION = if ($tag) { "$tag.0" } else { '0.0.0.0' }
+      $out = Join-Path $env:CI_PROJECT_DIR 'publish-output'
+      $makeappx = "${env:ProgramFiles(x86)}\Windows Kits\10\bin\10.0.22621.0\x64\MakeAppx.exe"
+    # Only the app project: publishing Vauchi.sln also published the test
+    # projects into the package. EnableMsixTooling generates resources.pri
+    # without Visual Studio's PRI tasks, which pam lacks (MSB4062, #593).
+    - dotnet publish Vauchi/Vauchi.csproj -c Release -r win-x64 --self-contained -p:Platform=x64 -p:EnableMsixTooling=true -o publish-output
+    - |
+      [xml]$manifest = Get-Content packaging/Package.appxmanifest
+      $manifest.Package.Identity.Version = $VERSION
+      $manifest.Save((Join-Path $out 'AppxManifest.xml'))
+      $required = @('AppxManifest.xml', 'Vauchi.exe', 'resources.pri', 'Microsoft.UI.Xaml.dll',
+        'Assets\StoreLogo.png', 'Assets\Square44x44Logo.png', 'Assets\Square150x150Logo.png', 'Assets\Wide310x150Logo.png')
+      $missing = @($required | Where-Object { -not (Test-Path (Join-Path $out $_)) })
+      if ($missing) { Write-Host "[msix] publish output lacks: $($missing -join ', ')"; exit 1 }
+      & $makeappx pack /d $out /p "Vauchi-$VERSION.msix" /o
+      if ($LASTEXITCODE -ne 0) { Write-Host "[msix] MakeAppx pack failed ($LASTEXITCODE)"; exit 1 }
+      # Unpack again and confirm the package carries the manifest and the app.
+      $check = Join-Path $env:TEMP 'msix-check'
+      & $makeappx unpack /p "Vauchi-$VERSION.msix" /d $check /o | Out-Null
+      if ($LASTEXITCODE -ne 0) { Write-Host "[msix] MakeAppx unpack failed ($LASTEXITCODE)"; exit 1 }
+      foreach ($f in @('AppxManifest.xml', 'Vauchi.exe', 'resources.pri')) {
+        if (-not (Test-Path (Join-Path $check $f))) { Write-Host "[msix] package lacks $f"; exit 1 }
+      }
+      $size = [math]::Round((Get-Item "Vauchi-$VERSION.msix").Length / 1MB, 1)
+      Write-Host "[msix] Vauchi-$VERSION.msix: $size MB, version $(([xml](Get-Content (Join-Path $check 'AppxManifest.xml'))).Package.Identity.Version), unsigned"
   artifacts:
     paths:
       - "Vauchi-*.msix"
