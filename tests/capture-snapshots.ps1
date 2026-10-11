@@ -439,6 +439,11 @@ if ($hwnd -eq [IntPtr]::Zero) {
     exit 1
 }
 $windowElement = [System.Windows.Automation.AutomationElement]::FromHandle($hwnd)
+# The title is Localizer.T("app.name"): without bundled locales the app
+# falls back to the raw key, as every CI build did until private#635.
+$windowTitle = $windowElement.Current.Name
+$localized = $windowTitle -ne 'app.name'
+Write-Host "[snapshots] Window title: '$windowTitle' (localized: $localized)"
 Save-Screen -Hwnd $hwnd -Name "home"
 foreach ($screen in $Screens) {
     $name = $screen.Name
@@ -489,5 +494,9 @@ if ($captured -eq 0) {
 }
 if (-not $initErrorShown) {
     Write-Error "A startup failure was not shown to the user (private#610)."
+    exit 1
+}
+if (-not $localized) {
+    Write-Error "The app shows raw locale keys: no locales were bundled (private#635)."
     exit 1
 }
