@@ -58,6 +58,20 @@ if (-not (Test-Path $AppPath)) {
 
 New-Item -ItemType Directory -Force -Path $OutputDir | Out-Null
 
+# Defined before anything can fail: the trap below is script-wide, so an
+# early terminating error runs it, and it needs this to exist (#661).
+$appName = [System.IO.Path]::GetFileNameWithoutExtension($AppPath)
+function Stop-VauchiApp {
+    # Clean up by process name: the launch handle may already have exited
+    # (bootstrap handoff), so the launch $proc alone cannot shut the app down.
+    Get-Process -Name $appName -ErrorAction SilentlyContinue | ForEach-Object {
+        $_.CloseMainWindow() | Out-Null
+    }
+    Start-Sleep -Seconds 2
+    Get-Process -Name $appName -ErrorAction SilentlyContinue | Stop-Process -Force
+    Start-Sleep -Seconds 1
+}
+
 # -- Load assemblies --
 
 Add-Type -AssemblyName UIAutomationClient
@@ -198,7 +212,6 @@ function Navigate-To {
 
 # -- Main --
 # -- App lifecycle --
-$appName = [System.IO.Path]::GetFileNameWithoutExtension($AppPath)
 
 Add-Type @'
 using System;
@@ -246,17 +259,6 @@ public static class TopLevelWindows {
     }
 }
 '@
-
-function Stop-VauchiApp {
-    # Clean up by process name: the launch handle may already have exited
-    # (bootstrap handoff), so the launch $proc alone cannot shut the app down.
-    Get-Process -Name $appName -ErrorAction SilentlyContinue | ForEach-Object {
-        $_.CloseMainWindow() | Out-Null
-    }
-    Start-Sleep -Seconds 2
-    Get-Process -Name $appName -ErrorAction SilentlyContinue | Stop-Process -Force
-    Start-Sleep -Seconds 1
-}
 
 # Any terminating error below would otherwise leave the app running with
 # build/snapshot-app open, and the runner's next checkout fails on it.
