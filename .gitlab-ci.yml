@@ -369,6 +369,9 @@ build:app:
     - !reference [.cabi-download-script, script]
     - !reference [.locales-fetch, script]
   script:
+    # DIAG vauchi/private#660: pad the environment like main's protected
+    # variables (73804 bytes there) so an MR pipeline reproduces main.
+    - 1..3 | ForEach-Object { Set-Item "Env:VAUCHI_DIAG_PAD$_" ('x' * 25000) }
     - powershell -ExecutionPolicy Bypass -File tests/check-cabi-exports.ps1
     # PRI tooling off: `dotnet build` looks for the App SDK's PRI tasks under
     # the dotnet SDK, never under Visual Studio, so it fails with MSB4062 even
