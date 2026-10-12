@@ -369,9 +369,6 @@ build:app:
     - !reference [.cabi-download-script, script]
     - !reference [.locales-fetch, script]
   script:
-    # DIAG vauchi/private#660: pad the environment like main's protected
-    # variables (73804 bytes there) so an MR pipeline reproduces main.
-    - 1..3 | ForEach-Object { Set-Item "Env:VAUCHI_DIAG_PAD$_" ('x' * 25000) }
     # pwsh, not Windows PowerShell 5.1: 5.1's Add-Type starts csc.exe, and
     # .NET Framework refuses a child environment over 65535 bytes — main's
     # protected variables reach 73804 on pam (vauchi/private#660).
