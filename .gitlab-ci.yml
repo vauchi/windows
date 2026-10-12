@@ -372,7 +372,10 @@ build:app:
     # DIAG vauchi/private#660: pad the environment like main's protected
     # variables (73804 bytes there) so an MR pipeline reproduces main.
     - 1..3 | ForEach-Object { Set-Item "Env:VAUCHI_DIAG_PAD$_" ('x' * 25000) }
-    - powershell -ExecutionPolicy Bypass -File tests/check-cabi-exports.ps1
+    # pwsh, not Windows PowerShell 5.1: 5.1's Add-Type starts csc.exe, and
+    # .NET Framework refuses a child environment over 65535 bytes — main's
+    # protected variables reach 73804 on pam (vauchi/private#660).
+    - pwsh -NoProfile -ExecutionPolicy Bypass -File tests/check-cabi-exports.ps1
     # PRI tooling off: `dotnet build` looks for the App SDK's PRI tasks under
     # the dotnet SDK, never under Visual Studio, so it fails with MSB4062 even
     # on pam with VS 2026 installed (windows!182). Unpackaged WinUI apps don't
