@@ -42,6 +42,15 @@
         Square44x44Logo="Assets\Square44x44Logo.png">
         <uap:DefaultTile Wide310x150Logo="Assets\Wide310x150Logo.png" />
       </uap:VisualElements>
+      <!-- vauchi:// links, including the vauchi.app/x landing page's
+           Open in Vauchi button (vauchi/private#650). -->
+      <Extensions>
+        <uap:Extension Category="windows.protocol">
+          <uap:Protocol Name="vauchi">
+            <uap:DisplayName>Vauchi</uap:DisplayName>
+          </uap:Protocol>
+        </uap:Extension>
+      </Extensions>
     </Application>
   </Applications>
 

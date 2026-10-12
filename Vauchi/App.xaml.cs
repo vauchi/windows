@@ -2,16 +2,23 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 using Microsoft.UI.Xaml;
+using Microsoft.Windows.AppLifecycle;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading;
+using System.Threading.Tasks;
 using Vauchi.CoreUI;
+using Vauchi.Platform;
 using Vauchi.Services;
 
 namespace Vauchi;
 
 public partial class App : Application
 {
+    private const string MainInstanceKey = "main";
+    private static readonly TimeSpan RedirectTimeout = TimeSpan.FromSeconds(5);
+
     private Window? _window;
     private static Mutex? _singleInstanceMutex;
 
@@ -40,9 +47,14 @@ public partial class App : Application
         _singleInstanceMutex = new Mutex(true, @"Global\VauchiDesktopSingleInstance", out bool isNew);
         if (!isNew)
         {
+            // The running instance takes this launch's vauchi:// link
+            // (vauchi/private#650) and comes forward; this one ends.
+            RedirectToRunningInstance();
             Environment.Exit(0);
             return;
         }
+        AppInstance mainInstance = AppInstance.FindOrRegisterForKey(MainInstanceKey);
+        mainInstance.Activated += OnRedirectedActivation;
 
         // Point the CABI i18n subsystem at the bundled locale files so
         // Localizer.T("key") returns translated strings. The `locales`
@@ -53,8 +65,11 @@ public partial class App : Application
 
         try
         {
-            _window = new MainWindow();
-            _window.Activate();
+            var mainWindow = new MainWindow();
+            _window = mainWindow;
+            mainWindow.Activate();
+            foreach (string uri in LinksFrom(AppInstance.GetCurrent().GetActivatedEventArgs()))
+                mainWindow.OpenDeepLink(uri);
         }
         catch (Exception ex)
         {
@@ -62,4 +77,39 @@ public partial class App : Application
             throw;
         }
     }
+
+    private static void RedirectToRunningInstance()
+    {
+        AppActivationArguments activation = AppInstance.GetCurrent().GetActivatedEventArgs();
+        AppInstance mainInstance = AppInstance.FindOrRegisterForKey(MainInstanceKey);
+        if (mainInstance.IsCurrent)
+            return;
+        // Off the UI thread: waiting on the redirect from the STA thread
+        // that has to pump its COM call deadlocks.
+        Task.Run(() => mainInstance.RedirectActivationToAsync(activation).AsTask())
+            .Wait(RedirectTimeout);
+    }
+
+    private void OnRedirectedActivation(object? sender, AppActivationArguments activation)
+    {
+        IReadOnlyList<string> links = LinksFrom(activation);
+        _window?.DispatcherQueue.TryEnqueue(() =>
+        {
+            if (_window is not MainWindow mainWindow)
+                return;
+            mainWindow.Activate();
+            foreach (string uri in links)
+                mainWindow.OpenDeepLink(uri);
+        });
+    }
+
+    private static IReadOnlyList<string> LinksFrom(AppActivationArguments activation) =>
+        activation.Kind switch
+        {
+            ExtendedActivationKind.Protocol when activation.Data is Windows.ApplicationModel.Activation.IProtocolActivatedEventArgs protocol =>
+                DeepLinks.Select(new[] { protocol.Uri.OriginalString }),
+            ExtendedActivationKind.Launch when activation.Data is Windows.ApplicationModel.Activation.ILaunchActivatedEventArgs launch =>
+                DeepLinks.Select(launch.Arguments.Split(' ', StringSplitOptions.RemoveEmptyEntries)),
+            _ => Array.Empty<string>(),
+        };
 }

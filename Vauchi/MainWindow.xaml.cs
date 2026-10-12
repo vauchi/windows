@@ -19,6 +19,7 @@ public sealed partial class MainWindow : Window
     private ExchangeCommandHandler? _exchange;
     private VauchiNative.VauchiEventCallback? _eventCallback;
     private DispatcherTimer? _wakeupTimer;
+    private readonly System.Collections.Generic.List<string> _pendingDeepLinks = new();
 
     public MainWindow()
         : this(initializeCore: true)
@@ -44,6 +45,22 @@ public sealed partial class MainWindow : Window
     }
 
     internal PresentationHost Host => Presentation;
+
+    /// <summary>
+    /// Brings the window forward and hands a vauchi:// link to Core, which
+    /// owns its destination. A link that arrives while Core is still
+    /// starting waits for it.
+    /// </summary>
+    public void OpenDeepLink(string uri)
+    {
+        Activate();
+        if (_appHandle == IntPtr.Zero)
+        {
+            _pendingDeepLinks.Add(uri);
+            return;
+        }
+        Presentation.DispatchPlatformEvent(DeepLinks.OpenedEventJson(uri));
+    }
 
     private async System.Threading.Tasks.Task InitializeAsync()
     {
@@ -131,6 +148,10 @@ public sealed partial class MainWindow : Window
 
         _eventCallback = OnCoreEvent;
         VauchiNative.AppSetEventCallback(_appHandle, _eventCallback, IntPtr.Zero);
+
+        foreach (string uri in _pendingDeepLinks)
+            Presentation.DispatchPlatformEvent(DeepLinks.OpenedEventJson(uri));
+        _pendingDeepLinks.Clear();
     }
 
     private void OnActivated(object sender, WindowActivatedEventArgs args)
