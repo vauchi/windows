@@ -36,6 +36,7 @@
     <Compile Include="..\Vauchi\MainWindowEffects.cs" Link="Linked\MainWindowEffects.cs" />
     <Compile Include="..\Vauchi\MainWindowState.cs" Link="Linked\MainWindowState.cs" />
     <Compile Include="..\Vauchi\Platform\BleExchangeService.cs" Link="Linked\BleExchangeService.cs" />
+    <Compile Include="..\Vauchi\Platform\DeepLinks.cs" Link="Linked\DeepLinks.cs" />
     <Compile Include="..\Vauchi\Platform\KeyStorageService.cs" Link="Linked\KeyStorageService.cs" />
     <Compile Include="..\Vauchi\Platform\SecureStorageService.cs" Link="Linked\SecureStorageService.cs" />
     <Compile Include="..\Vauchi\Platform\SystemTrayManager.cs" Link="Linked\SystemTrayManager.cs" />
