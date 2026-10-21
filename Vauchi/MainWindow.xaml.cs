@@ -129,6 +129,7 @@ public sealed partial class MainWindow : Window
             throw new InvalidOperationException(
                 "Failed to initialize the Core application engine.");
         }
+        SystemLocale.Report(_appHandle);
 
 #if DEBUG
         if (Array.Exists(

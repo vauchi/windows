@@ -106,6 +106,9 @@ public static partial class VauchiNative
     [LibraryImport(LibName, EntryPoint = "vauchi_config_free")]
     public static partial void ConfigFree(IntPtr config);
 
+    [LibraryImport(LibName, EntryPoint = "vauchi_app_set_render_context_json", StringMarshalling = StringMarshalling.Utf8)]
+    public static partial int AppSetRenderContextJson(IntPtr handle, string json);
+
     [LibraryImport(LibName, EntryPoint = "vauchi_app_destroy")]
     public static partial void AppDestroy(IntPtr handle);
 
