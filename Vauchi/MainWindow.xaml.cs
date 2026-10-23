@@ -146,6 +146,7 @@ public sealed partial class MainWindow : Window
             DispatcherQueue,
             this);
         Presentation.Initialize(_appHandle);
+        NetworkCost.Watch(Presentation.DispatchPlatformEvent, DispatcherQueue);
 
         _eventCallback = OnCoreEvent;
         VauchiNative.AppSetEventCallback(_appHandle, _eventCallback, IntPtr.Zero);
