@@ -14,7 +14,7 @@ namespace Vauchi.Platform;
 public static class KeyStorageService
 {
     private const string Resource = "vauchi";
-    private const string UserName = "storage-key";
+    internal const string AppEntry = "storage-key";
 
     /// <summary>
     /// Generate a new 32-byte cryptographic key.
@@ -29,29 +29,33 @@ public static class KeyStorageService
     /// <summary>
     /// Store a key in PasswordVault. Overwrites any existing key.
     /// </summary>
-    public static void StoreKey(byte[] key)
+    public static void StoreKey(byte[] key) => StoreKey(key, AppEntry);
+
+    internal static void StoreKey(byte[] key, string entry)
     {
         var vault = new PasswordVault();
         try
         {
-            var existing = vault.Retrieve(Resource, UserName);
+            var existing = vault.Retrieve(Resource, entry);
             vault.Remove(existing);
         }
         catch (Exception) { /* not found — ok */ }
 
         string base64 = Convert.ToBase64String(key);
-        vault.Add(new PasswordCredential(Resource, UserName, base64));
+        vault.Add(new PasswordCredential(Resource, entry, base64));
     }
 
     /// <summary>
     /// Retrieve the key from PasswordVault. Returns null if not found.
     /// </summary>
-    public static byte[]? RetrieveKey()
+    public static byte[]? RetrieveKey() => RetrieveKey(AppEntry);
+
+    internal static byte[]? RetrieveKey(string entry)
     {
         try
         {
             var vault = new PasswordVault();
-            var credential = vault.Retrieve(Resource, UserName);
+            var credential = vault.Retrieve(Resource, entry);
             credential.RetrievePassword();
             return Convert.FromBase64String(credential.Password);
         }
@@ -64,12 +68,14 @@ public static class KeyStorageService
     /// <summary>
     /// Delete the key from PasswordVault.
     /// </summary>
-    public static void DeleteKey()
+    public static void DeleteKey() => DeleteKey(AppEntry);
+
+    internal static void DeleteKey(string entry)
     {
         try
         {
             var vault = new PasswordVault();
-            var credential = vault.Retrieve(Resource, UserName);
+            var credential = vault.Retrieve(Resource, entry);
             vault.Remove(credential);
         }
         catch (Exception) { /* not found — ok */ }
