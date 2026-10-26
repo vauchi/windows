@@ -10,6 +10,11 @@ namespace Vauchi.Tests;
 
 public class KeyStorageServiceTests
 {
+    // Never the app's own entry: these tests run under the same Windows
+    // account as the app on dev machines and on pam, and deleting the app's
+    // key left its database unreadable (private#248).
+    private const string TestEntry = "storage-key-unit-tests";
+
     /// <summary>
     /// PasswordVault requires an interactive Windows session (DPAPI).
     /// CI runners that execute as a service lack a user session, so
@@ -49,13 +54,13 @@ public class KeyStorageServiceTests
         var original = new byte[32];
         new Random(42).NextBytes(original);
 
-        KeyStorageService.StoreKey(original);
-        byte[]? retrieved = KeyStorageService.RetrieveKey();
+        KeyStorageService.StoreKey(original, TestEntry);
+        byte[]? retrieved = KeyStorageService.RetrieveKey(TestEntry);
 
         Assert.NotNull(retrieved);
         Assert.Equal(original, retrieved);
 
-        KeyStorageService.DeleteKey();
+        KeyStorageService.DeleteKey(TestEntry);
     }
 
     [Fact]
@@ -66,9 +71,9 @@ public class KeyStorageServiceTests
             return;
         }
 
-        KeyStorageService.DeleteKey();
+        KeyStorageService.DeleteKey(TestEntry);
 
-        byte[]? retrieved = KeyStorageService.RetrieveKey();
+        byte[]? retrieved = KeyStorageService.RetrieveKey(TestEntry);
         Assert.Null(retrieved);
     }
 
@@ -83,10 +88,28 @@ public class KeyStorageServiceTests
         var key = new byte[32];
         new Random(99).NextBytes(key);
 
-        KeyStorageService.StoreKey(key);
-        KeyStorageService.DeleteKey();
+        KeyStorageService.StoreKey(key, TestEntry);
+        KeyStorageService.DeleteKey(TestEntry);
 
-        byte[]? retrieved = KeyStorageService.RetrieveKey();
+        byte[]? retrieved = KeyStorageService.RetrieveKey(TestEntry);
         Assert.Null(retrieved);
+    }
+
+    [Fact]
+    public void Tests_LeaveTheAppsOwnKeyAlone()
+    {
+        if (!IsPasswordVaultAvailable())
+        {
+            return;
+        }
+
+        byte[]? appKeyBefore = KeyStorageService.RetrieveKey();
+        var key = new byte[32];
+        new Random(7).NextBytes(key);
+
+        KeyStorageService.StoreKey(key, TestEntry);
+        KeyStorageService.DeleteKey(TestEntry);
+
+        Assert.Equal(appKeyBefore, KeyStorageService.RetrieveKey());
     }
 }
