@@ -149,7 +149,7 @@ public sealed partial class PresentationSurface
         }
         avatar.Children.Add(new Ellipse
         {
-            Fill = new SolidColorBrush(ThemeColors.SecondaryContainer),
+            Fill = Paint(colors => colors.SecondaryContainer),
         });
         avatar.Children.Add(new TextBlock
         {
@@ -207,7 +207,7 @@ public sealed partial class PresentationSurface
         {
             Width = QrSide,
             Height = QrSide,
-            Background = new SolidColorBrush(ThemeColors.QrSquare),
+            Background = new SolidColorBrush(FixedColors.QrSquare),
         };
         square.Children.Add(image);
         AutomationProperties.SetAutomationId(square, bindingId);

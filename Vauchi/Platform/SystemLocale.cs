@@ -15,11 +15,23 @@ namespace Vauchi.Platform;
 /// </summary>
 public static class SystemLocale
 {
-    public static string ContextJson(CultureInfo culture, string? restorableState = null) =>
-        string.IsNullOrEmpty(culture.Name)
-            ? "{}"
-            : JsonSerializer.Serialize(new Dictionary<string, string> { ["system_locale"] = culture.Name });
+    public static string ContextJson(CultureInfo culture, string? restorableState = null)
+    {
+        var context = new Dictionary<string, string>();
+        if (!string.IsNullOrEmpty(culture.Name))
+            context["system_locale"] = culture.Name;
+        if (restorableState is not null)
+            context["restorable_state"] = restorableState;
+        return JsonSerializer.Serialize(context);
+    }
 
-    public static void Report(IntPtr appHandle) =>
-        VauchiNative.AppSetRenderContextJson(appHandle, ContextJson(CultureInfo.CurrentUICulture));
+    /// <summary>
+    /// The OS language and the restorable state the shell kept travel in one
+    /// push, so the kept pick applies with the system language
+    /// (vauchi/private#814).
+    /// </summary>
+    public static void Report(IntPtr appHandle, string dataDirectory) =>
+        VauchiNative.AppSetRenderContextJson(
+            appHandle,
+            ContextJson(CultureInfo.CurrentUICulture, RestorableState.Kept(dataDirectory)));
 }

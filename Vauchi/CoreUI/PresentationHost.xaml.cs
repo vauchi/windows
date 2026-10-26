@@ -10,6 +10,7 @@ using System;
 using System.Collections.Generic;
 using System.Text.Json;
 using Vauchi.Interop;
+using Vauchi.Platform;
 using Vauchi.Services;
 using Windows.System;
 
@@ -20,6 +21,11 @@ public sealed partial class PresentationHost : UserControl
     private PresentationState _state = new();
     private IntPtr _appHandle;
     private bool _reducedMotion;
+    private string _colorScheme = "";
+    // Held so the ColorValuesChanged subscription lives as long as the host.
+    private Windows.UI.ViewManagement.UISettings? _uiSettings;
+    private readonly Brush? _markupOverlayBackground;
+    private readonly Brush? _markupOverlayBorder;
     private int _reportedWidth = -1;
     private int _reportedHeight = -1;
     private string _overlaySurfaceId = "";
@@ -32,9 +38,38 @@ public sealed partial class PresentationHost : UserControl
     public PresentationHost()
     {
         InitializeComponent();
+        _markupOverlayBackground = OverlayPanel.Background;
+        _markupOverlayBorder = OverlayPanel.BorderBrush;
         _reducedMotion = ReducedMotionRequested();
+        _colorScheme = SystemColorScheme.Current();
         SizeChanged += (_, args) =>
             ReportEnvironment((int)args.NewSize.Width, (int)args.NewSize.Height);
+        WatchColorScheme();
+    }
+
+    /// <summary>
+    /// Under "Follow system" Core repaints when the OS switches between
+    /// light and dark, so the switch is reported as it happens.
+    /// </summary>
+    private void WatchColorScheme()
+    {
+        try
+        {
+            _uiSettings = new Windows.UI.ViewManagement.UISettings();
+            _uiSettings.ColorValuesChanged += (_, _) =>
+                DispatcherQueue.TryEnqueue(() =>
+                {
+                    string scheme = SystemColorScheme.Current();
+                    if (scheme == _colorScheme)
+                        return;
+                    _colorScheme = scheme;
+                    ReportEnvironment(_reportedWidth, _reportedHeight, force: true);
+                });
+        }
+        catch (Exception)
+        {
+            _uiSettings = null;
+        }
     }
 
     public void Initialize(IntPtr appHandle)
@@ -100,7 +135,7 @@ public sealed partial class PresentationHost : UserControl
             return;
         _reportedWidth = width;
         _reportedHeight = height;
-        Dispatch(PresentationEvents.EnvironmentChanged(width, height, _reducedMotion));
+        Dispatch(PresentationEvents.EnvironmentChanged(width, height, _reducedMotion, _colorScheme));
     }
 
     private void DispatchSurfaceEvent(string surfaceId, string eventJson)
@@ -134,6 +169,11 @@ public sealed partial class PresentationHost : UserControl
             });
 
         _activeSecondaryAnchor = null;
+        SurfaceColors? activeColors = _state.ActiveSurfaceId is { Length: > 0 } activeId
+            && _state.Surface(activeId) is { } activeSurface
+                ? SurfaceColors.From(activeSurface)
+                : null;
+        PaintChrome(activeColors);
         for (int index = 0; index < visible.Count; index++)
         {
             string surfaceId = visible[index];
@@ -149,14 +189,38 @@ public sealed partial class PresentationHost : UserControl
                 BorderThickness = surfaceId == _state.ActiveSurfaceId
                     ? new Thickness(2)
                     : new Thickness(0),
-                BorderBrush = new SolidColorBrush(ThemeColors.ActiveSurfaceBorder),
             };
+            if (SurfaceColors.From(surface) is { } colors)
+                border.BorderBrush = new SolidColorBrush(colors.ActiveSurfaceBorder);
             Grid.SetColumn(border, index);
             SurfaceGrid.Children.Add(border);
         }
         RegisterShortcuts(_state.ActiveContextBar);
-        RenderNavigation();
+        RenderNavigation(activeColors);
         RenderOverlay();
+    }
+
+    /// <summary>
+    /// The window chrome and the overlay take the active surface's colours:
+    /// overlays carry no tokens of their own (vauchi/private#814). Without a
+    /// palette the XAML theme resources stay.
+    /// </summary>
+    private void PaintChrome(SurfaceColors? colors)
+    {
+        if (colors is null)
+        {
+            RequestedTheme = ElementTheme.Default;
+            SurfaceGrid.ClearValue(Panel.BackgroundProperty);
+            ClearValue(ForegroundProperty);
+            OverlayPanel.Background = _markupOverlayBackground;
+            OverlayPanel.BorderBrush = _markupOverlayBorder;
+            return;
+        }
+        RequestedTheme = colors.IsLight ? ElementTheme.Light : ElementTheme.Dark;
+        SurfaceGrid.Background = new SolidColorBrush(colors.Background);
+        Foreground = new SolidColorBrush(colors.Text);
+        OverlayPanel.Background = new SolidColorBrush(colors.SurfaceElevated);
+        OverlayPanel.BorderBrush = new SolidColorBrush(colors.Border);
     }
 
     /// <summary>
@@ -165,7 +229,7 @@ public sealed partial class PresentationHost : UserControl
     /// overlay (see D4 in the cross-frontend design review), so the
     /// pane renders every time state changes instead of on demand.
     /// </summary>
-    private void RenderNavigation()
+    private void RenderNavigation(SurfaceColors? colors)
     {
         SidebarModel model = SidebarModel.From(_state.ActiveNavigation);
         Sidebar.MenuItems.Clear();
@@ -180,7 +244,7 @@ public sealed partial class PresentationHost : UserControl
             };
             if (item.BadgeCount > 0)
                 navigationItem.InfoBadge = new InfoBadge { Value = item.BadgeCount };
-            FocusVisualStyle.Apply(navigationItem);
+            FocusVisualStyle.Apply(navigationItem, colors);
             AutomationProperties.SetAutomationId(navigationItem, item.InteractionId);
             AutomationProperties.SetName(navigationItem, item.AccessibilityLabel);
             Sidebar.MenuItems.Add(navigationItem);

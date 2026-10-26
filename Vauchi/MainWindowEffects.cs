@@ -33,6 +33,9 @@ public sealed partial class MainWindow
                 return;
             case "ResetApplication":
                 return;
+            case "SaveRestorableState":
+                KeepRestorableState(command.GetProperty("SaveRestorableState"));
+                return;
         }
 
         ExchangeCommand effect = ExchangeCommandParser.Parse(command);
@@ -43,6 +46,27 @@ public sealed partial class MainWindow
         }
         System.Diagnostics.Debug.WriteLine(
             $"[Vauchi] Unsupported Core effect: {PresentationState.CommandName(command)}");
+    }
+
+    private void KeepRestorableState(JsonElement payload)
+    {
+        if (_dataDirectory.Length == 0
+            || !payload.TryGetProperty("state", out JsonElement state)
+            || state.GetString() is not { } value)
+        {
+            return;
+        }
+        try
+        {
+            Vauchi.Platform.RestorableState.Keep(_dataDirectory, value);
+        }
+        catch (Exception exception)
+        {
+            // Until a value comes back Core keeps the pick in the vault, so
+            // a failed write loses nothing.
+            System.Diagnostics.Debug.WriteLine(
+                $"[Vauchi] Keeping restorable state failed: {exception.GetType().Name}");
+        }
     }
 
     private void RunWakeupTick()

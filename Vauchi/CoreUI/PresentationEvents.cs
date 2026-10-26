@@ -53,16 +53,19 @@ public static class PresentationEvents
         int availableWidth,
         int availableHeight,
         bool reducedMotion,
-        string? colorScheme = null) =>
-        Serialize(
-            "PresentationEnvironmentChanged",
-            new
-            {
-                available_width = System.Math.Max(0, availableWidth),
-                available_height = System.Math.Max(0, availableHeight),
-                input_modes = new[] { "pointer", "keyboard" },
-                motion = reducedMotion ? "reduced" : "full",
-            });
+        string? colorScheme = null)
+    {
+        var payload = new Dictionary<string, object>
+        {
+            ["available_width"] = System.Math.Max(0, availableWidth),
+            ["available_height"] = System.Math.Max(0, availableHeight),
+            ["input_modes"] = new[] { "pointer", "keyboard" },
+            ["motion"] = reducedMotion ? "reduced" : "full",
+        };
+        if (colorScheme is { Length: > 0 })
+            payload["color_scheme"] = colorScheme;
+        return Serialize("PresentationEnvironmentChanged", payload);
+    }
 
     private static string ValueChanged(
         string surfaceId,

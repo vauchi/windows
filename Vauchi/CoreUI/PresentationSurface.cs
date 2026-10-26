@@ -15,6 +15,7 @@ public sealed partial class PresentationSurface : UserControl
 {
     private string _surfaceId = "";
     private double _minimumTargetSize = TargetSize.Default;
+    private SurfaceColors? _colors;
 
     public event Action<string, string>? EventReady;
 
@@ -42,6 +43,7 @@ public sealed partial class PresentationSurface : UserControl
     {
         _surfaceId = String(surface, "surface_id");
         _minimumTargetSize = TargetSize.From(surface);
+        _colors = SurfaceColors.From(surface);
 
         var content = new StackPanel
         {
@@ -94,6 +96,12 @@ public sealed partial class PresentationSurface : UserControl
             root.Children.Add(primaryButton);
         }
 
+        if (_colors is { } colors)
+        {
+            RequestedTheme = colors.IsLight ? ElementTheme.Light : ElementTheme.Dark;
+            root.Background = new SolidColorBrush(colors.Background);
+            Foreground = new SolidColorBrush(colors.Text);
+        }
         Content = root;
         AutomationProperties.SetAutomationId(this, _surfaceId);
         AutomationProperties.SetName(this, String(surface, "accessibility_label"));
@@ -173,7 +181,7 @@ public sealed partial class PresentationSurface : UserControl
             MinWidth = _minimumTargetSize,
             MinHeight = _minimumTargetSize,
         };
-        FocusVisualStyle.Apply(button);
+        FocusVisualStyle.Apply(button, _colors);
         AutomationProperties.SetAutomationId(button, $"context-{role}");
         AutomationProperties.SetName(
             button,
@@ -217,7 +225,7 @@ public sealed partial class PresentationSurface : UserControl
             HorizontalAlignment = HorizontalAlignment.Stretch,
         };
         ApplyToneStyle(button, ActionToneStyle.From(String(action, "tone")));
-        FocusVisualStyle.Apply(button);
+        FocusVisualStyle.Apply(button, _colors);
         AutomationProperties.SetAutomationId(button, interactionId);
         AutomationProperties.SetName(
             button,
@@ -226,12 +234,14 @@ public sealed partial class PresentationSurface : UserControl
         return button;
     }
 
-    private static void ApplyToneStyle(Button button, ActionTone tone)
+    private void ApplyToneStyle(Button button, ActionTone tone)
     {
+        if (_colors is not { } colors)
+            return;
         switch (tone)
         {
             case ActionTone.Destructive:
-                button.Foreground = new SolidColorBrush(ThemeColors.Destructive);
+                button.Foreground = new SolidColorBrush(colors.Error);
                 break;
             case ActionTone.Serious:
                 // Serious (e.g. Recovery) is consequential but not
@@ -239,9 +249,9 @@ public sealed partial class PresentationSurface : UserControl
                 // "pay attention" without borrowing destructive's alarm
                 // red or a filled treatment neither tone earns.
                 button.Background = new SolidColorBrush(Microsoft.UI.Colors.Transparent);
-                button.BorderBrush = new SolidColorBrush(ThemeColors.Warning);
+                button.BorderBrush = new SolidColorBrush(colors.Warning);
                 button.BorderThickness = new Thickness(2);
-                button.Foreground = new SolidColorBrush(ThemeColors.Warning);
+                button.Foreground = new SolidColorBrush(colors.Warning);
                 break;
             case ActionTone.Standard:
                 break;
@@ -287,12 +297,19 @@ public sealed partial class PresentationSurface : UserControl
             _surfaceId,
             PresentationEvents.NumberChanged(_surfaceId, bindingId, value));
 
-    private static Border RenderDivider() => new()
+    private Border RenderDivider() => new()
     {
         Height = 1,
-        Background = new SolidColorBrush(ThemeColors.Divider),
+        Background = Paint(colors => colors.Divider),
         Margin = new Thickness(0, 8, 0, 8),
     };
+
+    /// <summary>
+    /// A brush in the surface's palette, or <c>null</c> — no fill — when
+    /// Core sent none. Never for a foreground: a null foreground hides text.
+    /// </summary>
+    private SolidColorBrush? Paint(Func<SurfaceColors, Windows.UI.Color> role) =>
+        _colors is { } colors ? new SolidColorBrush(role(colors)) : null;
 
     private static void ApplyAccessibility(DependencyObject element, JsonElement payload)
     {

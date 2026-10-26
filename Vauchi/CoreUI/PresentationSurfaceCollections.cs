@@ -95,7 +95,7 @@ public sealed partial class PresentationSurface
                 MinWidth = _minimumTargetSize,
                 MinHeight = _minimumTargetSize,
             };
-            FocusVisualStyle.Apply(more);
+            FocusVisualStyle.Apply(more, _colors);
             var flyout = new MenuFlyout();
             foreach (JsonElement action in secondary.EnumerateArray())
             {
@@ -129,7 +129,7 @@ public sealed partial class PresentationSurface
                 MinHeight = _minimumTargetSize,
                 IsEnabled = info.Enabled,
             };
-            FocusVisualStyle.Apply(infoButton);
+            FocusVisualStyle.Apply(infoButton, _colors);
             AutomationProperties.SetAutomationId(infoButton, info.InteractionId);
             AutomationProperties.SetName(infoButton, info.AccessibilityLabel);
             ToolTipService.SetToolTip(infoButton, info.AccessibilityLabel);
@@ -145,7 +145,7 @@ public sealed partial class PresentationSurface
             Padding = new Thickness(8),
             CornerRadius = new CornerRadius(8),
             Background = Boolean(row, "selected")
-                ? new SolidColorBrush(ThemeColors.SelectedBackground)
+                ? Paint(colors => colors.SelectedBackground)
                 : null,
         });
         if (row.TryGetProperty("controls", out JsonElement controls)

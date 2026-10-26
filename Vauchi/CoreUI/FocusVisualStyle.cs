@@ -14,18 +14,21 @@ namespace Vauchi.CoreUI;
 /// <remarks>
 /// Mirrors <c>tokens.json</c>'s <c>focus.ring_width</c> (3) and
 /// <c>ring_offset</c> (2) by hand: that section does not cross the C ABI
-/// yet, the same gap <c>ThemeColors.AvatarFallbackHex</c> documents for
-/// the avatar-fallback color. Reconcile against a generated value once
-/// core exposes one.
+/// yet. Reconcile against a generated value once core exposes one. The
+/// ring's colour is the surface's <c>focus_ring</c> role
+/// (vauchi/private#814).
 /// </remarks>
 public static class FocusVisualStyle
 {
     public const double RingWidth = 3;
     public const double RingOffset = 2;
 
-    public static void Apply(Control control)
+    /// <param name="colors">The surface's palette; without one the ring
+    /// keeps the system brush.</param>
+    public static void Apply(Control control, SurfaceColors? colors)
     {
-        control.FocusVisualPrimaryBrush = new SolidColorBrush(ThemeColors.FocusRing);
+        if (colors is not null)
+            control.FocusVisualPrimaryBrush = new SolidColorBrush(colors.FocusRing);
         control.FocusVisualPrimaryThickness = new Thickness(RingWidth);
         control.FocusVisualMargin = new Thickness(RingOffset);
     }

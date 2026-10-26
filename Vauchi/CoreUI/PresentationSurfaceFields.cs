@@ -89,13 +89,14 @@ public sealed partial class PresentationSurface
         string error = String(payload, "validation_error");
         if (error.Length > 0)
         {
-            container.Children.Add(new TextBlock
+            var message = new TextBlock
             {
                 Text = error,
-                Foreground = new Microsoft.UI.Xaml.Media.SolidColorBrush(
-                    ThemeColors.Destructive),
                 TextWrapping = TextWrapping.Wrap,
-            });
+            };
+            if (_colors is { } colors)
+                message.Foreground = new Microsoft.UI.Xaml.Media.SolidColorBrush(colors.Error);
+            container.Children.Add(message);
         }
         return container;
     }

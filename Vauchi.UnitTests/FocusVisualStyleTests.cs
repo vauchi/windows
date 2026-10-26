@@ -10,9 +10,7 @@ namespace Vauchi.UnitTests;
 /// Pins the hand-maintained mirror of <c>tokens.json</c>'s
 /// <c>focus.ring_width</c> / <c>ring_offset</c> — see the remark on
 /// <c>FocusVisualStyle</c> for why it is hand-maintained rather than
-/// generated. Same class of drift
-/// <c>ThemeColorsTests.AvatarFallbackMatchesItsHexConstant</c> guards for
-/// the avatar-fallback color.
+/// generated.
 /// </summary>
 public class FocusVisualStyleTests
 {
