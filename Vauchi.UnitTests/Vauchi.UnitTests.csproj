@@ -41,6 +41,8 @@
     <Compile Include="..\Vauchi\Platform\NetworkCost.cs" Link="Linked\NetworkCost.cs" />
     <Compile Include="..\Vauchi\Platform\SecureStorageService.cs" Link="Linked\SecureStorageService.cs" />
     <Compile Include="..\Vauchi\Platform\SystemLocale.cs" Link="Linked\SystemLocale.cs" />
+    <Compile Include="..\Vauchi\Platform\RestorableState.cs" Link="Linked\RestorableState.cs" />
+    <Compile Include="..\Vauchi\Platform\SystemColorScheme.cs" Link="Linked\SystemColorScheme.cs" />
     <Compile Include="..\Vauchi\Platform\SystemTrayManager.cs" Link="Linked\SystemTrayManager.cs" />
     <Compile Include="..\Vauchi\Services\DirectSendService.cs" Link="Linked\DirectSendService.cs" />
     <Compile Include="..\Vauchi\Services\Localizer.cs" Link="Linked\Localizer.cs" />
@@ -66,6 +68,7 @@
     <Compile Include="..\Vauchi\CoreUI\PresentationSurfaceFields.cs" Link="Linked\PresentationSurfaceFields.cs" />
     <Compile Include="..\Vauchi\CoreUI\PresentationSurfaceMedia.cs" Link="Linked\PresentationSurfaceMedia.cs" />
     <Compile Include="..\Vauchi\CoreUI\ThemeColors.cs" Link="Linked\ThemeColors.cs" />
+    <Compile Include="..\Vauchi\CoreUI\SurfaceColors.cs" Link="Linked\SurfaceColors.cs" />
     <Compile Include="..\Vauchi\CoreUI\ActionToneStyle.cs" Link="Linked\ActionToneStyle.cs" />
     <Compile Include="..\Vauchi\CoreUI\TargetSize.cs" Link="Linked\TargetSize.cs" />
     <Compile Include="..\Vauchi\CoreUI\FocusVisualStyle.cs" Link="Linked\FocusVisualStyle.cs" />

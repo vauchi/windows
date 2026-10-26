@@ -27,4 +27,17 @@ public class SystemLocaleTests
     {
         Assert.Equal("{}", SystemLocale.ContextJson(CultureInfo.InvariantCulture));
     }
+
+    // One push carries both, so the kept pick applies with the system
+    // language (vauchi/private#814).
+    [Fact]
+    public void TheKeptRestorableStateRidesInTheSamePush()
+    {
+        Assert.Equal(
+            """{"system_locale":"fr-CH","restorable_state":"{\u0022v\u0022:1}"}""",
+            SystemLocale.ContextJson(new CultureInfo("fr-CH"), "{\"v\":1}"));
+        Assert.Equal(
+            """{"restorable_state":"kept"}""",
+            SystemLocale.ContextJson(CultureInfo.InvariantCulture, "kept"));
+    }
 }

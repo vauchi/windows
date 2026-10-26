@@ -52,7 +52,8 @@ public static class PresentationEvents
     public static string EnvironmentChanged(
         int availableWidth,
         int availableHeight,
-        bool reducedMotion) =>
+        bool reducedMotion,
+        string? colorScheme = null) =>
         Serialize(
             "PresentationEnvironmentChanged",
             new

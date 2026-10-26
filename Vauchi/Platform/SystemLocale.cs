@@ -15,7 +15,7 @@ namespace Vauchi.Platform;
 /// </summary>
 public static class SystemLocale
 {
-    public static string ContextJson(CultureInfo culture) =>
+    public static string ContextJson(CultureInfo culture, string? restorableState = null) =>
         string.IsNullOrEmpty(culture.Name)
             ? "{}"
             : JsonSerializer.Serialize(new Dictionary<string, string> { ["system_locale"] = culture.Name });

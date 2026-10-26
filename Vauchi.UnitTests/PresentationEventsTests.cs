@@ -74,6 +74,12 @@ public class PresentationEventsTests
             {"available_width":840,"available_height":700,"input_modes":["pointer","keyboard"],"motion":"reduced"}
             """);
         AssertEvent(
+            PresentationEvents.EnvironmentChanged(840, 700, reducedMotion: false, colorScheme: "light"),
+            "PresentationEnvironmentChanged",
+            """
+            {"available_width":840,"available_height":700,"input_modes":["pointer","keyboard"],"motion":"full","color_scheme":"light"}
+            """);
+        AssertEvent(
             PresentationEvents.OverlayDismissed("contacts", "navigation"),
             "OverlayDismissed",
             """{"surface_id":"contacts","kind":"navigation"}""");
