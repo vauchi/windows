@@ -214,13 +214,43 @@ public sealed partial class PresentationHost : UserControl
             ClearValue(ForegroundProperty);
             OverlayPanel.Background = _markupOverlayBackground;
             OverlayPanel.BorderBrush = _markupOverlayBorder;
+            PaintPane(null, ElementTheme.Default);
             return;
         }
-        RequestedTheme = colors.IsLight ? ElementTheme.Light : ElementTheme.Dark;
+        ElementTheme theme = colors.IsLight ? ElementTheme.Light : ElementTheme.Dark;
+        RequestedTheme = theme;
         SurfaceGrid.Background = new SolidColorBrush(colors.Background);
         Foreground = new SolidColorBrush(colors.Text);
         OverlayPanel.Background = new SolidColorBrush(colors.SurfaceElevated);
         OverlayPanel.BorderBrush = new SolidColorBrush(colors.Border);
+        PaintPane(new SolidColorBrush(colors.Surface), theme);
+    }
+
+    // The keys NavigationView's template reads its pane background from.
+    private static readonly string[] PaneBackgroundKeys =
+    [
+        "NavigationViewDefaultPaneBackground",
+        "NavigationViewExpandedPaneBackground",
+        "NavigationViewTopPaneBackground",
+    ];
+
+    /// <summary>
+    /// The navigation pane takes the active surface's <c>surface</c> colour
+    /// instead of the system backdrop (vauchi/private#814).
+    /// </summary>
+    private void PaintPane(Brush? background, ElementTheme theme)
+    {
+        foreach (string key in PaneBackgroundKeys)
+        {
+            if (background is null)
+                Sidebar.Resources.Remove(key);
+            else
+                Sidebar.Resources[key] = background;
+        }
+        // The template resolves these keys only when its theme changes, so a
+        // new palette under the same light/dark would otherwise not show.
+        Sidebar.RequestedTheme = theme == ElementTheme.Dark ? ElementTheme.Light : ElementTheme.Dark;
+        Sidebar.RequestedTheme = theme;
     }
 
     /// <summary>
