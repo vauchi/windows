@@ -401,6 +401,23 @@ function Save-Screen {
     }
 }
 
+# -- Diagnostic (private#248): every capture on pam showed Core's init-error
+# dialog. Theory under test: pam's runner account keeps %LOCALAPPDATA%\Vauchi
+# between jobs while test:unit deletes the vault key, so a fresh key meets an
+# old database. Log what is there, then move it aside: if the app starts
+# afterwards, the stale data directory is the cause.
+$dataDir = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'Vauchi'
+if (Test-Path $dataDir) {
+    Write-Host "[diag-248] data directory exists: $dataDir"
+    Get-ChildItem -Path $dataDir -Recurse -File -ErrorAction SilentlyContinue |
+        ForEach-Object { Write-Host ("[diag-248]   {0}  {1} bytes  {2:u}" -f $_.FullName.Substring($dataDir.Length), $_.Length, $_.LastWriteTimeUtc) }
+    $aside = "$dataDir.stale-$env:CI_JOB_ID"
+    Move-Item -Path $dataDir -Destination $aside
+    Write-Host "[diag-248] moved aside to $aside"
+} else {
+    Write-Host "[diag-248] no data directory at $dataDir"
+}
+
 # -- Phase 1: onboarding flow (no identity yet on a fresh runner) --
 $hwnd = Start-VauchiWindow @()
 $windowElement = $null
