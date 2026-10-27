@@ -15,7 +15,6 @@ namespace Vauchi;
 public sealed partial class MainWindow : Window
 {
     private IntPtr _appHandle;
-    private string _dataDirectory = "";
     private SystemTrayManager? _tray;
     private ExchangeCommandHandler? _exchange;
     private VauchiNative.VauchiEventCallback? _eventCallback;
@@ -117,7 +116,6 @@ public sealed partial class MainWindow : Window
         string dataDirectory = System.IO.Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "Vauchi");
-        _dataDirectory = dataDirectory;
         byte[] key = KeyStorageService.RetrieveKey()
                      ?? KeyStorageService.GenerateKey();
         KeyStorageService.StoreKey(key);
@@ -131,7 +129,7 @@ public sealed partial class MainWindow : Window
             throw new InvalidOperationException(
                 "Failed to initialize the Core application engine.");
         }
-        SystemLocale.Report(_appHandle, dataDirectory);
+        SystemLocale.Report(_appHandle);
 
 #if DEBUG
         if (Array.Exists(

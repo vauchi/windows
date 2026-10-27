@@ -41,7 +41,6 @@
     <Compile Include="..\Vauchi\Platform\NetworkCost.cs" Link="Linked\NetworkCost.cs" />
     <Compile Include="..\Vauchi\Platform\SecureStorageService.cs" Link="Linked\SecureStorageService.cs" />
     <Compile Include="..\Vauchi\Platform\SystemLocale.cs" Link="Linked\SystemLocale.cs" />
-    <Compile Include="..\Vauchi\Platform\RestorableState.cs" Link="Linked\RestorableState.cs" />
     <Compile Include="..\Vauchi\Platform\SystemColorScheme.cs" Link="Linked\SystemColorScheme.cs" />
     <Compile Include="..\Vauchi\Platform\SystemTrayManager.cs" Link="Linked\SystemTrayManager.cs" />
     <Compile Include="..\Vauchi\Services\DirectSendService.cs" Link="Linked\DirectSendService.cs" />
