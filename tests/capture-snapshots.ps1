@@ -485,6 +485,9 @@ foreach ($screen in $Screens) {
     if ($windowState -ne "visible" -and -not $script:windowLossReported) {
         $script:windowLossReported = $true
         Write-AppDiagnostics -Proc $script:launchedProc
+    } elseif ($name -eq "exchange") {
+        Get-Process -Name $appName -ErrorAction SilentlyContinue |
+            Format-Table Id, HasExited, Responding, WorkingSet64 -AutoSize | Out-String | Write-Host
     }
 }
 Write-Host "[snapshots] Shutting down app..."
