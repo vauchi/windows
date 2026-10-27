@@ -179,7 +179,10 @@ public sealed partial class PresentationHost : UserControl
             string surfaceId = visible[index];
             if (_state.Surface(surfaceId) is not { } surface)
                 continue;
-            var renderer = new PresentationSurface(surface, _state.ContextBar(surfaceId));
+            var renderer = new PresentationSurface(
+                surface,
+                _state.ContextBar(surfaceId),
+                navigationShown: !SidebarModel.From(_state.ActiveNavigation).Hidden);
             renderer.EventReady += DispatchSurfaceEvent;
             if (surfaceId == _state.ActiveSurfaceId)
                 _activeSecondaryAnchor = renderer.SecondaryActionButton;

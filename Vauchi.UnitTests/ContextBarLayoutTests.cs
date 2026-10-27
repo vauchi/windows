@@ -58,7 +58,7 @@ public class ContextBarLayoutTests
         JsonElement bar = Bar(
             $$"""{"back":{{Action}},"navigation":{{Action}},"primary":null,"secondary":null,"info":null}""");
 
-        Assert.Equal(new[] { "back", "navigation" }, ContextBarLayout.LeadingSlots(bar));
+        Assert.Equal(new[] { "back", "navigation" }, ContextBarLayout.LeadingSlots(bar, navigationShown: false));
     }
 
     // @scenario: generic_presentation_protocol.feature :: Contextual controls expose four stable roles
@@ -68,7 +68,7 @@ public class ContextBarLayoutTests
         JsonElement bar = Bar(
             $$"""{"back":null,"navigation":null,"primary":{{Action}},"secondary":{{Action}},"info":{{Action}}}""");
 
-        Assert.Empty(ContextBarLayout.LeadingSlots(bar));
+        Assert.Empty(ContextBarLayout.LeadingSlots(bar, navigationShown: false));
     }
 
     // Info sits beside Actions, closer to the title; the menu button is the

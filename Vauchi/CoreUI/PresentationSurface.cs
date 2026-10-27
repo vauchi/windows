@@ -19,9 +19,9 @@ public sealed partial class PresentationSurface : UserControl
 
     public event Action<string, string>? EventReady;
 
-    public PresentationSurface(JsonElement surface, JsonElement? contextBar)
+    public PresentationSurface(JsonElement surface, JsonElement? contextBar, bool navigationShown)
     {
-        Render(surface, contextBar);
+        Render(surface, contextBar, navigationShown);
     }
 
     public string SurfaceId => _surfaceId;
@@ -39,7 +39,7 @@ public sealed partial class PresentationSurface : UserControl
     /// sends one — a full-width Primary button under it. Absent slots take
     /// no space; the retired separate bottom row no longer exists.
     /// </summary>
-    private void Render(JsonElement surface, JsonElement? contextBar)
+    private void Render(JsonElement surface, JsonElement? contextBar, bool navigationShown)
     {
         _surfaceId = String(surface, "surface_id");
         _minimumTargetSize = TargetSize.From(surface);
@@ -81,7 +81,7 @@ public sealed partial class PresentationSurface : UserControl
         root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
         Grid.SetRow(body, 1);
-        root.Children.Add(RenderTitleRow(surface, contextBar));
+        root.Children.Add(RenderTitleRow(surface, contextBar, navigationShown));
         root.Children.Add(body);
 
         if (contextBar is { } bar
@@ -112,7 +112,10 @@ public sealed partial class PresentationSurface : UserControl
     /// trailing, the title wrapping or shortening before either side moves
     /// (vauchi/private#534 design).
     /// </summary>
-    private FrameworkElement RenderTitleRow(JsonElement surface, JsonElement? contextBar)
+    private FrameworkElement RenderTitleRow(
+        JsonElement surface,
+        JsonElement? contextBar,
+        bool navigationShown)
     {
         var row = new Grid { ColumnSpacing = 4 };
         row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
@@ -120,7 +123,7 @@ public sealed partial class PresentationSurface : UserControl
         row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
         var leading = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 4 };
-        foreach (string role in ContextBarLayout.LeadingSlots(contextBar))
+        foreach (string role in ContextBarLayout.LeadingSlots(contextBar, navigationShown))
             leading.Children.Add(RoleButton(contextBar, role));
         Grid.SetColumn(leading, 0);
 

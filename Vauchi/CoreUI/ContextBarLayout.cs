@@ -30,7 +30,7 @@ public static class ContextBarLayout
     public static IReadOnlyList<string> Slots(JsonElement? bar) =>
         PresentRoles(bar, Roles);
 
-    public static IReadOnlyList<string> LeadingSlots(JsonElement? bar) =>
+    public static IReadOnlyList<string> LeadingSlots(JsonElement? bar, bool navigationShown) =>
         PresentRoles(bar, LeadingRoles);
 
     public static IReadOnlyList<string> TrailingSlots(JsonElement? bar) =>
