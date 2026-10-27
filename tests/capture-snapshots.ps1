@@ -224,7 +224,13 @@ public static class TopLevelWindows {
     [DllImport("user32.dll")] static extern uint GetWindowThreadProcessId(IntPtr h, out uint pid);
     [DllImport("user32.dll")] static extern bool IsWindowVisible(IntPtr h);
     [DllImport("user32.dll")] static extern int GetWindowTextLength(IntPtr h);
+    [DllImport("user32.dll")] static extern bool IsWindow(IntPtr h);
     delegate bool EnumProc(IntPtr h, IntPtr lp);
+
+    public static string WindowState(IntPtr h) {
+        if (!IsWindow(h)) return "destroyed";
+        return IsWindowVisible(h) ? "visible" : "hidden";
+    }
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     static extern int GetWindowText(IntPtr h, StringBuilder sb, int max);
@@ -307,6 +313,7 @@ function Start-VauchiWindow {
     } else {
         $proc = Start-Process -FilePath $AppPath -PassThru
     }
+    $script:launchedProc = $proc
     # Capture the handle THE MOMENT it shows: the bootstrap process can exit
     # shortly after, making later MainWindowHandle reads return $null while
     # the HWND itself stays valid.
@@ -470,6 +477,15 @@ foreach ($screen in $Screens) {
     }
     Start-Sleep -Seconds 2
     Save-Screen -Hwnd $hwnd -Name $name
+    # diag (private#838): after Exchange the window was gone and the next
+    # destinations failed. Say whether it exited, was destroyed or was
+    # only hidden, the first time it is not visible.
+    $windowState = [TopLevelWindows]::WindowState($hwnd)
+    Write-Host "[snapshots]   Window after ${label}: $windowState"
+    if ($windowState -ne "visible" -and -not $script:windowLossReported) {
+        $script:windowLossReported = $true
+        Write-AppDiagnostics -Proc $script:launchedProc
+    }
 }
 Write-Host "[snapshots] Shutting down app..."
 Stop-VauchiApp
