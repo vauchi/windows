@@ -71,6 +71,19 @@ public class ContextBarLayoutTests
         Assert.Empty(ContextBarLayout.LeadingSlots(bar, navigationShown: false));
     }
 
+    // The sidebar and the launcher open the same destinations; two controls
+    // for one list was what readers could not name (vauchi/private#479,
+    // #847). GTK, Qt, macOS, iOS and Android already leave it out.
+    // @scenario: generic_presentation_protocol.feature :: Contextual controls expose four stable roles
+    [Fact]
+    public void LeadingSlots_LeavesOutTheNavigationLauncher_BesideTheSidebar()
+    {
+        JsonElement bar = Bar(
+            $$"""{"back":{{Action}},"navigation":{{Action}},"primary":null,"secondary":null,"info":null}""");
+
+        Assert.Equal(new[] { "back" }, ContextBarLayout.LeadingSlots(bar, navigationShown: true));
+    }
+
     // Info sits beside Actions, closer to the title; the menu button is the
     // very trailing end (diagram: `[‹] Title … [ⓘ] [⋯]`).
     // @scenario: generic_presentation_protocol.feature :: Contextual controls expose four stable roles
