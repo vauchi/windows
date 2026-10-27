@@ -31,7 +31,9 @@ public static class ContextBarLayout
         PresentRoles(bar, Roles);
 
     public static IReadOnlyList<string> LeadingSlots(JsonElement? bar, bool navigationShown) =>
-        PresentRoles(bar, LeadingRoles);
+        PresentRoles(bar, navigationShown ? BackOnly : LeadingRoles);
+
+    private static readonly IReadOnlyList<string> BackOnly = new[] { "back" };
 
     public static IReadOnlyList<string> TrailingSlots(JsonElement? bar) =>
         PresentRoles(bar, TrailingRoles);
