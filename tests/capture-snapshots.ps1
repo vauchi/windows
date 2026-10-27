@@ -267,6 +267,29 @@ trap {
     break
 }
 
+function Write-AppDiagnostics {
+    param([System.Diagnostics.Process]$Proc)
+    Write-Host "[snapshots] Diagnostics - processes named ${appName}:"
+    Get-Process -Name $appName -ErrorAction SilentlyContinue |
+        Format-Table Id, ProcessName, MainWindowTitle, HasExited -AutoSize | Out-String | Write-Host
+    $Proc.Refresh()
+    $exitInfo = if ($Proc.HasExited) { "exit code $($Proc.ExitCode)" } else { "still running" }
+    Write-Host "[snapshots] Diagnostics - launched process: $exitInfo"
+    Write-Host "[snapshots] Diagnostics - all visible top-level windows:"
+    [TopLevelWindows]::DumpVisibleWindows() | Write-Host
+    # A WinUI app that dies leaves the reason only in the Application event
+    # log (.NET Runtime / Application Error / Windows Error Reporting entries).
+    Write-Host "[snapshots] Diagnostics - Application event log entries mentioning ${appName}:"
+    try {
+        Get-WinEvent -FilterHashtable @{ LogName = "Application"; StartTime = (Get-Date).AddMinutes(-5) } -ErrorAction Stop |
+            Where-Object { $_.Message -match $appName } |
+            Select-Object -First 5 |
+            ForEach-Object { Write-Host "  [$($_.ProviderName)] $($_.Message)" }
+    } catch {
+        Write-Host "  (no event log entries readable: $_)"
+    }
+}
+
 function Start-VauchiWindow {
     param([string[]]$LaunchArgs)
     # Persistent shell runner: a prior run's app instance may still be
@@ -320,26 +343,7 @@ function Start-VauchiWindow {
             }
         }
         if ($null -eq $hwnd -or $hwnd -eq [IntPtr]::Zero) {
-            Write-Host "[snapshots] Diagnostics - processes named ${appName}:"
-            Get-Process -Name $appName -ErrorAction SilentlyContinue |
-                Format-Table Id, ProcessName, MainWindowTitle, HasExited -AutoSize | Out-String | Write-Host
-            $proc.Refresh()
-            $exitInfo = if ($proc.HasExited) { "exit code $($proc.ExitCode)" } else { "still running" }
-            Write-Host "[snapshots] Diagnostics - launched process: $exitInfo"
-            Write-Host "[snapshots] Diagnostics - all visible top-level windows:"
-            [TopLevelWindows]::DumpVisibleWindows() | Write-Host
-            # A WinUI app that dies before its window shows leaves the reason
-            # only in the Application event log (.NET Runtime / Application
-            # Error / Windows Error Reporting entries).
-            Write-Host "[snapshots] Diagnostics - Application event log entries mentioning ${appName}:"
-            try {
-                Get-WinEvent -FilterHashtable @{ LogName = "Application"; StartTime = (Get-Date).AddMinutes(-5) } -ErrorAction Stop |
-                    Where-Object { $_.Message -match $appName } |
-                    Select-Object -First 5 |
-                    ForEach-Object { Write-Host "  [$($_.ProviderName)] $($_.Message)" }
-            } catch {
-                Write-Host "  (no event log entries readable: $_)"
-            }
+            Write-AppDiagnostics -Proc $proc
             if (-not $proc.HasExited) { $proc.Kill() }
             Write-Warning "No visible top-level window for process '$appName' after ${retry} retries."
             return [IntPtr]::Zero
