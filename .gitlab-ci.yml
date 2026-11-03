@@ -144,10 +144,18 @@ default:
           }
         }
 
-        # Install cosign
+        # Install cosign v3.0.5, pinned to the SHA-256 in sigstore's release
+        # checksums and in scripts' .install-cosign-windows: the verifier is
+        # verified before it verifies the DLL.
         $COSIGN_VERSION = "v3.0.5"
+        $COSIGN_SHA256 = "44e9e44202b67ddfaaf5ea1234f5a265417960c4ae98c5b57c35bc40ba9dd714"
         $COSIGN_URL = "https://github.com/sigstore/cosign/releases/download/$COSIGN_VERSION/cosign-windows-amd64.exe"
         curl.exe -fSL --retry 2 -o cosign.exe $COSIGN_URL
+        $cosignActual = (Get-FileHash cosign.exe -Algorithm SHA256).Hash.ToLower()
+        if ($cosignActual -ne $COSIGN_SHA256) {
+          Write-Error "cosign SHA-256 mismatch: expected $COSIGN_SHA256, got $cosignActual"
+          exit 1
+        }
 
         # Verify cosign signature
         Write-Host "Verifying cosign signature..."
