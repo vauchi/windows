@@ -12,6 +12,42 @@ namespace Vauchi.UnitTests;
 
 public class ScreenCatalogTests
 {
+    [Fact]
+    public void RenderCatalog_RequiresEveryEntryToHaveAValidSurface()
+    {
+        const string mixed = """
+            {"schema_version":1,"screens":[
+              {"code_id":"broken","commands":[{"ReplaceSurface":{}}]},
+              {"code_id":"fine","commands":[{"ReplaceSurface":{"surface":{"surface_id":"s","revision":1,"title":"Fine","nodes":[]}}}]}
+            ]}
+            """;
+        Assert.Throws<FormatException>(() => ScreenCatalog.ParseForRendering(mixed));
+    }
+
+    [Theory]
+    [InlineData("""{"schema_version":1,"screens":[]}""")]
+    [InlineData("""{"schema_version":1,"screens":[{"code_id":"empty","commands":[]}]}""")]
+    public void RenderCatalog_RejectsEmptyWork(string json)
+    {
+        Assert.Throws<FormatException>(() => ScreenCatalog.ParseForRendering(json));
+    }
+
+    [Fact]
+    public void RenderCatalog_RejectsCollidingScreenshotNames()
+    {
+        string json = TwoEntryCatalog().Replace("onboarding_name", "ONBOARDING_WELCOME");
+        Assert.Throws<FormatException>(() => ScreenCatalog.ParseForRendering(json));
+    }
+
+    [Fact]
+    public void RenderCatalog_PreservesEveryValidEntryInOrder()
+    {
+        var entries = ScreenCatalog.ParseForRendering(TwoEntryCatalog());
+        Assert.Equal(new[] { "onboarding_welcome", "onboarding_name" },
+            entries.Select(entry => entry.CodeId));
+        Assert.All(entries, entry => Assert.Null(entry.Error));
+    }
+
     private static string TwoEntryCatalog() =>
         File.ReadAllText(Path.Combine(
             AppContext.BaseDirectory,
