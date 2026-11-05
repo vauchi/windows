@@ -630,9 +630,36 @@ test:snapshots:
 # load there. pam runs jobs in an interactive console session, like
 # test:snapshots — see
 # _private/docs/backlog/2026-09-11-windows-screenshot-capture-needs-desktop-runner.
+collect:screen-catalog:
+  stage: test
+  image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/python:3.11-alpine
+  tags: [docker]
+  needs: []
+  before_script:
+    - apk add --no-cache curl
+  script:
+    - mkdir -p build
+    - |
+      curl --fail-with-body --silent --show-error \
+        --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
+        "${CI_API_V4_URL}/projects/vauchi%2Fcontract/repository/files/ci%2Ffetch-screen-catalog.py/raw?ref=84346ffe3214c5e842aded89081b28bbf5962ed2" \
+        -o build/fetch-screen-catalog.py
+      python3 build/fetch-screen-catalog.py build/screen_catalog_v1.json --assembly
+  artifacts:
+    paths:
+      - build/screen_catalog_v1.json
+      - build/screen_catalog_v1.provenance.json
+      - build/screen_catalog_v1.inventory.json
+    expire_in: 7 days
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
 test:screen-catalog:
   stage: test
-  needs: []
+  needs:
+    - job: collect:screen-catalog
+      artifacts: true
   timeout: 40m
   cache:
     key:
@@ -649,31 +676,6 @@ test:screen-catalog:
     VRT_SCREENSHOT_DIR: build/screen-catalog
   script:
     - !reference [.snapshot-app-build, script]
-    # Core main is the catalog's source of truth. Until it publishes
-    # screen_catalog_v1.json, fold presentation_contract_v1.json (the
-    # same batch shape: initial_commands plus one batch per step) into a
-    # catalog so the renderer still exercises every code path.
-    - |
-      $catalog = Join-Path $env:CI_PROJECT_DIR 'build\screen_catalog_v1.json'
-      $coreFiles = "$env:CI_API_V4_URL/projects/vauchi%2Fcore/repository/files"
-      $headers = @{ 'JOB-TOKEN' = $env:CI_JOB_TOKEN }
-      try {
-        Invoke-WebRequest -Headers $headers -Uri "$coreFiles/vauchi-app%2Ffixtures%2Fscreen_catalog_v1.json/raw?ref=main" -OutFile $catalog -ErrorAction Stop
-        Write-Host "[screen-catalog] catalog source: core main vauchi-app/fixtures/screen_catalog_v1.json"
-      } catch {
-        Write-Host "[screen-catalog] core main has no screen_catalog_v1.json ($($_.Exception.Message)); converting presentation_contract_v1.json"
-        $contractPath = Join-Path $env:CI_PROJECT_DIR 'build\presentation_contract_v1.json'
-        Invoke-WebRequest -Headers $headers -Uri "$coreFiles/vauchi-app%2Ffixtures%2Fpresentation_contract_v1.json/raw?ref=main" -OutFile $contractPath -ErrorAction Stop
-        $contract = Get-Content $contractPath -Raw | ConvertFrom-Json
-        $screens = @(@{ code_id = 'contract_initial'; title = 'Contract initial'; locale = 'en'; commands = $contract.initial_commands })
-        $step = 0
-        foreach ($entry in $contract.steps) {
-          $step++
-          $screens += @{ code_id = "contract_step_$step"; title = "Contract step $step"; locale = 'en'; commands = $entry.commands }
-        }
-        @{ schema_version = 1; screens = $screens } | ConvertTo-Json -Depth 100 | Set-Content $catalog -Encoding UTF8
-        Write-Host "[screen-catalog] catalog source: presentation_contract_v1.json folded into $($screens.Count) screens"
-      }
     - |
       $outDir = Join-Path $env:CI_PROJECT_DIR 'build\screen-catalog'
       $catalog = Join-Path $env:CI_PROJECT_DIR 'build\screen_catalog_v1.json'
@@ -693,12 +695,25 @@ test:screen-catalog:
       # prints the error yet leaves the runner step's status at 0, so
       # job 16457763478 passed with zero images.
       if ($proc.ExitCode -ne 0) { exit 1 }
+      $inventory = Get-Content (Join-Path $env:CI_PROJECT_DIR 'build\screen_catalog_v1.inventory.json') -Raw | ConvertFrom-Json
+      foreach ($id in $inventory.screen_ids) {
+        foreach ($suffix in @('.png', '.dark.png')) {
+          if (-not (Test-Path -LiteralPath (Join-Path $outDir ($id + $suffix)))) {
+            Write-Host "[screen-catalog] missing required screenshot: $id$suffix"
+            exit 1
+          }
+        }
+      }
+      if ($count -ne (2 * $inventory.screen_ids.Count)) { exit 1 }
   after_script:
     - !reference [.vrt-upload-script-pwsh, script]
   artifacts:
     when: always
     paths:
       - build/screen-catalog/
+      - build/screen_catalog_v1.json
+      - build/screen_catalog_v1.provenance.json
+      - build/screen_catalog_v1.inventory.json
     expire_in: 7 days
   tags: [windows, dotnet]
   hooks:

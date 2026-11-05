@@ -12,8 +12,8 @@ namespace Vauchi.CoreUI;
 /// One screen of Core's catalog fixture, reduced through the production
 /// <see cref="PresentationState"/> so the renderer shows exactly what the
 /// app would after receiving the same batch. <see cref="Error"/> is set
-/// when the batch did not reduce; the entry is kept so one bad screen in
-/// a Core-main catalog cannot abort the whole run.
+/// when the batch did not reduce. Diagnostic parsing retains bad entries;
+/// rendering requires the complete corpus to validate first.
 /// </summary>
 public sealed record ScreenCatalogEntry(
     string CodeId,
@@ -98,6 +98,27 @@ public static class ScreenCatalog
                 entries.Add(ParseEntry(screen, position++));
             return entries;
         }
+    }
+
+    public static IReadOnlyList<ScreenCatalogEntry> ParseForRendering(string json)
+    {
+        IReadOnlyList<ScreenCatalogEntry> entries = Parse(json);
+        if (entries.Count == 0)
+            throw new FormatException("screen catalog contains no screens");
+        var files = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (ScreenCatalogEntry entry in entries)
+        {
+            if (entry.Error is { } error)
+                throw new FormatException($"screen {entry.CodeId}: {error}");
+            if (entry.SurfaceTitle is null)
+                throw new FormatException($"screen {entry.CodeId} has no rendered surface");
+            foreach (string suffix in new[] { ".png", ".dark.png" })
+            {
+                if (!files.Add(entry.FileStem + suffix))
+                    throw new FormatException($"screen {entry.CodeId} collides with another screenshot");
+            }
+        }
+        return entries;
     }
 
     public static bool TryParseLaunchArguments(

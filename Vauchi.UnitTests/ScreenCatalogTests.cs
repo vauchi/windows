@@ -40,6 +40,13 @@ public class ScreenCatalogTests
     }
 
     [Fact]
+    public void RenderCatalog_RejectsLightDarkScreenshotCollisions()
+    {
+        string json = TwoEntryCatalog().Replace("onboarding_name", "onboarding_welcome.dark");
+        Assert.Throws<FormatException>(() => ScreenCatalog.ParseForRendering(json));
+    }
+
+    [Fact]
     public void RenderCatalog_PreservesEveryValidEntryInOrder()
     {
         var entries = ScreenCatalog.ParseForRendering(TwoEntryCatalog());

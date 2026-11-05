@@ -20,7 +20,7 @@ namespace Vauchi.CoreUI;
 /// <see cref="PresentationHost"/>: every entry is shown in the main window
 /// at 1440x900 and captured to <c>&lt;code_id&gt;.png</c> plus a
 /// <c>.dark.png</c> variant. Ends the process with exit code 0 when at
-/// least one screen rendered, 1 when none did and 2 on a setup failure.
+/// every screen rendered, 1 on incomplete rendering and 2 on a setup failure.
 /// </summary>
 public static class ScreenCatalogRenderer
 {
@@ -38,7 +38,7 @@ public static class ScreenCatalogRenderer
             Directory.CreateDirectory(outputDirectory);
             log = new StreamWriter(Path.Combine(outputDirectory, LogFileName)) { AutoFlush = true };
             IReadOnlyList<ScreenCatalogEntry> entries =
-                ScreenCatalog.Parse(File.ReadAllText(catalogPath));
+                ScreenCatalog.ParseForRendering(File.ReadAllText(catalogPath));
             Log(log, $"catalog {catalogPath}: {entries.Count} screens");
 
             window.AppWindow.ResizeClient(new SizeInt32(ClientWidth, ClientHeight));
@@ -46,11 +46,6 @@ public static class ScreenCatalogRenderer
             int rendered = 0;
             foreach (ScreenCatalogEntry entry in entries)
             {
-                if (entry.Error is { } error)
-                {
-                    Log(log, $"skip {entry.CodeId}: {error}");
-                    continue;
-                }
                 string lightPath = Path.Combine(outputDirectory, entry.FileStem + ".png");
                 string darkPath = Path.Combine(outputDirectory, entry.FileStem + ".dark.png");
                 await CaptureAsync(window, root, entry, ElementTheme.Light, lightPath, log);
@@ -58,7 +53,7 @@ public static class ScreenCatalogRenderer
                 rendered++;
             }
             Log(log, $"rendered {rendered} of {entries.Count} screens into {outputDirectory}");
-            exitCode = rendered > 0 ? 0 : 1;
+            exitCode = rendered == entries.Count ? 0 : 1;
         }
         catch (Exception exception)
         {
