@@ -677,6 +677,32 @@ test:screen-catalog:
   script:
     - !reference [.snapshot-app-build, script]
     - |
+      $invalidCatalog = Join-Path $env:CI_PROJECT_DIR 'build\screen_catalog_invalid.json'
+      $invalidDir = Join-Path $env:CI_PROJECT_DIR 'build\screen-catalog-invalid'
+      $invalid = Get-Content (Join-Path $env:CI_PROJECT_DIR 'build\screen_catalog_v1.json') -Raw | ConvertFrom-Json
+      $invalidId = [string]$invalid.screens[-1].code_id
+      $invalid.screens[-1].commands = @(@{ ReplaceSurface = @{} })
+      $invalid | ConvertTo-Json -Depth 100 | Set-Content $invalidCatalog -Encoding utf8
+      $app = Join-Path $env:CI_PROJECT_DIR 'build\snapshot-app\Vauchi.exe'
+      $rejected = Start-Process -FilePath $app -ArgumentList '--render-catalog', "`"$invalidCatalog`"", "`"$invalidDir`"" -PassThru
+      if (-not $rejected.WaitForExit(60000)) {
+        $rejected.Kill()
+        Write-Host '[screen-catalog] malformed-catalog rejection timed out'
+        exit 1
+      }
+      $rejectedLogPath = Join-Path $invalidDir 'render-catalog.log'
+      if (-not (Test-Path -LiteralPath $rejectedLogPath)) {
+        Write-Host '[screen-catalog] malformed-catalog rejection produced no diagnostic'
+        exit 1
+      }
+      $rejectedLog = [string](Get-Content $rejectedLogPath -Raw)
+      $rejectedCount = (Get-ChildItem $invalidDir -Filter '*.png' -ErrorAction SilentlyContinue | Measure-Object).Count
+      Write-Host "[screen-catalog] malformed corpus: exit $($rejected.ExitCode), $rejectedCount PNG files"
+      if ($rejected.ExitCode -eq 0 -or $rejectedCount -ne 0 -or -not $rejectedLog.Contains("screen ${invalidId}: ReplaceSurface is missing surface")) {
+        Write-Host $rejectedLog
+        exit 1
+      }
+    - |
       $outDir = Join-Path $env:CI_PROJECT_DIR 'build\screen-catalog'
       $catalog = Join-Path $env:CI_PROJECT_DIR 'build\screen_catalog_v1.json'
       New-Item -ItemType Directory -Force -Path $outDir | Out-Null
@@ -714,11 +740,13 @@ test:screen-catalog:
       - build/screen_catalog_v1.json
       - build/screen_catalog_v1.provenance.json
       - build/screen_catalog_v1.inventory.json
+      - build/screen_catalog_invalid.json
+      - build/screen-catalog-invalid/
     expire_in: 7 days
   tags: [windows, dotnet]
   hooks:
     pre_get_sources_script: !reference [.stop-stale-vauchi, script]
-  allow_failure: true
+  allow_failure: false
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
