@@ -547,6 +547,11 @@ if ($initErrorShown) {
 
 # Summary
 Write-Host ""
+$presentationTrace = Join-Path (Split-Path -Parent $AppPath) "presentation-trace.log"
+if (Test-Path -LiteralPath $presentationTrace) {
+    Write-Host "[snapshots] Presentation trace (pid, time, stage):"
+    Get-Content -LiteralPath $presentationTrace | Write-Host
+}
 Write-Host "[snapshots] Done: $captured captured, $failed failed"
 Write-Host "[snapshots] Output: $OutputDir"
 if ($captured -eq 0) {

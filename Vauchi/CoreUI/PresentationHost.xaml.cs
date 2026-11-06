@@ -97,10 +97,14 @@ public sealed partial class PresentationHost : UserControl
             return;
         }
 
+        PresentationTrace.Mark($"render-start active={_state.ActiveSurfaceId}");
         RenderPresentation();
+        PresentationTrace.Mark("focus-start");
         RestoreFocus(focusId);
+        PresentationTrace.Mark("effects-start");
         foreach (JsonElement effect in effects)
             ExecuteEffect(effect);
+        PresentationTrace.Mark("update-done");
     }
 
     public void DispatchPlatformEvent(string eventJson) =>
@@ -148,7 +152,9 @@ public sealed partial class PresentationHost : UserControl
     {
         if (_appHandle == IntPtr.Zero)
             return;
+        PresentationTrace.Mark("core-dispatch-start");
         string? envelope = VauchiNative.AppDispatch(_appHandle, eventJson);
+        PresentationTrace.Mark("core-dispatch-done");
         if (string.IsNullOrEmpty(envelope))
         {
             ShowProtocolError("Core did not return a presentation batch");
@@ -197,10 +203,12 @@ public sealed partial class PresentationHost : UserControl
                 border.BorderBrush = new SolidColorBrush(colors.ActiveSurfaceBorder);
             Grid.SetColumn(border, index);
             SurfaceGrid.Children.Add(border);
+            PresentationTrace.Mark($"surface-built {surfaceId}");
         }
         RegisterShortcuts(_state.ActiveContextBar);
         RenderNavigation(activeColors);
         RenderOverlay();
+        PresentationTrace.Mark("render-done");
     }
 
     /// <summary>
