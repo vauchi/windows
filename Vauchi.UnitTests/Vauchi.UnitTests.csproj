@@ -62,6 +62,7 @@
     <Compile Include="..\Vauchi\CoreUI\PresentationIcons.cs" Link="Linked\PresentationIcons.cs" />
     <Compile Include="..\Vauchi\CoreUI\SidebarModel.cs" Link="Linked\SidebarModel.cs" />
     <Compile Include="..\Vauchi\CoreUI\PresentationState.cs" Link="Linked\PresentationState.cs" />
+    <Compile Include="..\Vauchi\CoreUI\PresentationTrace.cs" Link="Linked\PresentationTrace.cs" />
     <Compile Include="..\Vauchi\CoreUI\PresentationSurface.cs" Link="Linked\PresentationSurface.cs" />
     <Compile Include="..\Vauchi\CoreUI\PresentationSurfaceCollections.cs" Link="Linked\PresentationSurfaceCollections.cs" />
     <Compile Include="..\Vauchi\CoreUI\PresentationSurfaceFields.cs" Link="Linked\PresentationSurfaceFields.cs" />
