@@ -300,6 +300,13 @@ function Write-AppDiagnostics {
     $Proc.Refresh()
     $exitInfo = if ($Proc.HasExited) { "exit code $($Proc.ExitCode)" } else { "still running" }
     Write-Host "[snapshots] Diagnostics - launched process: $exitInfo"
+    $unhandledLog = Join-Path (Split-Path -Parent $AppPath) "unhandled-exception.log"
+    if (Test-Path -LiteralPath $unhandledLog) {
+        Write-Host "[snapshots] Diagnostics - unhandled exception:"
+        Get-Content -LiteralPath $unhandledLog | Write-Host
+    } else {
+        Write-Host "[snapshots] Diagnostics - no unhandled exception was logged"
+    }
     Write-Host "[snapshots] Diagnostics - all visible top-level windows:"
     [TopLevelWindows]::DumpVisibleWindows() | Write-Host
     # A WinUI app that dies leaves the reason only in the Application event

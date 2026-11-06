@@ -25,6 +25,14 @@ public partial class App : Application
     public App()
     {
         InitializeComponent();
+#if DEBUG
+        // A stowed XAML exception otherwise ends the process with only
+        // 0xC000027B in the event log, naming no exception (private#1099).
+        // DEBUG only: exception text must not reach a release build's disk.
+        UnhandledException += (_, args) => File.AppendAllText(
+            Path.Combine(AppContext.BaseDirectory, "unhandled-exception.log"),
+            $"{args.Exception}{Environment.NewLine}");
+#endif
     }
 
     protected override void OnLaunched(LaunchActivatedEventArgs args)
