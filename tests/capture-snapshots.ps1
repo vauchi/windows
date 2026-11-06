@@ -31,6 +31,7 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
+$script:windowLossReported = $false
 
 # -- Paths --
 
@@ -68,7 +69,13 @@ function Stop-VauchiApp {
         $_.CloseMainWindow() | Out-Null
     }
     Start-Sleep -Seconds 2
-    Get-Process -Name $appName -ErrorAction SilentlyContinue | Stop-Process -Force
+    # A crashing process refuses the kill with "Access is denied" until error
+    # reporting lets go; what counts is whether it has gone (private#1099).
+    Get-Process -Name $appName -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+    Get-Process -Name $appName -ErrorAction SilentlyContinue | Wait-Process -Timeout 60 -ErrorAction SilentlyContinue
+    if (Get-Process -Name $appName -ErrorAction SilentlyContinue) {
+        Write-Warning "[snapshots] $appName is still running after being stopped"
+    }
     Start-Sleep -Seconds 1
 }
 
@@ -189,7 +196,19 @@ function Navigate-To {
     catch {}
 
     if ($null -ne $invokePattern) {
-        $invokePattern.Invoke()
+        # The app can crash inside this call. Report it as a lost window and
+        # keep going, so the later phases still run (private#1099).
+        try {
+            $invokePattern.Invoke()
+        }
+        catch {
+            Write-Warning "[snapshots] Invoking '$Label' failed: $_"
+            if (-not $script:windowLossReported) {
+                $script:windowLossReported = $true
+                Write-AppDiagnostics -Proc $script:launchedProc
+            }
+            return $false
+        }
         return $true
     }
 
@@ -303,9 +322,8 @@ function Start-VauchiWindow {
     # window appears.
     $leftover = Get-Process -Name $appName -ErrorAction SilentlyContinue
     if ($leftover) {
-        Write-Host "[snapshots] Killing $($leftover.Count) leftover '$appName' process(es)"
-        $leftover | Stop-Process -Force
-        Start-Sleep -Seconds 2
+        Write-Host "[snapshots] Killing $(@($leftover).Count) leftover '$appName' process(es)"
+        Stop-VauchiApp
     }
     Write-Host "[snapshots] Launching Vauchi $LaunchArgs..."
     if ($LaunchArgs.Count -gt 0) {
@@ -467,6 +485,8 @@ $windowTitle = $windowElement.Current.Name
 $localized = $windowTitle -ne 'app.name'
 Write-Host "[snapshots] Window title: '$windowTitle' (localized: $localized)"
 Save-Screen -Hwnd $hwnd -Name "home"
+$startupErrorShown = $null -ne (Find-Named -Window $windowElement -Name "Vauchi Error")
+Write-Host "[snapshots] Startup error dialog on a normal launch: $startupErrorShown"
 foreach ($screen in $Screens) {
     $name = $screen.Name
     $label = $screen.Label
@@ -524,6 +544,14 @@ Write-Host "[snapshots] Done: $captured captured, $failed failed"
 Write-Host "[snapshots] Output: $OutputDir"
 if ($captured -eq 0) {
     Write-Error "No screenshots captured."
+    exit 1
+}
+if ($startupErrorShown) {
+    Write-Error "A normal launch showed a startup error dialog; see home.png (private#1099)."
+    exit 1
+}
+if ($script:windowLossReported) {
+    Write-Error "The app's window was lost during navigation; see the diagnostics above (private#1099)."
     exit 1
 }
 if (-not $initErrorShown) {
