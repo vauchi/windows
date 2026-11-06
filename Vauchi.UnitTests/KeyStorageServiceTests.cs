@@ -52,7 +52,7 @@ public class KeyStorageServiceTests
         }
 
         var original = new byte[32];
-        new Random(42).NextBytes(original);
+        System.Security.Cryptography.RandomNumberGenerator.Fill(original);
 
         KeyStorageService.StoreKey(original, TestEntry);
         byte[]? retrieved = KeyStorageService.RetrieveKey(TestEntry);
@@ -86,7 +86,7 @@ public class KeyStorageServiceTests
         }
 
         var key = new byte[32];
-        new Random(99).NextBytes(key);
+        System.Security.Cryptography.RandomNumberGenerator.Fill(key);
 
         KeyStorageService.StoreKey(key, TestEntry);
         KeyStorageService.DeleteKey(TestEntry);
@@ -105,7 +105,7 @@ public class KeyStorageServiceTests
 
         byte[]? appKeyBefore = KeyStorageService.RetrieveKey();
         var key = new byte[32];
-        new Random(7).NextBytes(key);
+        System.Security.Cryptography.RandomNumberGenerator.Fill(key);
 
         KeyStorageService.StoreKey(key, TestEntry);
         KeyStorageService.DeleteKey(TestEntry);
