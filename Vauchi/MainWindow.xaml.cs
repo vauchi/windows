@@ -89,12 +89,29 @@ public sealed partial class MainWindow : Window
 
             InitializeApp();
             RestoreWindowState();
-            _tray = new SystemTrayManager(this);
-            _tray.Initialize();
+            InitializeTray();
         }
         catch (Exception exception)
         {
             await ShowInitializationError(exception);
+        }
+    }
+
+    // A session with no shell cannot register an icon. The app works without
+    // one, so that must not reach the user as a failed startup (private#1099).
+    private void InitializeTray()
+    {
+        var tray = new SystemTrayManager(this);
+        try
+        {
+            tray.Initialize();
+            _tray = tray;
+        }
+        catch (Exception exception)
+        {
+            System.Diagnostics.Debug.WriteLine(
+                $"[Vauchi] Tray unavailable: {exception.Message}");
+            tray.Dispose();
         }
     }
 
@@ -214,6 +231,9 @@ public sealed partial class MainWindow : Window
 
     private void HideWindow()
     {
+        // The tray is the only way back to a hidden window.
+        if (_tray is null)
+            return;
         try
         {
             AppWindow?.Hide();
