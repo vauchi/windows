@@ -41,15 +41,13 @@ public class KeyStorageServiceTests
         }
     }
 
-    [Fact]
+    private const string VaultUnavailableReason =
+        "PasswordVault requires an interactive Windows session; service-account CI runners cannot exercise this.";
+
+    [SkippableFact]
     public void RoundTrip_StoreAndRetrieve_ReturnsSameBytes()
     {
-        if (!IsPasswordVaultAvailable())
-        {
-            // xUnit 2.8+ supports Assert.Skip; fall back to pass-with-warning
-            // if running on older version.
-            return;
-        }
+        Skip.IfNot(IsPasswordVaultAvailable(), VaultUnavailableReason);
 
         var original = new byte[32];
         System.Security.Cryptography.RandomNumberGenerator.Fill(original);
@@ -63,13 +61,10 @@ public class KeyStorageServiceTests
         KeyStorageService.DeleteKey(TestEntry);
     }
 
-    [Fact]
+    [SkippableFact]
     public void RetrieveKey_WhenNoneStored_ReturnsNull()
     {
-        if (!IsPasswordVaultAvailable())
-        {
-            return;
-        }
+        Skip.IfNot(IsPasswordVaultAvailable(), VaultUnavailableReason);
 
         KeyStorageService.DeleteKey(TestEntry);
 
@@ -77,13 +72,10 @@ public class KeyStorageServiceTests
         Assert.Null(retrieved);
     }
 
-    [Fact]
+    [SkippableFact]
     public void DeleteKey_RemovesStoredKey()
     {
-        if (!IsPasswordVaultAvailable())
-        {
-            return;
-        }
+        Skip.IfNot(IsPasswordVaultAvailable(), VaultUnavailableReason);
 
         var key = new byte[32];
         System.Security.Cryptography.RandomNumberGenerator.Fill(key);
@@ -95,13 +87,10 @@ public class KeyStorageServiceTests
         Assert.Null(retrieved);
     }
 
-    [Fact]
+    [SkippableFact]
     public void Tests_LeaveTheAppsOwnKeyAlone()
     {
-        if (!IsPasswordVaultAvailable())
-        {
-            return;
-        }
+        Skip.IfNot(IsPasswordVaultAvailable(), VaultUnavailableReason);
 
         byte[]? appKeyBefore = KeyStorageService.RetrieveKey();
         var key = new byte[32];

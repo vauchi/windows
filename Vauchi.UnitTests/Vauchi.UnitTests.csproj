@@ -21,6 +21,10 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.*" />
     <PackageReference Include="xunit" Version="2.*" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.*" />
+    <!-- Xunit v2 has no dynamic Assert.Skip (v3 only); SkippableFact fills the gap
+         so KeyStorageServiceTests report an explicit skip instead of silent-pass
+         when PasswordVault needs an interactive Windows session (private#1129). -->
+    <PackageReference Include="Xunit.SkippableFact" Version="1.5.*" />
     <PackageReference Include="JunitXml.TestLogger" Version="4.*" />
     <PackageReference Include="coverlet.collector" Version="6.*" />
     <PackageReference Include="ZXing.Net" Version="0.16.9" />
