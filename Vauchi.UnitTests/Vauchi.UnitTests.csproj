@@ -28,6 +28,10 @@
     <PackageReference Include="JunitXml.TestLogger" Version="4.*" />
     <PackageReference Include="coverlet.collector" Version="6.*" />
     <PackageReference Include="ZXing.Net" Version="0.16.9" />
+    <!-- The hardware shell, pinned exactly (ADR-077 D-3), as the app pins it. -->
+    <PackageReference Include="Vauchi.Contract" Version="[0.100.0]" />
+    <PackageReference Include="vauchi-windows-hw" Version="[0.4.0]" />
+    <PackageReference Include="vauchi-windows-hw-native" Version="[0.4.0]" />
     <PackageReference Include="ZXing.Net.Bindings.Windows.Compatibility" Version="0.16.9" />
   </ItemGroup>
   <!-- Link helper files from main project -->
@@ -37,6 +41,8 @@
     <Compile Include="..\Vauchi\Handlers\ExchangeCommandHandler.cs" Link="Linked\ExchangeCommandHandler.cs" />
     <Compile Include="..\Vauchi\Interop\VauchiNative.cs" Link="Linked\VauchiNative.cs" />
     <Compile Include="..\Vauchi\Interop\CabiEngineLink.cs" Link="Linked\CabiEngineLink.cs" />
+    <Compile Include="..\Vauchi\Hardware\HardwareBridge.cs" Link="Linked\HardwareBridge.cs" />
+    <Compile Include="..\Vauchi\Hardware\WindowsHardware.cs" Link="Linked\WindowsHardware.cs" />
     <Compile Include="..\Vauchi\CoreUI\IEngineLink.cs" Link="Linked\IEngineLink.cs" />
     <Compile Include="..\Vauchi\MainWindow.xaml.cs" Link="Linked\MainWindow.xaml.cs" />
     <Compile Include="..\Vauchi\MainWindowEffects.cs" Link="Linked\MainWindowEffects.cs" />
