@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Mattia Egloff <mattia.egloff@pm.me>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+using System.Linq;
 using System.Text.Json;
 using Vauchi.CoreUI;
 using Xunit;
@@ -104,5 +105,47 @@ public class ContextBarLayoutTests
             $$"""{"back":{{Action}},"navigation":{{Action}},"primary":{{Action}},"secondary":null,"info":null}""");
 
         Assert.Empty(ContextBarLayout.TrailingSlots(bar));
+    }
+
+    private static string[] PinnedLabels(JsonElement bar) =>
+        ContextBarLayout.Pinned(bar)
+            .Select(action => action.GetProperty("label").GetString() ?? "")
+            .ToArray();
+
+    private static string Labelled(string label) =>
+        $$"""{"interaction_id":"{{label}}","label":"{{label}}","accessibility_label":"{{label}}","enabled":true}""";
+
+    // Core pins a few actions under the content for a decision that must
+    // not scroll away (vauchi/private#1304); the shell draws them in the
+    // order Core sent.
+    // @internal
+    [Fact]
+    public void Pinned_KeepsCoresOrder()
+    {
+        JsonElement bar = Bar(
+            $$"""{"back":{{Action}},"pinned":[{{Labelled("yes")}},{{Labelled("no")}}]}""");
+
+        Assert.Equal(new[] { "yes", "no" }, PinnedLabels(bar));
+    }
+
+    // A Core that predates the slot leaves the key out; nothing is drawn.
+    // @internal
+    [Fact]
+    public void Pinned_OfNoBarOrABarWithoutTheGroup_IsEmpty()
+    {
+        Assert.Empty(ContextBarLayout.Pinned(null));
+        Assert.Empty(ContextBarLayout.Pinned(Bar($$"""{"primary":{{Action}}}""")));
+        Assert.Empty(ContextBarLayout.Pinned(Bar("""{"pinned":null}""")));
+    }
+
+    // Unknown input fails closed: an entry that is no action is left out
+    // and does not take the group with it.
+    // @internal
+    [Fact]
+    public void Pinned_LeavesOutAnEntryThatIsNoAction()
+    {
+        JsonElement bar = Bar($$"""{"pinned":[7,{{Labelled("no")}}]}""");
+
+        Assert.Equal(new[] { "no" }, PinnedLabels(bar));
     }
 }

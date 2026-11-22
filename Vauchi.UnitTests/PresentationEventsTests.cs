@@ -71,13 +71,13 @@ public class PresentationEventsTests
             PresentationEvents.EnvironmentChanged(840, 700, reducedMotion: true),
             "PresentationEnvironmentChanged",
             """
-            {"available_width":840,"available_height":700,"input_modes":["pointer","keyboard"],"motion":"reduced"}
+            {"available_width":840,"available_height":700,"input_modes":["pointer","keyboard"],"motion":"reduced","pinned_actions":true}
             """);
         AssertEvent(
             PresentationEvents.EnvironmentChanged(840, 700, reducedMotion: false, colorScheme: "light"),
             "PresentationEnvironmentChanged",
             """
-            {"available_width":840,"available_height":700,"input_modes":["pointer","keyboard"],"motion":"full","color_scheme":"light"}
+            {"available_width":840,"available_height":700,"input_modes":["pointer","keyboard"],"motion":"full","pinned_actions":true,"color_scheme":"light"}
             """);
         AssertEvent(
             PresentationEvents.OverlayDismissed("contacts", "navigation"),
