@@ -11,6 +11,12 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 CHECK = ROOT / "ci/check-display-boundary.py"
+LIBRARY = """<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+  </PropertyGroup>
+</Project>
+"""
 CLEAN = "using System;\nusing Microsoft.UI.Xaml;\n\nnamespace Vauchi.CoreUI;\n\npublic sealed class Host\n{\n}\n"
 
 
@@ -21,6 +27,8 @@ class DisplayBoundaryCheckTests(unittest.TestCase):
         self.folder.mkdir()
         self.source = self.folder / "Host.cs"
         self.source.write_text(CLEAN, encoding="utf-8")
+        self.project = self.folder / "Vauchi.Display.csproj"
+        self.project.write_text(LIBRARY, encoding="utf-8")
 
     def tearDown(self):
         self.temporary.cleanup()
@@ -60,6 +68,33 @@ class DisplayBoundaryCheckTests(unittest.TestCase):
 
                 self.assertEqual(1, result.returncode, result.stdout)
                 self.assertIn(f"Host.cs:9: names {named}\n", result.stderr)
+
+    def test_the_folder_is_a_project_of_its_own(self):
+        self.project.unlink()
+
+        result = self.check()
+
+        self.assertEqual(1, result.returncode, result.stdout)
+        self.assertIn("no project file: the display shell is a library of its own", result.stderr)
+
+    def test_the_library_references_no_other_project(self):
+        self.project.write_text(
+            LIBRARY.replace("</Project>", '  <ItemGroup>\n    <ProjectReference Include="..\\\\Vauchi.csproj" />\n  </ItemGroup>\n</Project>'),
+            encoding="utf-8",
+        )
+
+        result = self.check()
+
+        self.assertEqual(1, result.returncode, result.stdout)
+        self.assertIn("Vauchi.Display.csproj: references the project", result.stderr)
+
+    def test_the_library_is_not_an_executable(self):
+        self.project.write_text(LIBRARY.replace("Library", "WinExe"), encoding="utf-8")
+
+        result = self.check()
+
+        self.assertEqual(1, result.returncode, result.stdout)
+        self.assertIn("Vauchi.Display.csproj: OutputType 'WinExe' is not Library", result.stderr)
 
     def test_markup_is_read_too(self):
         (self.folder / "Host.xaml").write_text(
