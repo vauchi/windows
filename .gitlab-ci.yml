@@ -825,11 +825,11 @@ test:snapshots:record:
     - !reference [.cabi-download-script, script]
     - !reference [.locales-fetch, script]
   script:
-    - dotnet build Vauchi/Vauchi.csproj -c Debug -p:Platform=x64 -p:EnableCoreMrtTooling=false -p:AppxGeneratePriEnabled=false
-    - |
-      $debugDir = "Vauchi\bin\x64\Debug\net8.0-windows10.0.22621.0\win-x64"
-      Copy-Item cabi/vauchi_cabi.dll -Destination $debugDir -Force
-    - pwsh -NoProfile -ExecutionPolicy Bypass -File tests/capture-snapshots.ps1 -UpdateBaselines
+    # The same launchable build as test:snapshots. The PRI-off `dotnet
+    # build` this job used cannot find ms-appx:///MainWindow.xaml
+    # (vauchi/private#593), so it recorded nothing (vauchi/private#348).
+    - !reference [.snapshot-app-build, script]
+    - pwsh -NoProfile -ExecutionPolicy Bypass -File tests/capture-snapshots.ps1 -AppPath build/snapshot-app/Vauchi.exe -UpdateBaselines
     - |
       git config user.name "vauchi-bot"
       git config user.email "bot@vauchi.app"
