@@ -36,6 +36,8 @@
     <Compile Include="..\Vauchi\Helpers\ExchangeHardwareEventJson.cs" Link="Linked\ExchangeHardwareEventJson.cs" />
     <Compile Include="..\Vauchi\Handlers\ExchangeCommandHandler.cs" Link="Linked\ExchangeCommandHandler.cs" />
     <Compile Include="..\Vauchi\Interop\VauchiNative.cs" Link="Linked\VauchiNative.cs" />
+    <Compile Include="..\Vauchi\Interop\CabiEngineLink.cs" Link="Linked\CabiEngineLink.cs" />
+    <Compile Include="..\Vauchi\CoreUI\IEngineLink.cs" Link="Linked\IEngineLink.cs" />
     <Compile Include="..\Vauchi\MainWindow.xaml.cs" Link="Linked\MainWindow.xaml.cs" />
     <Compile Include="..\Vauchi\MainWindowEffects.cs" Link="Linked\MainWindowEffects.cs" />
     <Compile Include="..\Vauchi\MainWindowState.cs" Link="Linked\MainWindowState.cs" />

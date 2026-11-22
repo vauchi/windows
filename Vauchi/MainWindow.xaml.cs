@@ -162,7 +162,8 @@ public sealed partial class MainWindow : Window
             Presentation.DispatchPlatformEvent,
             DispatcherQueue,
             this);
-        Presentation.Initialize(_appHandle);
+        Presentation.Translate = Localizer.T;
+        Presentation.Initialize(new CabiEngineLink(_appHandle));
         NetworkCost.Watch(Presentation.DispatchPlatformEvent, DispatcherQueue);
 
         _eventCallback = OnCoreEvent;

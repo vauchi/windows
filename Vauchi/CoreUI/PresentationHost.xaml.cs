@@ -9,9 +9,7 @@ using Microsoft.UI.Xaml.Media;
 using System;
 using System.Collections.Generic;
 using System.Text.Json;
-using Vauchi.Interop;
 using Vauchi.Platform;
-using Vauchi.Services;
 using Windows.System;
 
 namespace Vauchi.CoreUI;
@@ -19,7 +17,7 @@ namespace Vauchi.CoreUI;
 public sealed partial class PresentationHost : UserControl
 {
     private PresentationState _state = new();
-    private IntPtr _appHandle;
+    private IEngineLink? _engine;
     private bool _reducedMotion;
     private string _colorScheme = "";
     // Held so the ColorValuesChanged subscription lives as long as the host.
@@ -31,6 +29,12 @@ public sealed partial class PresentationHost : UserControl
     private string _overlaySurfaceId = "";
     private string _overlayKind = "";
     private Button? _activeSecondaryAnchor;
+
+    /// <summary>
+    /// Copy for the one label Core does not send, the close button of an
+    /// overlay. The app supplies the lookup; until it does the key is shown.
+    /// </summary>
+    public Func<string, string> Translate { get; set; } = key => key;
 
     public event Action<JsonElement>? NativeEffectReady;
     public event Action? NativeBackRequested;
@@ -72,18 +76,18 @@ public sealed partial class PresentationHost : UserControl
         }
     }
 
-    public void Initialize(IntPtr appHandle)
+    public void Initialize(IEngineLink engine)
     {
-        _appHandle = appHandle;
+        _engine = engine;
         Refresh();
         ReportEnvironment((int)ActualWidth, (int)ActualHeight, force: true);
     }
 
     public void Refresh()
     {
-        if (_appHandle == IntPtr.Zero)
+        if (_engine is null)
             return;
-        string? envelope = VauchiNative.AppInitialCommands(_appHandle);
+        string? envelope = _engine.InitialCommands();
         if (!string.IsNullOrEmpty(envelope))
             ApplyEnvelope(envelope);
     }
@@ -131,7 +135,7 @@ public sealed partial class PresentationHost : UserControl
 
     private void ReportEnvironment(int width, int height, bool force = false)
     {
-        if (_appHandle == IntPtr.Zero)
+        if (_engine is null)
             return;
         width = Math.Max(0, width);
         height = Math.Max(0, height);
@@ -150,10 +154,10 @@ public sealed partial class PresentationHost : UserControl
 
     private void Dispatch(string eventJson)
     {
-        if (_appHandle == IntPtr.Zero)
+        if (_engine is null)
             return;
         PresentationTrace.Mark("core-dispatch-start");
-        string? envelope = VauchiNative.AppDispatch(_appHandle, eventJson);
+        string? envelope = _engine.Dispatch(eventJson);
         PresentationTrace.Mark("core-dispatch-done");
         if (string.IsNullOrEmpty(envelope))
         {
@@ -377,7 +381,7 @@ public sealed partial class PresentationHost : UserControl
             : "";
         AutomationProperties.SetName(OverlayPanel, OverlayTitle.Text);
         OverlayCloseButton.Content = new FontIcon { Glyph = "\uE8BB" };
-        AutomationProperties.SetName(OverlayCloseButton, OverlayCloseLabel.For(overlay, Localizer.T));
+        AutomationProperties.SetName(OverlayCloseButton, OverlayCloseLabel.For(overlay, Translate));
 
         if (overlay.TryGetProperty("items", out JsonElement items)
             && items.ValueKind == JsonValueKind.Array)

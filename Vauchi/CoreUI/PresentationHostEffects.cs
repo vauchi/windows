@@ -8,7 +8,6 @@ using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Media.Animation;
 using System;
 using System.Text.Json;
-using Vauchi.Services;
 using Windows.System;
 
 namespace Vauchi.CoreUI;
@@ -74,7 +73,7 @@ public sealed partial class PresentationHost
                 ? title.GetString() ?? ""
                 : "",
             Content = body,
-            CloseButtonText = OverlayCloseLabel.For(overlay, Localizer.T),
+            CloseButtonText = OverlayCloseLabel.For(overlay, Translate),
             XamlRoot = XamlRoot,
         };
         dialog.Closed += (_, _) =>
@@ -119,7 +118,7 @@ public sealed partial class PresentationHost
                 ? title.GetString() ?? ""
                 : "",
             Content = items,
-            CloseButtonText = OverlayCloseLabel.For(overlay, Localizer.T),
+            CloseButtonText = OverlayCloseLabel.For(overlay, Translate),
             XamlRoot = XamlRoot,
         };
         items.ItemClick += (_, args) =>
