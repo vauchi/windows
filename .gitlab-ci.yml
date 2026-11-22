@@ -1090,3 +1090,16 @@ lint:domain-calls:
   extends: .domain-calls-job
   variables:
     VAUCHI_SCRIPTS_REF: "ci-templates-v2026.11.17"
+
+# The display shell (Vauchi/CoreUI) reaches the engine through IEngineLink
+# and names neither Core's C ABI nor an app service, which keeps the folder
+# movable into a library project (ADR-078, private#1234). The check's own
+# tests plant each forbidden name first (CC-27).
+lint:display-boundary:
+  stage: lint
+  image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/python:3.11-alpine
+  tags: [docker]
+  needs: []
+  script:
+    - python3 ci/tests/check-display-boundary.test.py
+    - python3 ci/check-display-boundary.py
