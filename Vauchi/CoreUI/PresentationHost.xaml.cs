@@ -234,8 +234,12 @@ public sealed partial class PresentationHost : UserControl
         Foreground = new SolidColorBrush(colors.Text);
         OverlayPanel.Background = new SolidColorBrush(colors.SurfaceElevated);
         OverlayPanel.BorderBrush = new SolidColorBrush(colors.Border);
-        PaintPane(new SolidColorBrush(colors.Surface), theme);
+        PaintPane(colors.Surface, theme);
     }
+
+    private bool _paneIsPainted;
+    private Windows.UI.Color? _paintedPaneBackground;
+    private ElementTheme _paintedPaneTheme;
 
     // The keys NavigationView's template reads its pane background from.
     private static readonly string[] PaneBackgroundKeys =
@@ -249,14 +253,24 @@ public sealed partial class PresentationHost : UserControl
     /// The navigation pane takes the active surface's <c>surface</c> colour
     /// instead of the system backdrop (vauchi/private#814).
     /// </summary>
-    private void PaintPane(Brush? background, ElementTheme theme)
+    private void PaintPane(Windows.UI.Color? background, ElementTheme theme)
     {
+        // Only for a new colour or theme: the theme flip below re-resolves
+        // every theme resource under the NavigationView, the surface
+        // included. Done on each render it pulled brushes from under running
+        // animations, and XAML's next frame failed in
+        // FlushDeferredAnimationOperationQueue (0xC000027B, private#1099).
+        if (_paneIsPainted && background == _paintedPaneBackground && theme == _paintedPaneTheme)
+            return;
+        _paneIsPainted = true;
+        _paintedPaneBackground = background;
+        _paintedPaneTheme = theme;
         foreach (string key in PaneBackgroundKeys)
         {
-            if (background is null)
+            if (background is not { } color)
                 Sidebar.Resources.Remove(key);
             else
-                Sidebar.Resources[key] = background;
+                Sidebar.Resources[key] = new SolidColorBrush(color);
         }
         // The template resolves these keys only when its theme changes, so a
         // new palette under the same light/dark would otherwise not show.
