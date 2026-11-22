@@ -128,7 +128,6 @@ $Screens = @(
 # Primary actions Core puts on the onboarding surfaces, in the order the
 # flow reaches them. Any of them advances the walk; the walk ends when the
 # destinations appear.
-$OnboardingActions = @("Create new identity", "Continue", "Start using the app")
 $OnboardingMaxSteps = 8
 
 # -- Helper: capture window screenshot --
@@ -402,6 +401,16 @@ function Start-VauchiWindow {
     return $hwnd
 }
 
+function Find-ById {
+    param(
+        [System.Windows.Automation.AutomationElement]$Window,
+        [string]$AutomationId
+    )
+    $condition = New-Object System.Windows.Automation.PropertyCondition(
+        [System.Windows.Automation.AutomationElement]::AutomationIdProperty, $AutomationId)
+    return $Window.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $condition)
+}
+
 function Find-Named {
     param(
         [System.Windows.Automation.AutomationElement]$Window,
@@ -476,24 +485,30 @@ if ($hwnd -ne [IntPtr]::Zero) {
     Write-Warning "[snapshots] Skipping the onboarding flow: the app showed no window"
     $OnboardingMaxSteps = 0
 }
+$onboardingCompleted = $false
 for ($step = 1; $step -le $OnboardingMaxSteps; $step++) {
     Save-Screen -Hwnd $hwnd -Name ("onboarding-{0:d2}" -f $step)
     if ($null -ne (Find-Named -Window $windowElement -Name "Contacts")) {
         Write-Host "[snapshots] Destinations visible after $step onboarding step(s)"
+        $onboardingCompleted = $true
         break
     }
-    if (Set-FirstEmptyEdit -Window $windowElement -Text "Test User") {
-        Start-Sleep -Milliseconds 500
+    # Core puts each step's way forward in the context bar's primary slot,
+    # whatever its label or language, so the walk follows the slot and not
+    # a list of English labels (private#852).
+    $primary = Find-ById -Window $windowElement -AutomationId "context-primary"
+    if ($null -eq $primary) {
+        Write-Warning "[snapshots] No primary action at onboarding step $step - stopping the flow"
+        break
     }
-    $advanced = $false
-    foreach ($action in $OnboardingActions) {
-        if ($null -ne (Find-Named -Window $windowElement -Name $action)) {
-            $advanced = Navigate-To -Window $windowElement -Label $action
-            if ($advanced) { break }
-        }
+    # Disabled means the step wants an answer first: the display name.
+    if (-not $primary.Current.IsEnabled -and
+        -not (Set-FirstEmptyEdit -Window $windowElement -Text "Test User")) {
+        Write-Warning "[snapshots] '$($primary.Current.Name)' is disabled at step $step and no field is empty - stopping the flow"
+        break
     }
-    if (-not $advanced) {
-        Write-Warning "[snapshots] No onboarding action found at step $step - stopping the flow"
+    if (-not (Navigate-To -Window $windowElement -Label $primary.Current.Name)) {
+        Write-Warning "[snapshots] Could not press '$($primary.Current.Name)' at step $step - stopping the flow"
         break
     }
     Start-Sleep -Seconds 2
@@ -581,6 +596,10 @@ if ($captured -eq 0) {
 }
 if ($startupErrorShown) {
     Write-Error "A normal launch showed a startup error dialog; see home.png (private#1099)."
+    exit 1
+}
+if ($OnboardingMaxSteps -gt 0 -and -not $onboardingCompleted) {
+    Write-Error "Onboarding did not reach the destinations in $OnboardingMaxSteps steps; see the warnings above (private#852)."
     exit 1
 }
 if ($script:windowLossReported) {
