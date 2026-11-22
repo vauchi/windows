@@ -3,6 +3,7 @@
 
 using System.Text.Json;
 using Vauchi.CoreUI;
+using Vauchi.Interop;
 using Xunit;
 
 namespace Vauchi.UnitTests;
@@ -83,6 +84,54 @@ public class PresentationEventsTests
             PresentationEvents.OverlayDismissed("contacts", "navigation"),
             "OverlayDismissed",
             """{"surface_id":"contacts","kind":"navigation"}""");
+    }
+
+    // The events Core's own contract fixture replays are the reference
+    // for what a shell sends. A literal expectation in this file once
+    // pinned {"Text":…} while the contract said {"text":…}, and Core
+    // answered every value with an error (vauchi/private#1099).
+    [Fact]
+    public void ContractFixtureEvents_AreWhatThisShellBuilds()
+    {
+        string fixtureJson = Assert.IsType<string>(VauchiNative.PresentationContractFixture());
+        using JsonDocument fixture = JsonDocument.Parse(fixtureJson);
+        int compared = 0;
+        foreach (JsonElement step in fixture.RootElement.GetProperty("steps").EnumerateArray())
+        {
+            JsonElement expected = step.GetProperty("event");
+            JsonProperty variant = Assert.Single(expected.EnumerateObject());
+            JsonElement payload = variant.Value;
+            string surfaceId = payload.GetProperty("surface_id").GetString()!;
+            string built = variant.Name switch
+            {
+                "ActionActivated" => PresentationEvents.ActionActivated(
+                    surfaceId, payload.GetProperty("interaction_id").GetString()!),
+                "ValueChanged" => BuildValueChanged(surfaceId, payload),
+                _ => throw new Xunit.Sdk.XunitException(
+                    $"the contract fixture replays {variant.Name}, which this test does not build yet"),
+            };
+            using JsonDocument actual = JsonDocument.Parse(built);
+            Assert.Equal(
+                JsonSerializer.Serialize(expected),
+                JsonSerializer.Serialize(actual.RootElement));
+            compared++;
+        }
+        Assert.True(compared > 0, "the contract fixture replays no events");
+    }
+
+    private static string BuildValueChanged(string surfaceId, JsonElement payload)
+    {
+        string bindingId = payload.GetProperty("binding_id").GetString()!;
+        JsonProperty value = Assert.Single(payload.GetProperty("value").EnumerateObject());
+        return value.Name switch
+        {
+            "text" => PresentationEvents.TextChanged(surfaceId, bindingId, value.Value.GetString()!),
+            "boolean" => PresentationEvents.BooleanChanged(surfaceId, bindingId, value.Value.GetBoolean()),
+            "choice" => PresentationEvents.ChoiceChanged(surfaceId, bindingId, value.Value.GetString()),
+            "number" => PresentationEvents.NumberChanged(surfaceId, bindingId, value.Value.GetDouble()),
+            _ => throw new Xunit.Sdk.XunitException(
+                $"the contract fixture uses the value tag {value.Name}, which this shell cannot send"),
+        };
     }
 
     private static void AssertEvent(
