@@ -837,7 +837,7 @@ test:snapshots:record:
       $changes = git diff --cached --name-only
       if ($changes) {
         git commit -m "test: update Windows snapshot baselines [skip ci]"
-        git push "https://project-access-token:$env:PROJECT_ACCESS_TOKEN@gitlab.com/vauchi/windows.git" HEAD:$env:CI_COMMIT_REF_NAME
+        git push "https://project-access-token:$env:PROJECT_ACCESS_TOKEN@gitlab.com/vauchi/windows-app.git" HEAD:$env:CI_COMMIT_REF_NAME
       } else {
         Write-Host "No baseline changes to commit"
       }

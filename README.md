@@ -1,10 +1,10 @@
 <!-- SPDX-FileCopyrightText: 2026 Mattia Egloff <mattia.egloff@pm.me> -->
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 
-> **Mirror:** This repo is a read-only mirror of [gitlab.com/vauchi/windows](https://gitlab.com/vauchi/windows). Please open issues and merge requests there.
+> **Mirror:** This repo is a read-only mirror of [gitlab.com/vauchi/windows-app](https://gitlab.com/vauchi/windows-app). Please open issues and merge requests there.
 
-[![Pipeline](https://img.shields.io/endpoint?url=https://vauchi.gitlab.io/windows/badges/pipeline.json&label=pipeline)](https://gitlab.com/vauchi/windows)
-[![REUSE](https://api.reuse.software/badge/gitlab.com/vauchi/windows)](https://api.reuse.software/info/gitlab.com/vauchi/windows)
+[![Pipeline](https://img.shields.io/endpoint?url=https://vauchi.gitlab.io/windows-app/badges/pipeline.json&label=pipeline)](https://gitlab.com/vauchi/windows-app)
+[![REUSE](https://api.reuse.software/badge/gitlab.com/vauchi/windows-app)](https://api.reuse.software/info/gitlab.com/vauchi/windows-app)
 
 > [!NOTE]
 > **You're early — and that's the point.** Vauchi is pre-alpha and
