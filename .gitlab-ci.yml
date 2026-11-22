@@ -653,6 +653,35 @@ test:inputs:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
+# The UI Automation tree Narrator reads, on every navigation destination:
+# each operable control has a name. After test:inputs, on the same desktop
+# (vauchi/private#348).
+test:accessibility:
+  stage: test
+  needs:
+    - job: test:inputs
+      artifacts: false
+  cache:
+    key:
+      files:
+        - cabi-version.json
+    paths:
+      - cabi/
+    policy: pull
+  before_script:
+    - !reference [.cabi-download-script, script]
+    - !reference [.locales-fetch, script]
+  script:
+    - !reference [.snapshot-app-build, script]
+    - pwsh -NoProfile -ExecutionPolicy Bypass -File tests/check-accessibility.ps1 -AppPath build/snapshot-app/Vauchi.exe
+  tags: [windows, dotnet]
+  hooks:
+    pre_get_sources_script: !reference [.stop-stale-vauchi, script]
+  allow_failure: true
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
 # Replays Core's screen catalog (every app screen as a Command batch)
 # through the real WinUI renderer to PNG files. Needs a desktop-capable
 # Windows runner: saas-windows-medium-amd64 is a Server Core image
