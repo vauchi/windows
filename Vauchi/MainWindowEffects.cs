@@ -97,8 +97,7 @@ public sealed partial class MainWindow
             _engine.Hardware = null;
         if (hardware is null)
             return;
-        // Bounded by the shell's own shutdown grace; nothing in it needs this thread.
-        hardware.DisposeAsync().AsTask().GetAwaiter().GetResult();
+        hardware.Stop();
     }
 
     private void RunWakeupTick()

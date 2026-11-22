@@ -106,12 +106,16 @@ public sealed class HardwareBridge
         return _shell.Execute(command) != ExecuteResult.Unsupported;
     }
 
-    /// <summary>Reports what the shell observes until <paramref name="stop"/> is cancelled or the shell closes.</summary>
+    /// <summary>
+    /// Reports what the shell observes until <paramref name="stop"/> is
+    /// cancelled or the shell closes. Run it on the thread pool: it does not
+    /// return to a captured context.
+    /// </summary>
     public async Task RunAsync(CancellationToken stop)
     {
         try
         {
-            while (await _shell.NextAsync(stop).ConfigureAwait(false) is { } observation)
+            while (await _shell.NextAsync(stop) is { } observation)
             {
                 _report(Wire(observation));
             }

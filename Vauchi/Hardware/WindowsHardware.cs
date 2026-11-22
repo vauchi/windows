@@ -36,7 +36,7 @@ public sealed class WindowsHardware : IAsyncDisposable
         Action<string> report,
         Action<System.Text.Json.JsonElement> leftToTheApp)
     {
-        DeviceCapabilities device = await WindowsProbe.ProbeAsync().ConfigureAwait(false);
+        DeviceCapabilities device = await WindowsProbe.ProbeAsync();
         var backends = new Backends
         {
             Discovery = new WinRtDiscovery(),
@@ -48,11 +48,20 @@ public sealed class WindowsHardware : IAsyncDisposable
         return new WindowsHardware(new HardwareShell(backends, device), report, leftToTheApp);
     }
 
-    public async ValueTask DisposeAsync()
+    /// <summary>
+    /// Ends the shell, bounded by its shutdown grace. Safe to wait on from
+    /// the UI thread: the work runs on the thread pool, so nothing in it
+    /// needs the thread that waits.
+    /// </summary>
+    public void Stop() => Task.Run(StopAsync).GetAwaiter().GetResult();
+
+    public ValueTask DisposeAsync() => new(Task.Run(StopAsync));
+
+    private async Task StopAsync()
     {
         _stop.Cancel();
-        await _reporting.ConfigureAwait(false);
-        await _shell.DisposeAsync().ConfigureAwait(false);
+        await _reporting;
+        await _shell.DisposeAsync();
         _stop.Dispose();
     }
 }
