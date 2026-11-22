@@ -623,6 +623,36 @@ test:snapshots:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
+# One value of each kind (text, switch, choice) goes through the running
+# app and has to come back: until vauchi/private#1099 Core could read none
+# of them from this shell and no job noticed. After test:snapshots, which
+# drives the same desktop.
+test:inputs:
+  stage: test
+  needs:
+    - job: test:snapshots
+      artifacts: false
+  cache:
+    key:
+      files:
+        - cabi-version.json
+    paths:
+      - cabi/
+    policy: pull
+  before_script:
+    - !reference [.cabi-download-script, script]
+    - !reference [.locales-fetch, script]
+  script:
+    - !reference [.snapshot-app-build, script]
+    - pwsh -NoProfile -ExecutionPolicy Bypass -File tests/exercise-inputs.ps1 -AppPath build/snapshot-app/Vauchi.exe
+  tags: [windows, dotnet]
+  hooks:
+    pre_get_sources_script: !reference [.stop-stale-vauchi, script]
+  allow_failure: true
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
 # Replays Core's screen catalog (every app screen as a Command batch)
 # through the real WinUI renderer to PNG files. Needs a desktop-capable
 # Windows runner: saas-windows-medium-amd64 is a Server Core image
