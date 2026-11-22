@@ -38,16 +38,16 @@ public static class PresentationEvents
             new { surface_id = surfaceId, binding_id = bindingId });
 
     public static string TextChanged(string surfaceId, string bindingId, string value) =>
-        ValueChanged(surfaceId, bindingId, "Text", value);
+        ValueChanged(surfaceId, bindingId, "text", value);
 
     public static string BooleanChanged(string surfaceId, string bindingId, bool value) =>
-        ValueChanged(surfaceId, bindingId, "Boolean", value);
+        ValueChanged(surfaceId, bindingId, "boolean", value);
 
     public static string ChoiceChanged(string surfaceId, string bindingId, string? value) =>
-        ValueChanged(surfaceId, bindingId, "Choice", value);
+        ValueChanged(surfaceId, bindingId, "choice", value);
 
     public static string NumberChanged(string surfaceId, string bindingId, double value) =>
-        ValueChanged(surfaceId, bindingId, "Number", value);
+        ValueChanged(surfaceId, bindingId, "number", value);
 
     public static string EnvironmentChanged(
         int availableWidth,
