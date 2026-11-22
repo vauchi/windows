@@ -188,6 +188,21 @@ function Navigate-To {
         return $false
     }
 
+    # A press right after typing reaches a button the app has not enabled
+    # yet, or one it is about to replace; UI Automation then answers
+    # "Unrecognized error" (private#1099). Wait for the enabled one.
+    $waitedMs = 0
+    while (-not $element.Current.IsEnabled -and $waitedMs -lt 5000) {
+        Start-Sleep -Milliseconds 100
+        $waitedMs += 100
+        $found = $Window.FindFirst(
+            [System.Windows.Automation.TreeScope]::Descendants, $nameCondition)
+        if ($null -ne $found) { $element = $found }
+    }
+    if ($waitedMs -gt 0) {
+        Write-Host "[snapshots] '$Label' enabled=$($element.Current.IsEnabled) after ${waitedMs}ms"
+    }
+
     $invokePattern = $null
     try {
         $invokePattern = $element.GetCurrentPattern(
@@ -444,6 +459,12 @@ $dataDir = Join-Path ([Environment]::GetFolderPath('LocalApplicationData')) 'Vau
 if (Test-Path $dataDir) {
     Remove-Item -Path $dataDir -Recurse -Force
     Write-Host "[snapshots] Removed the previous run's data directory: $dataDir"
+}
+# The app appends to these. Left from an earlier run, they made a healthy
+# process read as one that had thrown (private#1099).
+foreach ($staleLog in @("unhandled-exception.log", "presentation-trace.log")) {
+    $stalePath = Join-Path (Split-Path -Parent $AppPath) $staleLog
+    if (Test-Path -LiteralPath $stalePath) { Remove-Item -LiteralPath $stalePath -Force }
 }
 
 # -- Phase 1: onboarding flow (no identity yet on a fresh runner) --
