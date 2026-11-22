@@ -5,7 +5,7 @@ include:
   - template: Security/SAST.gitlab-ci.yml
   - template: Security/Secret-Detection.gitlab-ci.yml
   - project: 'vauchi/scripts'
-    ref: ci-templates-v2026.11.17
+    ref: ci-templates-v2026.11.22
     file:
       - '/ci-templates/design-drift.yml'
       - '/ci-templates/parser-parity.yml'
@@ -19,7 +19,7 @@ include:
       - '/ci-templates/domain-calls.yml'
 
 variables:
-  VAUCHI_SCRIPTS_REF: "ci-templates-v2026.11.17"
+  VAUCHI_SCRIPTS_REF: "ci-templates-v2026.11.22"
   SAST_EXCLUDED_PATHS: "bin/, obj/, packages/"
   SECRET_DETECTION_EXCLUDED_PATHS: "bin/, obj/, packages/"
   SAST_ANALYZER_IMAGE_TAG: "5"
@@ -895,7 +895,7 @@ check:parser-parity:
     FRONTEND_NAME: "windows"
     PARSER_FILE: "Vauchi/CoreUI/PresentationSurface.cs"
     PARSER_PROTOCOL: "presentation"
-    PARSER_SCRIPT_REF: "ci-templates-v2026.11.17"
+    PARSER_SCRIPT_REF: "ci-templates-v2026.11.22"
     CORE_PIN_FILE: "cabi-version.json"
     CORE_PIN_KIND: "cabi-json"
 
@@ -1089,7 +1089,7 @@ check:pictogram-copies-current:
 lint:domain-calls:
   extends: .domain-calls-job
   variables:
-    VAUCHI_SCRIPTS_REF: "ci-templates-v2026.11.17"
+    VAUCHI_SCRIPTS_REF: "ci-templates-v2026.11.22"
 
 # The display shell (Vauchi/CoreUI) reaches the engine through IEngineLink
 # and names neither Core's C ABI nor an app service, which keeps the folder
