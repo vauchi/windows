@@ -48,20 +48,20 @@ public class PresentationEventsTests
             PresentationEvents.TextChanged("editor", "display_name", "A \"quoted\" name"),
             "ValueChanged",
             """
-            {"surface_id":"editor","binding_id":"display_name","value":{"Text":"A \"quoted\" name"}}
+            {"surface_id":"editor","binding_id":"display_name","value":{"text":"A \"quoted\" name"}}
             """);
         AssertEvent(
             PresentationEvents.BooleanChanged("settings", "sync_enabled", true),
             "ValueChanged",
-            """{"surface_id":"settings","binding_id":"sync_enabled","value":{"Boolean":true}}""");
+            """{"surface_id":"settings","binding_id":"sync_enabled","value":{"boolean":true}}""");
         AssertEvent(
             PresentationEvents.ChoiceChanged("editor", "kind", null),
             "ValueChanged",
-            """{"surface_id":"editor","binding_id":"kind","value":{"Choice":null}}""");
+            """{"surface_id":"editor","binding_id":"kind","value":{"choice":null}}""");
         AssertEvent(
             PresentationEvents.NumberChanged("settings", "volume", 0.75),
             "ValueChanged",
-            """{"surface_id":"settings","binding_id":"volume","value":{"Number":0.75}}""");
+            """{"surface_id":"settings","binding_id":"volume","value":{"number":0.75}}""");
     }
 
     [Fact]
