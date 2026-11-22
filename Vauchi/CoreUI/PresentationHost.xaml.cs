@@ -273,27 +273,51 @@ public sealed partial class PresentationHost : UserControl
     private void RenderNavigation(SurfaceColors? colors)
     {
         SidebarModel model = SidebarModel.From(_state.ActiveNavigation);
-        Sidebar.MenuItems.Clear();
-        foreach (SidebarItemModel item in model.Items)
+        // Items are kept and only what changed is set. Clearing MenuItems on
+        // every render left a detached NavigationViewItem to be invoked, and
+        // NavigationView::RaiseItemInvokedForNavigationViewItem read a null
+        // pointer for it (0xC000027B, private#1099).
+        bool sameItemCount = Sidebar.MenuItems.Count == model.Items.Count;
+        if (!sameItemCount)
+            Sidebar.MenuItems.Clear();
+        for (int index = 0; index < model.Items.Count; index++)
         {
-            var navigationItem = new NavigationViewItem
+            SidebarItemModel item = model.Items[index];
+            NavigationViewItem navigationItem = sameItemCount
+                ? (NavigationViewItem)Sidebar.MenuItems[index]
+                : new NavigationViewItem();
+            if (!Equals(navigationItem.Content, item.Label))
+                navigationItem.Content = item.Label;
+            if ((navigationItem.Icon as FontIcon)?.Glyph != item.Glyph)
+                navigationItem.Icon = new FontIcon { Glyph = item.Glyph };
+            if (!Equals(navigationItem.Tag, item.InteractionId))
             {
-                Content = item.Label,
-                Icon = new FontIcon { Glyph = item.Glyph },
-                IsSelected = item.Selected,
-                Tag = item.InteractionId,
-            };
-            if (item.BadgeCount > 0)
-                navigationItem.InfoBadge = new InfoBadge { Value = item.BadgeCount };
-            FocusVisualStyle.Apply(navigationItem, colors);
-            AutomationProperties.SetAutomationId(navigationItem, item.InteractionId);
-            AutomationProperties.SetName(navigationItem, item.AccessibilityLabel);
-            Sidebar.MenuItems.Add(navigationItem);
+                navigationItem.Tag = item.InteractionId;
+                AutomationProperties.SetAutomationId(navigationItem, item.InteractionId);
+            }
+            int shownBadge = navigationItem.InfoBadge?.Value ?? 0;
+            if (shownBadge != item.BadgeCount)
+            {
+                navigationItem.InfoBadge = item.BadgeCount > 0
+                    ? new InfoBadge { Value = item.BadgeCount }
+                    : null;
+            }
+            if (!sameItemCount)
+                FocusVisualStyle.Apply(navigationItem, colors);
+            if (AutomationProperties.GetName(navigationItem) != item.AccessibilityLabel)
+                AutomationProperties.SetName(navigationItem, item.AccessibilityLabel);
+            if (!sameItemCount)
+                Sidebar.MenuItems.Add(navigationItem);
+            if (item.Selected && !ReferenceEquals(Sidebar.SelectedItem, navigationItem))
+                Sidebar.SelectedItem = navigationItem;
         }
-        Sidebar.IsPaneVisible = !model.Hidden;
-        Sidebar.PaneDisplayMode = _state.WindowClass == "compact"
+        if (Sidebar.IsPaneVisible == model.Hidden)
+            Sidebar.IsPaneVisible = !model.Hidden;
+        NavigationViewPaneDisplayMode paneMode = _state.WindowClass == "compact"
             ? NavigationViewPaneDisplayMode.LeftCompact
             : NavigationViewPaneDisplayMode.Left;
+        if (Sidebar.PaneDisplayMode != paneMode)
+            Sidebar.PaneDisplayMode = paneMode;
     }
 
     private void Sidebar_ItemInvoked(NavigationView sender, NavigationViewItemInvokedEventArgs args)
