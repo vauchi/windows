@@ -30,8 +30,8 @@
     <PackageReference Include="ZXing.Net" Version="0.16.9" />
     <!-- The hardware shell, pinned exactly (ADR-077 D-3), as the app pins it. -->
     <PackageReference Include="Vauchi.Contract" Version="[0.100.0]" />
-    <PackageReference Include="vauchi-windows-hw" Version="[0.4.0]" />
-    <PackageReference Include="vauchi-windows-hw-native" Version="[0.4.0]" />
+    <PackageReference Include="vauchi-windows-hw" Version="[0.4.1]" />
+    <PackageReference Include="vauchi-windows-hw-native" Version="[0.4.1]" />
     <PackageReference Include="ZXing.Net.Bindings.Windows.Compatibility" Version="0.16.9" />
   </ItemGroup>
   <!-- Link helper files from main project -->
