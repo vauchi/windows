@@ -84,6 +84,32 @@ public sealed partial class PresentationSurface : UserControl
         root.Children.Add(RenderTitleRow(surface, contextBar, navigationShown));
         root.Children.Add(body);
 
+        // Under the body and outside its scroll, the pinned group first:
+        // a decision that must not scroll away (vauchi/private#1304).
+        IReadOnlyList<JsonElement> pinnedActions = ContextBarLayout.Pinned(contextBar);
+        if (pinnedActions.Count > 0)
+        {
+            var pinned = new StackPanel { Spacing = Token(surface, "spacing_small", 8) };
+            for (int index = 0; index < pinnedActions.Count; index++)
+            {
+                Button button = ActionButton(pinnedActions[index]);
+                button.HorizontalContentAlignment = HorizontalAlignment.Center;
+                // A plain string is cut at the button's width; an answer
+                // has to be read whole.
+                button.Content = new TextBlock
+                {
+                    Text = String(pinnedActions[index], "label"),
+                    TextWrapping = TextWrapping.Wrap,
+                    TextAlignment = TextAlignment.Center,
+                };
+                AutomationProperties.SetAutomationId(button, $"context-pinned-{index}");
+                pinned.Children.Add(button);
+            }
+            root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            Grid.SetRow(pinned, root.RowDefinitions.Count - 1);
+            root.Children.Add(pinned);
+        }
+
         if (contextBar is { } bar
             && bar.TryGetProperty("primary", out JsonElement primary)
             && primary.ValueKind == JsonValueKind.Object)
@@ -92,7 +118,7 @@ public sealed partial class PresentationSurface : UserControl
             Button primaryButton = ActionButton(primary);
             primaryButton.HorizontalContentAlignment = HorizontalAlignment.Center;
             AutomationProperties.SetAutomationId(primaryButton, "context-primary");
-            Grid.SetRow(primaryButton, 2);
+            Grid.SetRow(primaryButton, root.RowDefinitions.Count - 1);
             root.Children.Add(primaryButton);
         }
 

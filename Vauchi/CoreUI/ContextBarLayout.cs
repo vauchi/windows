@@ -38,6 +38,25 @@ public static class ContextBarLayout
     public static IReadOnlyList<string> TrailingSlots(JsonElement? bar) =>
         PresentRoles(bar, TrailingRoles);
 
+    /// Core's pinned group in Core's order: a decision kept in view under
+    /// the content (vauchi/private#1304). Empty for a bar without it, which
+    /// is every bar of a Core that predates the slot.
+    public static IReadOnlyList<JsonElement> Pinned(JsonElement? bar)
+    {
+        var actions = new List<JsonElement>();
+        if (bar is not { } value
+            || value.ValueKind != JsonValueKind.Object
+            || !value.TryGetProperty("pinned", out JsonElement pinned)
+            || pinned.ValueKind != JsonValueKind.Array)
+            return actions;
+        foreach (JsonElement action in pinned.EnumerateArray())
+        {
+            if (action.ValueKind == JsonValueKind.Object)
+                actions.Add(action);
+        }
+        return actions;
+    }
+
     private static IReadOnlyList<string> PresentRoles(
         JsonElement? bar,
         IReadOnlyList<string> order)
