@@ -8,6 +8,7 @@ using System;
 using System.IO;
 using System.Text.Json;
 using Vauchi.CoreUI;
+using Vauchi.Hardware;
 using Vauchi.Helpers;
 using Vauchi.Interop;
 using Windows.Storage;
@@ -46,6 +47,60 @@ public sealed partial class MainWindow
     }
 
 
+    /// <summary>
+    /// Brings the hardware shell up and tells Core what this machine has.
+    /// From that report on Core sends the shell's commands in a batch's
+    /// hardware field (ADR-077).
+    /// </summary>
+    private async System.Threading.Tasks.Task StartHardwareAsync()
+    {
+        WindowsHardware hardware;
+        try
+        {
+            hardware = await WindowsHardware.StartAsync(
+                eventJson => DispatcherQueue.TryEnqueue(() =>
+                {
+                    if (_appHandle != IntPtr.Zero)
+                        Presentation.DispatchPlatformEvent(eventJson);
+                }),
+                // Queued, not run in place: the batch it came in is still being
+                // handed to the display, and an effect may dispatch an event.
+                command => DispatcherQueue.TryEnqueue(() =>
+                {
+                    if (_appHandle != IntPtr.Zero)
+                        ExecuteNativeEffect(command);
+                }));
+        }
+        catch (Exception exception)
+        {
+            // Without a report Core plans no hardware; the type alone is logged (no PII).
+            System.Diagnostics.Debug.WriteLine(
+                $"[Vauchi] Hardware shell failed to start: {exception.GetType().Name}");
+            return;
+        }
+        if (_appHandle == IntPtr.Zero || _engine is null)
+        {
+            // The window closed while the machine was being probed.
+            await hardware.DisposeAsync();
+            return;
+        }
+        _hardware = hardware;
+        _engine.Hardware = hardware.Bridge;
+        Presentation.DispatchPlatformEvent(hardware.Bridge.Capabilities);
+    }
+
+    private void StopHardware()
+    {
+        WindowsHardware? hardware = _hardware;
+        _hardware = null;
+        if (_engine is not null)
+            _engine.Hardware = null;
+        if (hardware is null)
+            return;
+        // Bounded by the shell's own shutdown grace; nothing in it needs this thread.
+        hardware.DisposeAsync().AsTask().GetAwaiter().GetResult();
+    }
+
     private void RunWakeupTick()
     {
         if (_appHandle == IntPtr.Zero)
@@ -55,6 +110,7 @@ public sealed partial class MainWindow
             string? envelope = VauchiNative.AppOnWakeup(_appHandle);
             if (string.IsNullOrEmpty(envelope))
                 return;
+            _engine?.Hardware?.Route(envelope);
             Presentation.ApplyEnvelope(envelope);
 
             using JsonDocument document = JsonDocument.Parse(envelope);

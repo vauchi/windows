@@ -19,6 +19,10 @@
     <PackageReference Include="H.NotifyIcon.WinUI" Version="2.2.0" />
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.7.*" />
     <PackageReference Include="ZXing.Net" Version="0.16.9" />
+    <!-- The contract and the hardware shell, each pinned exactly (ADR-077 D-3). -->
+    <PackageReference Include="Vauchi.Contract" Version="[0.100.0]" />
+    <PackageReference Include="vauchi-windows-hw" Version="[0.4.0]" />
+    <PackageReference Include="vauchi-windows-hw-native" Version="[0.4.0]" />
     <PackageReference Include="ZXing.Net.Bindings.Windows.Compatibility" Version="0.16.9" />
   </ItemGroup>
   <!-- Design tokens — vendored from themes/generated/Tokens.cs

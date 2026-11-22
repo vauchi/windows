@@ -6,6 +6,7 @@ using Microsoft.UI.Xaml.Controls;
 using System;
 using Vauchi.CoreUI;
 using Vauchi.Handlers;
+using Vauchi.Hardware;
 using Vauchi.Interop;
 using Vauchi.Platform;
 using Vauchi.Services;
@@ -17,6 +18,8 @@ public sealed partial class MainWindow : Window
     private IntPtr _appHandle;
     private SystemTrayManager? _tray;
     private ExchangeCommandHandler? _exchange;
+    private HardwareEngineLink? _engine;
+    private WindowsHardware? _hardware;
     private VauchiNative.VauchiEventCallback? _eventCallback;
     private DispatcherTimer? _wakeupTimer;
     private readonly System.Collections.Generic.List<string> _pendingDeepLinks = new();
@@ -163,7 +166,9 @@ public sealed partial class MainWindow : Window
             DispatcherQueue,
             this);
         Presentation.Translate = Localizer.T;
-        Presentation.Initialize(new CabiEngineLink(_appHandle));
+        _engine = new HardwareEngineLink(new CabiEngineLink(_appHandle));
+        Presentation.Initialize(_engine);
+        _ = StartHardwareAsync();
         NetworkCost.Watch(Presentation.DispatchPlatformEvent, DispatcherQueue);
 
         _eventCallback = OnCoreEvent;
@@ -259,6 +264,7 @@ public sealed partial class MainWindow : Window
         VauchiNative.AppSetEventCallback(_appHandle, null, IntPtr.Zero);
         _eventCallback = null;
         _exchange?.Dispose();
+        StopHardware();
         VauchiNative.AppDestroy(_appHandle);
         _appHandle = IntPtr.Zero;
     }
