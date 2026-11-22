@@ -14,6 +14,7 @@ the folder movable into a library project (vauchi/private#1234).
 
 import re
 import sys
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 # Core's C ABI, the app's services and handlers, and any P/Invoke.
@@ -26,6 +27,20 @@ FORBIDDEN = re.compile(
 LINE_COMMENT = re.compile(r"^\s*//")
 
 
+def project_violations(directory):
+    projects = sorted(directory.glob("*.csproj"))
+    if not projects:
+        yield f"{directory}: no project file: the display shell is a library of its own"
+    for project in projects:
+        root = ET.parse(project).getroot()
+        for output in root.iter("OutputType"):
+            if (output.text or "").strip() != "Library":
+                yield f"{project}: OutputType {(output.text or '').strip()!r} is not Library"
+        for reference in root.iter("ProjectReference"):
+            # Whatever it is, it is the app's or Core's: the library is a leaf.
+            yield f"{project}: references the project {reference.get('Include')!r}"
+
+
 def violations(directory):
     sources = sorted(
         path for path in directory.rglob("*")
@@ -35,6 +50,7 @@ def violations(directory):
         # A renamed or empty directory must not read as a clean one.
         yield f"{directory}: no source file to check"
         return
+    yield from project_violations(directory)
     for source in sources:
         for number, line in enumerate(source.read_text(encoding="utf-8-sig").splitlines(), start=1):
             if LINE_COMMENT.match(line):

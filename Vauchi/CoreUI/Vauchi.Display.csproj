@@ -1,0 +1,36 @@
+<!-- SPDX-FileCopyrightText: 2026 Mattia Egloff <mattia.egloff@pm.me> -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- The WinUI display shell as a library (ADR-078): it renders the
+         contract's commands and reaches the engine through IEngineLink
+         only. The app, Vauchi, links Core and assembles this. The project
+         lives in the folder the shared audits already read. -->
+    <OutputType>Library</OutputType>
+    <TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+    <UseWinUI>true</UseWinUI>
+    <Nullable>enable</Nullable>
+    <RootNamespace>Vauchi</RootNamespace>
+    <WindowsSdkPackageVersion>10.0.22621.57</WindowsSdkPackageVersion>
+    <Platforms>x64</Platforms>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.7.*" />
+    <!-- Draws the display code Core sends; decoding a camera frame is windows-hw's. -->
+    <PackageReference Include="ZXing.Net" Version="0.16.9" />
+    <PackageReference Include="ZXing.Net.Bindings.Windows.Compatibility" Version="0.16.9" />
+  </ItemGroup>
+  <!-- Pictograms stay where the vendoring check looks for them, in the
+       app's Assets; Pictograms.Resolve reads them back by logical name
+       from this assembly. -->
+  <ItemGroup>
+    <EmbeddedResource Include="..\Assets\Pictograms\**\*.svg"
+                      LogicalName="Vauchi.Pictograms/%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Vauchi" />
+    <InternalsVisibleTo Include="Vauchi.UnitTests" />
+  </ItemGroup>
+</Project>

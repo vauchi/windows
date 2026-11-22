@@ -36,8 +36,16 @@
        needs no code. Regenerate: cp ../assets/pictograms/exchange/generated/svg/*.svg
        Vauchi/Assets/Pictograms/exchange/ -->
   <ItemGroup>
-    <EmbeddedResource Include="Assets\Pictograms\**\*.svg"
-                      LogicalName="Vauchi.Pictograms/%(RecursiveDir)%(Filename)%(Extension)" />
+    <ProjectReference Include="CoreUI\Vauchi.Display.csproj" />
+  </ItemGroup>
+  <!-- CoreUI is the display library's folder: nothing in it is this
+       project's to compile. -->
+  <ItemGroup>
+    <Compile Remove="CoreUI\**" />
+    <Page Remove="CoreUI\**" />
+    <None Remove="CoreUI\**" />
+    <Content Remove="CoreUI\**" />
+    <EmbeddedResource Remove="CoreUI\**" />
   </ItemGroup>
   <!-- CABI native library — copied to output when present -->
   <ItemGroup>
