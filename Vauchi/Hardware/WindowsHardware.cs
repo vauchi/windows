@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Vauchi.Contract;
 using Vauchi.WindowsHw;
 using Vauchi.WindowsHw.Native;
+using Vauchi.WindowsHw.Notifications;
 
 namespace Vauchi.Hardware;
 
@@ -43,7 +44,9 @@ public sealed class WindowsHardware : IAsyncDisposable
             Central = new GattCentral(new WinRtGattDialer()),
             Advertising = new GattPeripheral(new WinRtGattServerHost()),
             Nfc = new PcscReader(new WinSCard()),
+            Camera = new QrCamera(new WinRtCameraSource(), new ZxingCppDecoder()),
             Direct = new TcpDirectExchange(),
+            Notifications = new AppNotifications(),
         };
         return new WindowsHardware(new HardwareShell(backends, device), report, leftToTheApp);
     }

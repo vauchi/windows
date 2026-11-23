@@ -26,9 +26,9 @@
       },
       "vauchi-windows-display": {
         "type": "Direct",
-        "requested": "[0.1.0, 0.1.0]",
-        "resolved": "0.1.0",
-        "contentHash": "8oBBV1Kzdq54zTBLqCiGMPeJj+UxM5dfxIQEUgzQFhDb35MC1DlDYf8JGX6T8IUFEAeN/jU1r8sLYEnju3h1Ig==",
+        "requested": "[0.2.0, 0.2.0]",
+        "resolved": "0.2.0",
+        "contentHash": "k0mpVTJYey4Qj/eAn4apJRIEFpW2G7CJBXkU/2MAq5JtgcNEADT/XJtCiepqovW/u4MSmchGgGUtHWVWbZUr2w==",
         "dependencies": {
           "Microsoft.WindowsAppSDK": "1.7.260224002",
           "ZXing.Net": "0.16.9",
@@ -37,27 +37,38 @@
       },
       "vauchi-windows-hw": {
         "type": "Direct",
-        "requested": "[0.4.1, 0.4.1]",
-        "resolved": "0.4.1",
-        "contentHash": "M32AwXWpMQauvY5IB3NaU+DjtbjM6LHgu7MzGl9JkpRTj49OZt2NocGRTAALXQrVhJT8hWiJRMwFEQvbGXOwaA==",
+        "requested": "[0.7.0, 0.7.0]",
+        "resolved": "0.7.0",
+        "contentHash": "1e/eK7qrc9G6onoo4cZOw2dZwT8w5tQ7p0FHCxz9HuxlXEIwOH6nBsC5sVR8ioKO8PCyEu2vQWodMs20sX5xNg==",
         "dependencies": {
-          "Vauchi.Contract": "[0.100.0]"
+          "Vauchi.Contract": "[0.101.0]"
         }
       },
       "vauchi-windows-hw-native": {
         "type": "Direct",
-        "requested": "[0.4.1, 0.4.1]",
-        "resolved": "0.4.1",
-        "contentHash": "UO9ZLv2kd2mPDGpTXOxcDoB6kjlhOy6/609sOd7r8BFv+OkoqZEdRWHjFpQ3y3bbPkZj1cT1f6ZV1YyqSz+DDg==",
+        "requested": "[0.7.0, 0.7.0]",
+        "resolved": "0.7.0",
+        "contentHash": "qixw35KXHDb+WXDmeLD7/jmuI7HwMTq+heiTfeIRRgj1nVip08qiq2zpcJDYYOfD3JSyI7xYiZ0CZCI5Gr6vIw==",
         "dependencies": {
-          "vauchi-windows-hw": "0.4.1"
+          "ZXingCpp": "[0.5.3]",
+          "vauchi-windows-hw": "0.7.0"
+        }
+      },
+      "vauchi-windows-hw-notifications": {
+        "type": "Direct",
+        "requested": "[0.7.0, 0.7.0]",
+        "resolved": "0.7.0",
+        "contentHash": "xYmECQrqQ5v/Im3qbycByE8Qtmmn8lxye5NNqs1bQ/FTRGFDvdwXQU7UIRlQ1ZzMvvqbXXxmPyo1JbcbfFIXSA==",
+        "dependencies": {
+          "Microsoft.WindowsAppSDK": "[1.7.260224002, 1.8.0)",
+          "vauchi-windows-hw": "0.7.0"
         }
       },
       "Vauchi.Contract": {
         "type": "Direct",
-        "requested": "[0.100.0, 0.100.0]",
-        "resolved": "0.100.0",
-        "contentHash": "hIrSLm2qprw+rs8CTdtGk8toWtIEvieC2T9cqq9NHYAhlxEoYVooARWhFQ8zWcIslXCBSsnN8va3LaSalnlF2Q=="
+        "requested": "[0.101.0, 0.101.0]",
+        "resolved": "0.101.0",
+        "contentHash": "xpcQPSDRRvSOcHXIDUiHa6maToqzOWPa50Lq8cc1OCb1SKSODF/G324P1Tgcqw2UljyYvCRgyD68ejYhAxyN3w=="
       },
       "ZXing.Net": {
         "type": "Direct",
@@ -126,6 +137,11 @@
         "dependencies": {
           "System.Collections.Immutable": "9.0.0"
         }
+      },
+      "ZXingCpp": {
+        "type": "Transitive",
+        "resolved": "0.5.3",
+        "contentHash": "9/OpxmBgi0d1HRFYrhQ115Szyd/oAhcsG0p21Fp877sH2S+Fjnlrw3yhyCWhjd/uNQTaMnWkPUKfpaCuWXem7g=="
       }
     },
     "net8.0-windows10.0.22621/win-x64": {
@@ -148,6 +164,11 @@
         "type": "Transitive",
         "resolved": "9.0.0",
         "contentHash": "z8FfGIaoeALdD+KF44A2uP8PZIQQtDGiXsOLuN8nohbKhkyKt7zGaZb+fKiCxTuBqG22Q7myIAioSWaIcOOrOw=="
+      },
+      "ZXingCpp": {
+        "type": "Transitive",
+        "resolved": "0.5.3",
+        "contentHash": "9/OpxmBgi0d1HRFYrhQ115Szyd/oAhcsG0p21Fp877sH2S+Fjnlrw3yhyCWhjd/uNQTaMnWkPUKfpaCuWXem7g=="
       }
     }
   }

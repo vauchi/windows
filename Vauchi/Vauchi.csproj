@@ -23,9 +23,10 @@
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.7.*" />
     <PackageReference Include="ZXing.Net" Version="0.16.9" />
     <!-- The contract and the hardware shell, each pinned exactly (ADR-077 D-3). -->
-    <PackageReference Include="Vauchi.Contract" Version="[0.100.0]" />
-    <PackageReference Include="vauchi-windows-hw" Version="[0.4.1]" />
-    <PackageReference Include="vauchi-windows-hw-native" Version="[0.4.1]" />
+    <PackageReference Include="Vauchi.Contract" Version="[0.101.0]" />
+    <PackageReference Include="vauchi-windows-hw" Version="[0.7.0]" />
+    <PackageReference Include="vauchi-windows-hw-native" Version="[0.7.0]" />
+    <PackageReference Include="vauchi-windows-hw-notifications" Version="[0.7.0]" />
     <PackageReference Include="ZXing.Net.Bindings.Windows.Compatibility" Version="0.16.9" />
   </ItemGroup>
   <!-- Brand font files (OFL-1.1) — vendored verbatim from themes/fonts,
@@ -38,7 +39,7 @@
   <!-- The display shell, with its pictograms and design tokens, pinned
        exactly from windows-display's registry (ADR-078 decision 8). -->
   <ItemGroup>
-    <PackageReference Include="vauchi-windows-display" Version="[0.1.0]" />
+    <PackageReference Include="vauchi-windows-display" Version="[0.2.0]" />
   </ItemGroup>
   <!-- CABI native library — copied to output when present -->
   <ItemGroup>

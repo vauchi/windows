@@ -29,12 +29,13 @@
     <PackageReference Include="coverlet.collector" Version="6.*" />
     <PackageReference Include="ZXing.Net" Version="0.16.9" />
     <!-- The hardware shell, pinned exactly (ADR-077 D-3), as the app pins it. -->
-    <PackageReference Include="Vauchi.Contract" Version="[0.100.0]" />
-    <PackageReference Include="vauchi-windows-hw" Version="[0.4.1]" />
-    <PackageReference Include="vauchi-windows-hw-native" Version="[0.4.1]" />
+    <PackageReference Include="Vauchi.Contract" Version="[0.101.0]" />
+    <PackageReference Include="vauchi-windows-hw" Version="[0.7.0]" />
+    <PackageReference Include="vauchi-windows-hw-native" Version="[0.7.0]" />
+    <PackageReference Include="vauchi-windows-hw-notifications" Version="[0.7.0]" />
     <!-- The display shell the app assembles; its own tests live in
          windows-display, these test the app around it. -->
-    <PackageReference Include="vauchi-windows-display" Version="[0.1.0]" />
+    <PackageReference Include="vauchi-windows-display" Version="[0.2.0]" />
     <PackageReference Include="ZXing.Net.Bindings.Windows.Compatibility" Version="0.16.9" />
   </ItemGroup>
   <!-- Link helper files from main project -->
