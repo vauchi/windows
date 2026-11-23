@@ -32,6 +32,9 @@
     <PackageReference Include="Vauchi.Contract" Version="[0.100.0]" />
     <PackageReference Include="vauchi-windows-hw" Version="[0.4.1]" />
     <PackageReference Include="vauchi-windows-hw-native" Version="[0.4.1]" />
+    <!-- The display shell the app assembles; its own tests live in
+         windows-display, these test the app around it. -->
+    <PackageReference Include="vauchi-windows-display" Version="[0.1.0]" />
     <PackageReference Include="ZXing.Net.Bindings.Windows.Compatibility" Version="0.16.9" />
   </ItemGroup>
   <!-- Link helper files from main project -->
@@ -43,7 +46,6 @@
     <Compile Include="..\Vauchi\Interop\CabiEngineLink.cs" Link="Linked\CabiEngineLink.cs" />
     <Compile Include="..\Vauchi\Hardware\HardwareBridge.cs" Link="Linked\HardwareBridge.cs" />
     <Compile Include="..\Vauchi\Hardware\WindowsHardware.cs" Link="Linked\WindowsHardware.cs" />
-    <Compile Include="..\Vauchi\CoreUI\IEngineLink.cs" Link="Linked\IEngineLink.cs" />
     <Compile Include="..\Vauchi\MainWindow.xaml.cs" Link="Linked\MainWindow.xaml.cs" />
     <Compile Include="..\Vauchi\MainWindowEffects.cs" Link="Linked\MainWindowEffects.cs" />
     <Compile Include="..\Vauchi\MainWindowState.cs" Link="Linked\MainWindowState.cs" />
@@ -53,50 +55,9 @@
     <Compile Include="..\Vauchi\Platform\NetworkCost.cs" Link="Linked\NetworkCost.cs" />
     <Compile Include="..\Vauchi\Platform\SecureStorageService.cs" Link="Linked\SecureStorageService.cs" />
     <Compile Include="..\Vauchi\Platform\SystemLocale.cs" Link="Linked\SystemLocale.cs" />
-    <Compile Include="..\Vauchi\CoreUI\SystemColorScheme.cs" Link="Linked\SystemColorScheme.cs" />
     <Compile Include="..\Vauchi\Platform\SystemTrayManager.cs" Link="Linked\SystemTrayManager.cs" />
     <Compile Include="..\Vauchi\Services\DirectSendService.cs" Link="Linked\DirectSendService.cs" />
     <Compile Include="..\Vauchi\Services\Localizer.cs" Link="Linked\Localizer.cs" />
     <Compile Include="..\Vauchi\Services\ScreenCaptureProtection.cs" Link="Linked\ScreenCaptureProtection.cs" />
-    <Compile Include="..\Vauchi\CoreUI\BrandFonts.cs" Link="Linked\BrandFonts.cs" />
-    <Compile Include="..\Vauchi\CoreUI\PresentationEvents.cs" Link="Linked\PresentationEvents.cs" />
-    <Compile Include="..\Vauchi\CoreUI\PresentationHost.xaml.cs" Link="Linked\PresentationHost.xaml.cs" />
-    <Compile Include="..\Vauchi\CoreUI\PresentationHostEffects.cs" Link="Linked\PresentationHostEffects.cs" />
-    <Compile Include="..\Vauchi\CoreUI\PresentationJson.cs" Link="Linked\PresentationJson.cs" />
-    <Compile Include="..\Vauchi\CoreUI\PresentationImageShape.cs" Link="Linked\PresentationImageShape.cs" />
-    <Compile Include="..\Vauchi\CoreUI\PresentationQrPlacement.cs" Link="Linked\PresentationQrPlacement.cs" />
-    <Compile Include="..\Vauchi\CoreUI\WakeupTiming.cs" Link="Linked\WakeupTiming.cs" />
-    <Compile Include="..\Vauchi\CoreUI\PresentationChoiceShape.cs" Link="Linked\PresentationChoiceShape.cs" />
-    <Compile Include="..\Vauchi\CoreUI\NavigationIcons.cs" Link="Linked\NavigationIcons.cs" />
-    <Compile Include="..\Vauchi\CoreUI\NavigationSpec.cs" Link="Linked\NavigationSpec.cs" />
-    <Compile Include="..\Vauchi\CoreUI\Pictograms.cs" Link="Linked\Pictograms.cs" />
-    <Compile Include="..\Vauchi\CoreUI\PictogramIcon.cs" Link="Linked\PictogramIcon.cs" />
-    <Compile Include="..\Vauchi\CoreUI\PresentationIcons.cs" Link="Linked\PresentationIcons.cs" />
-    <Compile Include="..\Vauchi\CoreUI\SidebarModel.cs" Link="Linked\SidebarModel.cs" />
-    <Compile Include="..\Vauchi\CoreUI\PresentationState.cs" Link="Linked\PresentationState.cs" />
-    <Compile Include="..\Vauchi\CoreUI\PresentationTrace.cs" Link="Linked\PresentationTrace.cs" />
-    <Compile Include="..\Vauchi\CoreUI\PresentationSurface.cs" Link="Linked\PresentationSurface.cs" />
-    <Compile Include="..\Vauchi\CoreUI\PresentationSurfaceCollections.cs" Link="Linked\PresentationSurfaceCollections.cs" />
-    <Compile Include="..\Vauchi\CoreUI\PresentationSurfaceFields.cs" Link="Linked\PresentationSurfaceFields.cs" />
-    <Compile Include="..\Vauchi\CoreUI\PresentationSurfaceMedia.cs" Link="Linked\PresentationSurfaceMedia.cs" />
-    <Compile Include="..\Vauchi\CoreUI\FixedColors.cs" Link="Linked\FixedColors.cs" />
-    <Compile Include="..\Vauchi\CoreUI\SurfaceColors.cs" Link="Linked\SurfaceColors.cs" />
-    <Compile Include="..\Vauchi\CoreUI\ActionToneStyle.cs" Link="Linked\ActionToneStyle.cs" />
-    <Compile Include="..\Vauchi\CoreUI\TargetSize.cs" Link="Linked\TargetSize.cs" />
-    <Compile Include="..\Vauchi\CoreUI\FocusVisualStyle.cs" Link="Linked\FocusVisualStyle.cs" />
-    <Compile Include="..\Vauchi\CoreUI\ScreenCatalog.cs" Link="Linked\ScreenCatalog.cs" />
-    <Compile Include="..\Vauchi\CoreUI\ContextBarLayout.cs" Link="Linked\ContextBarLayout.cs" />
-    <Compile Include="..\Vauchi\CoreUI\RowInfo.cs" Link="Linked\RowInfo.cs" />
-    <Compile Include="..\Vauchi\CoreUI\OverlayCloseLabel.cs" Link="Linked\OverlayCloseLabel.cs" />
-  </ItemGroup>
-  <!-- Same logical names as Vauchi.csproj: the linked Pictograms.cs reads
-       them from whichever assembly it is compiled into -->
-  <ItemGroup>
-    <EmbeddedResource Include="..\Vauchi\Assets\Pictograms\**\*.svg"
-                      LogicalName="Vauchi.Pictograms/%(RecursiveDir)%(Filename)%(Extension)" />
-  </ItemGroup>
-  <!-- Screen-catalog batches copied from Core's presentation_contract_v1.json -->
-  <ItemGroup>
-    <Content Include="Fixtures\*.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

@@ -40,17 +40,23 @@ starting the Core engine. CI runs it as `test:screen-catalog`.
 
 ## Architecture
 
-This app is a display-only shell: core emits generic, fully prepared
-presentation commands, and the app reports opaque events back.
+The app assembles Core, the display shell and the hardware shell
+(ADR-078): Core emits generic, fully prepared commands, and the shells
+report opaque events back.
 
-- **PresentationHost** (`CoreUI/PresentationHost.xaml`) renders core's
-  presentation commands (JSON via C ABI) with WinUI controls
-- **PresentationEvents** (`CoreUI/PresentationEvents.cs`) reports user
-  input to core as opaque event JSON
-- **VauchiNative.cs** wraps C ABI via `LibraryImport` + `System.Text.Json`
+- **The display shell** is
+  [windows-display](https://gitlab.com/vauchi/windows-display), pinned
+  as the `vauchi-windows-display` package: it renders Core's
+  presentation commands with WinUI controls and reports user input as
+  opaque event JSON, reaching the engine through `IEngineLink`
+- **The hardware shell** is
+  [windows-hw](https://gitlab.com/vauchi/windows-hw), pinned as
+  `vauchi-windows-hw` and `vauchi-windows-hw-native`
+- **VauchiNative.cs** wraps C ABI via `LibraryImport` + `System.Text.Json`;
+  `CabiEngineLink` hands it to the display shell
 - **Platform chrome**: taskbar, notifications, MSIX packaging
 
-All business logic lives in `vauchi-core` (Rust). This repo is a pure rendering layer.
+All business logic lives in `vauchi-core` (Rust). This repo holds none.
 
 ## License
 

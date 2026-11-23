@@ -24,6 +24,17 @@
           "Microsoft.Windows.SDK.BuildTools": "10.0.22621.756"
         }
       },
+      "vauchi-windows-display": {
+        "type": "Direct",
+        "requested": "[0.1.0, 0.1.0]",
+        "resolved": "0.1.0",
+        "contentHash": "8oBBV1Kzdq54zTBLqCiGMPeJj+UxM5dfxIQEUgzQFhDb35MC1DlDYf8JGX6T8IUFEAeN/jU1r8sLYEnju3h1Ig==",
+        "dependencies": {
+          "Microsoft.WindowsAppSDK": "1.7.260224002",
+          "ZXing.Net": "0.16.9",
+          "ZXing.Net.Bindings.Windows.Compatibility": "0.16.9"
+        }
+      },
       "vauchi-windows-hw": {
         "type": "Direct",
         "requested": "[0.4.1, 0.4.1]",
@@ -114,14 +125,6 @@
         "contentHash": "ANiqLu3DxW9kol/hMmTWbt3414t9ftdIuiIU7j80okq2YzAueo120M442xk1kDJWtmZTqWQn7wHDvMRipVOEOQ==",
         "dependencies": {
           "System.Collections.Immutable": "9.0.0"
-        }
-      },
-      "vauchi.display": {
-        "type": "Project",
-        "dependencies": {
-          "Microsoft.WindowsAppSDK": "[1.7.*, )",
-          "ZXing.Net": "[0.16.9, )",
-          "ZXing.Net.Bindings.Windows.Compatibility": "[0.16.9, )"
         }
       }
     },
