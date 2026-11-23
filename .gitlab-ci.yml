@@ -1024,3 +1024,19 @@ lint:domain-calls:
   variables:
     VAUCHI_SCRIPTS_REF: "ci-templates-v2026.11.22"
 
+# ADR-078 D-13: the app holds no behaviour. Only the wiring reads a
+# command or builds an event; display and hardware work belongs in
+# windows-display and windows-hw. The check's own tests plant each kind
+# first (CC-27).
+lint:no-behaviour:
+  stage: lint
+  image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/python:3.11-alpine
+  tags: [docker]
+  needs: []
+  script:
+    - python3 ci/tests/check-no-behaviour.test.py
+    - python3 ci/check-no-behaviour.py
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
