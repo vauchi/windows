@@ -40,9 +40,6 @@
   </ItemGroup>
   <!-- Link helper files from main project -->
   <ItemGroup>
-    <Compile Include="..\Vauchi\Helpers\ExchangeCommandParser.cs" Link="Linked\ExchangeCommandParser.cs" />
-    <Compile Include="..\Vauchi\Helpers\ExchangeHardwareEventJson.cs" Link="Linked\ExchangeHardwareEventJson.cs" />
-    <Compile Include="..\Vauchi\Handlers\ExchangeCommandHandler.cs" Link="Linked\ExchangeCommandHandler.cs" />
     <Compile Include="..\Vauchi\Interop\VauchiNative.cs" Link="Linked\VauchiNative.cs" />
     <Compile Include="..\Vauchi\Interop\CabiEngineLink.cs" Link="Linked\CabiEngineLink.cs" />
     <Compile Include="..\Vauchi\Hardware\HardwareBridge.cs" Link="Linked\HardwareBridge.cs" />
@@ -50,14 +47,12 @@
     <Compile Include="..\Vauchi\MainWindow.xaml.cs" Link="Linked\MainWindow.xaml.cs" />
     <Compile Include="..\Vauchi\MainWindowEffects.cs" Link="Linked\MainWindowEffects.cs" />
     <Compile Include="..\Vauchi\MainWindowState.cs" Link="Linked\MainWindowState.cs" />
-    <Compile Include="..\Vauchi\Platform\BleExchangeService.cs" Link="Linked\BleExchangeService.cs" />
     <Compile Include="..\Vauchi\Platform\DeepLinks.cs" Link="Linked\DeepLinks.cs" />
     <Compile Include="..\Vauchi\Platform\KeyStorageService.cs" Link="Linked\KeyStorageService.cs" />
     <Compile Include="..\Vauchi\Platform\NetworkCost.cs" Link="Linked\NetworkCost.cs" />
     <Compile Include="..\Vauchi\Platform\SecureStorageService.cs" Link="Linked\SecureStorageService.cs" />
     <Compile Include="..\Vauchi\Platform\SystemLocale.cs" Link="Linked\SystemLocale.cs" />
     <Compile Include="..\Vauchi\Platform\SystemTrayManager.cs" Link="Linked\SystemTrayManager.cs" />
-    <Compile Include="..\Vauchi\Services\DirectSendService.cs" Link="Linked\DirectSendService.cs" />
     <Compile Include="..\Vauchi\Services\Localizer.cs" Link="Linked\Localizer.cs" />
     <Compile Include="..\Vauchi\Services\ScreenCaptureProtection.cs" Link="Linked\ScreenCaptureProtection.cs" />
   </ItemGroup>

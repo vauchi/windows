@@ -5,19 +5,21 @@ using Microsoft.UI.Xaml;
 using Microsoft.Windows.AppNotifications;
 using Microsoft.Windows.AppNotifications.Builder;
 using System;
-using System.IO;
 using System.Text.Json;
 using Vauchi.CoreUI;
 using Vauchi.Hardware;
-using Vauchi.Helpers;
 using Vauchi.Interop;
-using Windows.Storage;
-using Windows.Storage.Pickers;
 
 namespace Vauchi;
 
 public sealed partial class MainWindow
 {
+    /// <summary>
+    /// The commands neither shell runs. Until the hardware shell reports, Core
+    /// sends every command to the display path (ADR-077), so the first
+    /// wakeup and a notification can arrive here; the display shell and the
+    /// hardware shell run everything else.
+    /// </summary>
     private void ExecuteNativeEffect(JsonElement command)
     {
         switch (PresentationState.CommandName(command))
@@ -25,22 +27,10 @@ public sealed partial class MainWindow
             case "ScheduleWakeup":
                 ArmWakeupTimer(command.GetProperty("ScheduleWakeup"));
                 return;
-            case "ExportFile":
-                ExportFile(command.GetProperty("ExportFile").GetProperty("file"));
-                return;
             case "PostNotification":
                 PostNotification(
                     command.GetProperty("PostNotification").GetProperty("notification"));
                 return;
-            case "ResetApplication":
-                return;
-        }
-
-        ExchangeCommand effect = ExchangeCommandParser.Parse(command);
-        if (effect.Kind != ExchangeCommandKind.Unknown)
-        {
-            _exchange?.Handle(new[] { effect });
-            return;
         }
         System.Diagnostics.Debug.WriteLine(
             $"[Vauchi] Unsupported Core effect: {PresentationState.CommandName(command)}");
@@ -163,35 +153,6 @@ public sealed partial class MainWindow
         };
         _wakeupTimer.Tick += (_, _) => RunWakeupTick();
         _wakeupTimer.Start();
-    }
-
-    private async void ExportFile(JsonElement file)
-    {
-        byte[]? bytes = file.TryGetProperty("data", out JsonElement data)
-            ? PresentationJson.Bytes(data)
-            : null;
-        if (bytes is null)
-            return;
-
-        string suggestedName =
-            file.GetProperty("suggested_name").GetString() ?? "export.bin";
-        string extension = Path.GetExtension(suggestedName);
-        if (extension.Length == 0)
-            extension = ".bin";
-        var picker = new FileSavePicker
-        {
-            SuggestedStartLocation = PickerLocationId.DocumentsLibrary,
-            SuggestedFileName = Path.GetFileNameWithoutExtension(suggestedName),
-        };
-        picker.FileTypeChoices.Add(
-            file.GetProperty("mime_type").GetString() ?? "File",
-            new[] { extension });
-        IntPtr windowHandle = WinRT.Interop.WindowNative.GetWindowHandle(this);
-        WinRT.Interop.InitializeWithWindow.Initialize(picker, windowHandle);
-
-        StorageFile? destination = await picker.PickSaveFileAsync();
-        if (destination is not null)
-            await FileIO.WriteBytesAsync(destination, bytes);
     }
 
     private static void PostNotification(JsonElement notification)
