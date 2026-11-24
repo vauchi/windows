@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
 using Microsoft.Windows.AppNotifications;
 using Microsoft.Windows.AppNotifications.Builder;
 using System;
@@ -14,6 +15,16 @@ namespace Vauchi;
 
 public sealed partial class MainWindow
 {
+    private CameraPreviews<SwapChainPanel>? _cameraPreviews;
+
+    /// <summary>
+    /// The display shell shows a camera panel: the hardware shell draws its
+    /// preview there, under Core's preview id (ADR-077 amendment 2026-11-01).
+    /// </summary>
+    private void ShowCameraPreview(string previewId, SwapChainPanel panel) => _cameraPreviews?.Shown(previewId, panel);
+
+    private void EndCameraPreview(string previewId, SwapChainPanel panel) => _cameraPreviews?.Gone(previewId, panel);
+
     /// <summary>
     /// The commands neither shell runs. Until the hardware shell reports, Core
     /// sends every command to the display path (ADR-077), so the first
@@ -75,6 +86,7 @@ public sealed partial class MainWindow
             return;
         }
         _hardware = hardware;
+        _cameraPreviews = new CameraPreviews<SwapChainPanel>(hardware.Previews, panel => new PanelPreview(panel));
         _engine.Hardware = hardware.Bridge;
         Presentation.DispatchPlatformEvent(hardware.Bridge.Capabilities);
     }
@@ -83,6 +95,8 @@ public sealed partial class MainWindow
     {
         WindowsHardware? hardware = _hardware;
         _hardware = null;
+        _cameraPreviews?.Dispose();
+        _cameraPreviews = null;
         if (_engine is not null)
             _engine.Hardware = null;
         if (hardware is null)

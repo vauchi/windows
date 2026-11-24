@@ -40,7 +40,7 @@
   <!-- The display shell, with its pictograms and design tokens, pinned
        exactly from windows-display's registry (ADR-078 decision 8). -->
   <ItemGroup>
-    <PackageReference Include="vauchi-windows-display" Version="[0.2.0]" />
+    <PackageReference Include="vauchi-windows-display" Version="[0.3.0]" />
   </ItemGroup>
   <!-- CABI native library — copied to output when present -->
   <ItemGroup>

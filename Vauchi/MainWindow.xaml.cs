@@ -41,6 +41,8 @@ public sealed partial class MainWindow : Window
 
         Presentation.NativeEffectReady += ExecuteNativeEffect;
         Presentation.NativeBackRequested += HideWindow;
+        Presentation.CameraViewportShown += ShowCameraPreview;
+        Presentation.CameraViewportGone += EndCameraPreview;
         Activated += OnActivated;
         _ = InitializeAsync();
     }
@@ -250,6 +252,8 @@ public sealed partial class MainWindow : Window
         SaveWindowState();
         Presentation.NativeEffectReady -= ExecuteNativeEffect;
         Presentation.NativeBackRequested -= HideWindow;
+        Presentation.CameraViewportShown -= ShowCameraPreview;
+        Presentation.CameraViewportGone -= EndCameraPreview;
         _tray?.Dispose();
         _wakeupTimer?.Stop();
         if (_appHandle == IntPtr.Zero)

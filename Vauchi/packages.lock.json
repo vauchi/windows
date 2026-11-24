@@ -26,9 +26,9 @@
       },
       "vauchi-windows-display": {
         "type": "Direct",
-        "requested": "[0.2.0, 0.2.0]",
-        "resolved": "0.2.0",
-        "contentHash": "k0mpVTJYey4Qj/eAn4apJRIEFpW2G7CJBXkU/2MAq5JtgcNEADT/XJtCiepqovW/u4MSmchGgGUtHWVWbZUr2w==",
+        "requested": "[0.3.0, 0.3.0]",
+        "resolved": "0.3.0",
+        "contentHash": "KIB+eUWgmxKkK2YGnOcKXnz1KYHOVwBDUbG8vnF+Xvla1iKAk+fK+VrfG6YqpMz9WZlMLB1cQ5CjiTd8mGFNaQ==",
         "dependencies": {
           "Microsoft.WindowsAppSDK": "1.7.260224002",
           "ZXing.Net": "0.16.9",

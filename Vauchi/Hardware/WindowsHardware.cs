@@ -21,15 +21,20 @@ public sealed class WindowsHardware : IAsyncDisposable
     private readonly CancellationTokenSource _stop = new();
     private readonly Task _reporting;
 
-    private WindowsHardware(HardwareShell shell, Action<string> report, Action<System.Text.Json.JsonElement> leftToTheApp)
+    private WindowsHardware(
+        HardwareShell shell, PreviewOutputs previews, Action<string> report, Action<System.Text.Json.JsonElement> leftToTheApp)
     {
         _shell = shell;
+        Previews = previews;
         Bridge = new HardwareBridge(shell, report, leftToTheApp);
         // Off the caller's thread: the shell's events arrive whenever the OS has one.
         _reporting = Task.Run(() => Bridge.RunAsync(_stop.Token));
     }
 
     public HardwareBridge Bridge { get; }
+
+    /// <summary>Where the camera shows its preview, by Core's preview id; the app attaches the panels.</summary>
+    public PreviewOutputs Previews { get; }
 
     /// <param name="report">Takes one contract <c>Event</c> as JSON, on a thread-pool thread.</param>
     /// <param name="leftToTheApp">Takes one command no backend here runs, on the routing thread.</param>
@@ -38,17 +43,18 @@ public sealed class WindowsHardware : IAsyncDisposable
         Action<System.Text.Json.JsonElement> leftToTheApp)
     {
         DeviceCapabilities device = await WindowsProbe.ProbeAsync();
+        var previews = new PreviewOutputs();
         var backends = new Backends
         {
             Discovery = new WinRtDiscovery(),
             Central = new GattCentral(new WinRtGattDialer()),
             Advertising = new GattPeripheral(new WinRtGattServerHost()),
             Nfc = new PcscReader(new WinSCard()),
-            Camera = new QrCamera(new WinRtCameraSource(), new ZxingCppDecoder()),
+            Camera = new QrCamera(new WinRtCameraSource(previews), new ZxingCppDecoder()),
             Direct = new TcpDirectExchange(),
             Notifications = new AppNotifications(),
         };
-        return new WindowsHardware(new HardwareShell(backends, device), report, leftToTheApp);
+        return new WindowsHardware(new HardwareShell(backends, device), previews, report, leftToTheApp);
     }
 
     /// <summary>

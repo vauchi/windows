@@ -36,7 +36,7 @@
     <PackageReference Include="vauchi-windows-hw-preview" Version="[0.8.0]" />
     <!-- The display shell the app assembles; its own tests live in
          windows-display, these test the app around it. -->
-    <PackageReference Include="vauchi-windows-display" Version="[0.2.0]" />
+    <PackageReference Include="vauchi-windows-display" Version="[0.3.0]" />
     <PackageReference Include="ZXing.Net.Bindings.Windows.Compatibility" Version="0.16.9" />
   </ItemGroup>
   <!-- Link helper files from main project -->
@@ -46,6 +46,7 @@
     <Compile Include="..\Vauchi\Hardware\HardwareBridge.cs" Link="Linked\HardwareBridge.cs" />
     <Compile Include="..\Vauchi\Hardware\WindowsHardware.cs" Link="Linked\WindowsHardware.cs" />
     <Compile Include="..\Vauchi\Hardware\CameraPreviews.cs" Link="Linked\CameraPreviews.cs" />
+    <Compile Include="..\Vauchi\Hardware\PanelPreview.cs" Link="Linked\PanelPreview.cs" />
     <Compile Include="..\Vauchi\MainWindow.xaml.cs" Link="Linked\MainWindow.xaml.cs" />
     <Compile Include="..\Vauchi\MainWindowEffects.cs" Link="Linked\MainWindowEffects.cs" />
     <Compile Include="..\Vauchi\MainWindowState.cs" Link="Linked\MainWindowState.cs" />
