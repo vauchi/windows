@@ -24,9 +24,10 @@
     <PackageReference Include="ZXing.Net" Version="0.16.9" />
     <!-- The contract and the hardware shell, each pinned exactly (ADR-077 D-3). -->
     <PackageReference Include="Vauchi.Contract" Version="[0.101.0]" />
-    <PackageReference Include="vauchi-windows-hw" Version="[0.7.0]" />
-    <PackageReference Include="vauchi-windows-hw-native" Version="[0.7.0]" />
-    <PackageReference Include="vauchi-windows-hw-notifications" Version="[0.7.0]" />
+    <PackageReference Include="vauchi-windows-hw" Version="[0.8.0]" />
+    <PackageReference Include="vauchi-windows-hw-native" Version="[0.8.0]" />
+    <PackageReference Include="vauchi-windows-hw-notifications" Version="[0.8.0]" />
+    <PackageReference Include="vauchi-windows-hw-preview" Version="[0.8.0]" />
     <PackageReference Include="ZXing.Net.Bindings.Windows.Compatibility" Version="0.16.9" />
   </ItemGroup>
   <!-- Brand font files (OFL-1.1) — vendored verbatim from themes/fonts,
