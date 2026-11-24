@@ -12,8 +12,11 @@
          WindowsAppSDK bootstrap; without a RID the testhost builds to the no-RID
          output while the referenced app builds to win-x64\, so vstest cannot load
          Microsoft.TestPlatform.CoreUtilities. `dotnet test` selects with -r win-x64.
-         https://learn.microsoft.com/windows/apps/develop/testing/ -->
-    <RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
+         https://learn.microsoft.com/windows/apps/develop/testing/
+         Only win-x64, the one runtime the app ships: CI restores this project
+         through the solution and with -r win-x64, and its locked restore
+         refuses a lock file whose runtimes differ from either (NU1004). -->
+    <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
     <WindowsAppSdkBootstrapInitialize>true</WindowsAppSdkBootstrapInitialize>
   </PropertyGroup>
   <ItemGroup>
