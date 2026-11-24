@@ -5,5 +5,9 @@
     <!-- WinUI PRI generation requires VS MSBuild tools.
          Build with: msbuild (from VS Developer Command Prompt) or Visual Studio IDE.
          dotnet build/test will show PRI error but C# compilation succeeds. -->
+    <!-- Every project restores what its packages.lock.json names, and CI
+         refuses a restore that would change it (ADR-077 D-3). -->
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <RestoreLockedMode Condition="'$(CI)' == 'true'">true</RestoreLockedMode>
   </PropertyGroup>
 </Project>
