@@ -5,7 +5,7 @@ include:
   - template: Security/SAST.gitlab-ci.yml
   - template: Security/Secret-Detection.gitlab-ci.yml
   - project: 'vauchi/scripts'
-    ref: ci-templates-v2026.11.22
+    ref: ci-templates-v2026.11.26
     file:
       - '/ci-templates/removed-symbols.yml'
       - '/ci-templates/badges.yml'
@@ -17,7 +17,7 @@ include:
       - '/ci-templates/domain-calls.yml'
 
 variables:
-  VAUCHI_SCRIPTS_REF: "ci-templates-v2026.11.22"
+  VAUCHI_SCRIPTS_REF: "ci-templates-v2026.11.26"
   SAST_EXCLUDED_PATHS: "bin/, obj/, packages/"
   SECRET_DETECTION_EXCLUDED_PATHS: "bin/, obj/, packages/"
   SAST_ANALYZER_IMAGE_TAG: "5"
@@ -1022,7 +1022,7 @@ github-mirror:
 lint:domain-calls:
   extends: .domain-calls-job
   variables:
-    VAUCHI_SCRIPTS_REF: "ci-templates-v2026.11.22"
+    VAUCHI_SCRIPTS_REF: "ci-templates-v2026.11.26"
 
 # ADR-078 D-13: the app holds no behaviour. Only the wiring reads a
 # command or builds an event; display and hardware work belongs in
